@@ -80,9 +80,10 @@ FamilyTree.sln
 
 Правила:
 - Поточна мова зберігається в `settings.json`; при старті виставляється `Thread.CurrentThread.CurrentUICulture`.
-- Перемикання мови в налаштуваннях: м'який перезапуск головного вікна (найпростіший надійний шлях у WPF) або динамічна підміна ResourceDictionary — обрати під час T-0.2 і зафіксувати.
+- Перемикання мови в налаштуваннях: **зафіксовано (T-0.2) — живе оновлення без перезапуску**. Markup extension `{loc:Localize Key}` повертає прив'язку до індексатора класу-проксі `LocalizationSource` (реалізує `INotifyPropertyChanged`); `ILocalizationService.SetLanguage` піднімає подію `LanguageChanged`, за якою проксі сигналить оновлення індексатора (`Binding.IndexerName`) — і всі написи перечитуються миттєво. Дати/числа оновлюються через прив'язки до властивостей ViewModel, що реагують на `LanguageChanged`.
 - Ключі ресурсів — ієрархічні: `Person_Editor_Title`, `Validation_CycleDetected`, `Tree_Mode_Ancestors`.
-- Додавання нової мови = новий `Strings.xx.resx` + новий `XxKinshipFormatter` + рядок у списку мов у налаштуваннях. Жодних змін у логіці.
+- Ідентифікація мови — за **власним кодом** застосунку (`LanguageOption.Code`), а не за `CultureInfo.TwoLetterISOLanguageName` (той не унікальний і для рідкісних мов повертає трилітерний код). Форматування дат/чисел — за окремим `FormattingCulture`, який має відкат, якщо реальної `CultureInfo` немає. Невідомий/битий код мови в `settings.json` не викидає виняток — тихий відкат на мову за замовчуванням.
+- Додавання нової мови — два шляхи: (а) **вбудована** (є `CultureInfo`): новий `Strings.xx.resx` + `RegisterBuiltIn("xx")` + новий `XxKinshipFormatter`; (б) **без `CultureInfo`** (діалект/штучна/рідкісна мова): файл перекладу `%AppData%\FamilyTree\languages\<code>.json` (`displayName`, необов'язковий `formattingCulture`, `strings`), який підхоплюється при старті; відсутні ключі беруться з нейтральної мови. Деталі — `docs/localization-custom-languages.md`. Жодних змін у логіці.
 
 ---
 

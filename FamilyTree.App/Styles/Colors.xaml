@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Палітра кольорів застосунку. Один центр правди для тем/стилів. -->
+
+    <Color x:Key="PrimaryColor">#2E5D8A</Color>
+    <Color x:Key="PrimaryHoverColor">#3A6FA3</Color>
+    <Color x:Key="PrimaryPressedColor">#244B70</Color>
+    <Color x:Key="AccentColor">#4C9A6E</Color>
+
+    <Color x:Key="BackgroundColor">#F5F6F8</Color>
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="BorderColor">#D4D8DE</Color>
+
+    <Color x:Key="TextPrimaryColor">#1E2226</Color>
+    <Color x:Key="TextSecondaryColor">#5C636B</Color>
+    <Color x:Key="TextOnPrimaryColor">#FFFFFF</Color>
+
+    <Color x:Key="WarningColor">#C9922B</Color>
+    <Color x:Key="ErrorColor">#C0392B</Color>
+
+    <!-- Пензлі на основі палітри -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHoverColor}" />
+    <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{StaticResource PrimaryPressedColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{StaticResource TextOnPrimaryColor}" />
+
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
+
+</ResourceDictionary>

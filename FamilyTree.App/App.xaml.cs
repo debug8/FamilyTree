@@ -1,4 +1,6 @@
 using System.Windows;
+using FamilyTree.App.Localization;
+using FamilyTree.App.Settings;
 using FamilyTree.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,7 +9,7 @@ namespace FamilyTree.App;
 
 /// <summary>
 /// Точка входу застосунку. Композиційний корінь: будує Generic Host,
-/// реєструє сервіси та ViewModel-и, показує головне вікно.
+/// реєструє сервіси та ViewModel-и, виставляє мову й показує головне вікно.
 /// </summary>
 public partial class App : Application
 {
@@ -26,13 +28,16 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Сервіси застосунку
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+
         // ViewModel-и
         services.AddSingleton<MainViewModel>();
 
         // Вікна
         services.AddSingleton<MainWindow>();
 
-        // TODO (T-0.2): ILocalizationService
         // TODO (Етап 1): IFamilyStorage, доменні сервіси
     }
 
@@ -40,6 +45,19 @@ public partial class App : Application
     {
         await _host.StartAsync();
 
+        // 1. Завантажити налаштування та виставити збережену мову.
+        //    Невідомий/битий код обробляється всередині SetLanguage (тихий відкат на uk).
+        var settings = _host.Services.GetRequiredService<ISettingsService>();
+        settings.Load();
+
+        var localization = _host.Services.GetRequiredService<ILocalizationService>();
+        localization.SetLanguage(settings.Current.Language);
+
+        // 2. Ініціалізувати XAML-проксі локалізації ДО створення вікна
+        //    (markup extension {loc:Localize} звертається до LocalizationSource.Instance).
+        LocalizationSource.Initialize(localization);
+
+        // 3. Показати головне вікно.
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
