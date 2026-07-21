@@ -1,0 +1,61 @@
+## Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+publish/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+## Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+## VS Code (розкоментуй, якщо не хочеш ділити налаштування редактора)
+# .vscode/
+
+## Test / coverage output
+[Tt]est[Rr]esults/
+*.coverage
+*.coverage.xml
+coverage*.json
+coverage*.cobertura.xml
+
+## Verify / snapshot тести (залишковий файл при падінні)
+*.received.*
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+## Логи та діагностика
+*.log
+*.binlog
+msbuild.log
+
+## Локальні налаштування збірки
+launchSettings.local.json
+
+## App runtime data
+*.familytree.media/
+.backups/
+settings.json
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
