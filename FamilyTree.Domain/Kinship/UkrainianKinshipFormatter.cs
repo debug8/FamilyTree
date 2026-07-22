@@ -1,0 +1,120 @@
+using System.Linq;
+
+namespace FamilyTree.Domain.Kinship;
+
+/// <summary>
+/// T-3.2 — українські назви родства (розд. 4.3).
+/// Бічні лінії (a, b ≥ 1), k = min(a, b), d = |a − b|:
+///  • d = 0 → «k-юрідний» брат/сестра (k = 1 — рідні, з поділом єдинокровні/єдиноутробні);
+///  • b &lt; a (старша гілка): d = 1 → дядько/тітка з префіксом порядку k;
+///    d ≥ 2 → дід/баба (d = 2) чи пра…дід (d ≥ 3) з префіксом порядку k + 1
+///    (брат діда — «двоюрідний дід», двоюрідний брат діда — «троюрідний дід»);
+///  • b &gt; a (молодша гілка): d = 1 → племінник; d = 2 → внучатий племінник;
+///    d ≥ 3 → пра…внучатий племінник; префікс порядку k (для k ≥ 2).
+/// </summary>
+public sealed class UkrainianKinshipFormatter : IKinshipFormatter
+{
+    private static readonly string[] OrdinalStems =
+    {
+        "", "", "двоюрідн", "троюрідн", "чотириюрідн", "п'ятиюрідн", "шестиюрідн", "семиюрідн",
+    };
+
+    public string CultureCode => "uk";
+
+    public string Format(in KinshipContext context)
+    {
+        var c = context; // локальна копія: in-параметр не можна захоплювати в лямбду (CS1628)
+        return c.Kind switch
+        {
+            KinshipKind.SamePerson => "та сама особа",
+            KinshipKind.None => "родинний зв'язок не встановлено",
+            KinshipKind.Spouse => Pick(c.RelativeGender, "чоловік", "дружина"),
+            _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
+        };
+    }
+
+    /// <summary>Для невідомої статі показуємо обидва варіанти: «син / дочка».</summary>
+    private static string ByGender(Gender gender, Func<string> male, Func<string> female) => gender switch
+    {
+        Gender.Male => male(),
+        Gender.Female => female(),
+        _ => $"{male()} / {female()}",
+    };
+
+    private static string Build(KinshipContext c, Gender g) => c.Kind switch
+    {
+        KinshipKind.DirectAncestor => c.StepsUp switch
+        {
+            1 => Pick(g, "батько", "мати"),
+            2 => Pick(g, "дід", "баба"),
+            _ => Pra(c.StepsUp - 2) + Pick(g, "дід", "баба"),
+        },
+        KinshipKind.DirectDescendant => c.StepsDown switch
+        {
+            1 => Pick(g, "син", "дочка"),
+            2 => Pick(g, "онук", "онука"),
+            _ => Pra(c.StepsDown - 2) + Pick(g, "внук", "внучка"),
+        },
+        KinshipKind.Collateral => BuildCollateral(c.StepsUp, c.StepsDown, g, c.SiblingKind),
+        _ => string.Empty,
+    };
+
+    private static string BuildCollateral(int a, int b, Gender g, SiblingKind siblingKind)
+    {
+        var k = Math.Min(a, b);
+        var d = Math.Abs(a - b);
+
+        if (d == 0)
+        {
+            if (k == 1)
+            {
+                var word = Pick(g, "брат", "сестра");
+                return siblingKind switch
+                {
+                    SiblingKind.HalfPaternal => Pick(g, "єдинокровний ", "єдинокровна ") + word,
+                    SiblingKind.HalfMaternal => Pick(g, "єдиноутробний ", "єдиноутробна ") + word,
+                    SiblingKind.HalfUnknown => Pick(g, "зведений ", "зведена ") + word,
+                    _ => word,
+                };
+            }
+
+            return $"{Ordinal(k, g)} {Pick(g, "брат", "сестра")}";
+        }
+
+        if (b < a) // старша гілка: дядьки, двоюрідні діди…
+        {
+            if (d == 1)
+            {
+                var word = Pick(g, "дядько", "тітка");
+                return k == 1 ? word : $"{Ordinal(k, g)} {word}";
+            }
+
+            var baseWord = d == 2
+                ? Pick(g, "дід", "баба")
+                : Pra(d - 2) + Pick(g, "дід", "баба");
+            return $"{Ordinal(k + 1, g)} {baseWord}";
+        }
+
+        // b > a — молодша гілка: племінники та їхні нащадки.
+        var nephewWord = d switch
+        {
+            1 => Pick(g, "племінник", "племінниця"),
+            2 => Pick(g, "внучатий племінник", "внучата племінниця"),
+            _ => Pra(d - 2) + Pick(g, "внучатий племінник", "внучата племінниця"),
+        };
+        return k == 1 ? nephewWord : $"{Ordinal(k, g)} {nephewWord}";
+    }
+
+    private static string Pick(Gender g, string male, string female) =>
+        g == Gender.Female ? female : male;
+
+    /// <summary>«пра» × n: Pra(1) → «пра», Pra(2) → «прапра»…</summary>
+    private static string Pra(int count) => string.Concat(Enumerable.Repeat("пра", count));
+
+    /// <summary>«двоюрідний/двоюрідна», «троюрідний»… для k ≥ 8 — «8-юрідний».</summary>
+    private static string Ordinal(int k, Gender g)
+    {
+        var stem = k < OrdinalStems.Length ? OrdinalStems[k] : $"{k}-юрідн";
+        return stem + (g == Gender.Female ? "а" : "ий");
+    }
+}
