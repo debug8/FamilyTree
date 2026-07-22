@@ -76,6 +76,36 @@
   <data name="Theme_Dark" xml:space="preserve">
     <value>Dark</value>
   </data>
+  <data name="Validation_SelfParent" xml:space="preserve">
+    <value>A person cannot be their own parent.</value>
+  </data>
+  <data name="Validation_SelfSpouse" xml:space="preserve">
+    <value>A person cannot be married to themselves.</value>
+  </data>
+  <data name="Validation_DuplicateParentChild" xml:space="preserve">
+    <value>This parent–child relationship already exists.</value>
+  </data>
+  <data name="Validation_DuplicateSpouse" xml:space="preserve">
+    <value>This marriage already exists.</value>
+  </data>
+  <data name="Validation_CycleDetected" xml:space="preserve">
+    <value>Not allowed: this would create a cycle — the person would become their own ancestor.</value>
+  </data>
+  <data name="Validation_SecondBiologicalFather" xml:space="preserve">
+    <value>The child already has a biological father.</value>
+  </data>
+  <data name="Validation_SecondBiologicalMother" xml:space="preserve">
+    <value>The child already has a biological mother.</value>
+  </data>
+  <data name="Validation_ChildBornBeforeParentAdult" xml:space="preserve">
+    <value>Warning: the child was born before the parent ({0}) turned 12.</value>
+  </data>
+  <data name="Validation_ParentYoungerThanChild" xml:space="preserve">
+    <value>Warning: the parent ({0}) is younger than the child ({1}).</value>
+  </data>
+  <data name="Validation_DeathBeforeBirth" xml:space="preserve">
+    <value>Warning: death date is earlier than birth date.</value>
+  </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Today</value>
   </data>

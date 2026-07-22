@@ -76,6 +76,36 @@
   <data name="Theme_Dark" xml:space="preserve">
     <value>Темна</value>
   </data>
+  <data name="Validation_SelfParent" xml:space="preserve">
+    <value>Особа не може бути власним батьком або матір'ю.</value>
+  </data>
+  <data name="Validation_SelfSpouse" xml:space="preserve">
+    <value>Особа не може бути в шлюбі сама з собою.</value>
+  </data>
+  <data name="Validation_DuplicateParentChild" xml:space="preserve">
+    <value>Такий зв'язок «батьки — дитина» вже існує.</value>
+  </data>
+  <data name="Validation_DuplicateSpouse" xml:space="preserve">
+    <value>Такий шлюбний зв'язок уже існує.</value>
+  </data>
+  <data name="Validation_CycleDetected" xml:space="preserve">
+    <value>Неможливо: створюється цикл — особа стала б власним предком.</value>
+  </data>
+  <data name="Validation_SecondBiologicalFather" xml:space="preserve">
+    <value>У дитини вже є біологічний батько.</value>
+  </data>
+  <data name="Validation_SecondBiologicalMother" xml:space="preserve">
+    <value>У дитини вже є біологічна мати.</value>
+  </data>
+  <data name="Validation_ChildBornBeforeParentAdult" xml:space="preserve">
+    <value>Попередження: дитину народжено, коли батькові/матері ({0}) було менше 12 років.</value>
+  </data>
+  <data name="Validation_ParentYoungerThanChild" xml:space="preserve">
+    <value>Попередження: батько/мати ({0}) молодші за дитину ({1}).</value>
+  </data>
+  <data name="Validation_DeathBeforeBirth" xml:space="preserve">
+    <value>Попередження: дата смерті раніша за дату народження.</value>
+  </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Сьогодні</value>
   </data>
