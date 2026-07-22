@@ -14,4 +14,7 @@ public sealed class AppSettings
 
     /// <summary>Стиль назв родства (standard, detailed). За замовчуванням — стандартний.</summary>
     public string KinshipNamingStyle { get; set; } = "standard";
+
+    /// <summary>Останні відкриті файли (найновіші — першими).</summary>
+    public List<string> RecentFiles { get; set; } = new();
 }

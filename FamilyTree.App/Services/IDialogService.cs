@@ -18,4 +18,13 @@ public interface IDialogService
 
     /// <summary>Показує інформаційне повідомлення (напр. помилку валідації).</summary>
     void ShowMessage(string message, string title);
+
+    /// <summary>Запит про незбережені зміни (Зберегти / Не зберігати / Скасувати).</summary>
+    SaveChangesResult ConfirmSaveChanges(string message, string title);
+
+    /// <summary>Діалог відкриття файлу. Повертає шлях або null.</summary>
+    string? AskOpenPath(string filter);
+
+    /// <summary>Діалог збереження файлу. Повертає шлях або null.</summary>
+    string? AskSavePath(string filter, string suggestedName);
 }

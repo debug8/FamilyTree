@@ -187,6 +187,39 @@
   <data name="Validation_Continue" xml:space="preserve">
     <value>Continue despite warnings?</value>
   </data>
+  <data name="Menu_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Menu_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Menu_Open" xml:space="preserve">
+    <value>Open…</value>
+  </data>
+  <data name="Menu_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Menu_SaveAs" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="Menu_Recent" xml:space="preserve">
+    <value>Recent files</value>
+  </data>
+  <data name="Menu_Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="File_Filter" xml:space="preserve">
+    <value>Family Tree (*.familytree)|*.familytree|All files (*.*)|*.*</value>
+  </data>
+  <data name="File_ErrorTitle" xml:space="preserve">
+    <value>File error</value>
+  </data>
+  <data name="SaveChanges_Title" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="SaveChanges_Message" xml:space="preserve">
+    <value>The document has unsaved changes. Save them?</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

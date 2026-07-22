@@ -187,6 +187,39 @@
   <data name="Validation_Continue" xml:space="preserve">
     <value>Продовжити попри попередження?</value>
   </data>
+  <data name="Menu_File" xml:space="preserve">
+    <value>Файл</value>
+  </data>
+  <data name="Menu_New" xml:space="preserve">
+    <value>Новий</value>
+  </data>
+  <data name="Menu_Open" xml:space="preserve">
+    <value>Відкрити…</value>
+  </data>
+  <data name="Menu_Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Menu_SaveAs" xml:space="preserve">
+    <value>Зберегти як…</value>
+  </data>
+  <data name="Menu_Recent" xml:space="preserve">
+    <value>Останні файли</value>
+  </data>
+  <data name="Menu_Exit" xml:space="preserve">
+    <value>Вихід</value>
+  </data>
+  <data name="File_Filter" xml:space="preserve">
+    <value>Дерево родини (*.familytree)|*.familytree|Усі файли (*.*)|*.*</value>
+  </data>
+  <data name="File_ErrorTitle" xml:space="preserve">
+    <value>Помилка файлу</value>
+  </data>
+  <data name="SaveChanges_Title" xml:space="preserve">
+    <value>Незбережені зміни</value>
+  </data>
+  <data name="SaveChanges_Message" xml:space="preserve">
+    <value>У документі є незбережені зміни. Зберегти їх?</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>

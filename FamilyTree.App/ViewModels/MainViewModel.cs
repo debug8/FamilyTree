@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FamilyTree.App.Localization;
@@ -9,16 +11,18 @@ using FamilyTree.App.Theming;
 using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Validation;
+using FamilyTree.Storage;
 
 namespace FamilyTree.App.ViewModels;
 
 /// <summary>
-/// Головна ViewModel: список осіб із пошуком (T-2.1), CRUD осіб (T-2.2, T-2.3),
-/// перемикачі мови/теми/стилю назв.
+/// Головна ViewModel: файлові операції (T-2.5), список осіб із пошуком (T-2.1),
+/// CRUD осіб (T-2.2, T-2.3), керування зв'язками (T-2.4), перемикачі мови/теми/стилю.
 /// </summary>
 public partial class MainViewModel : ObservableObject, IDisposable
 {
     private const int SearchDebounceMs = 300;
+    private const int MaxRecentFiles = 8;
 
     private readonly ILocalizationService _localization;
     private readonly IThemeService _theme;
@@ -26,6 +30,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IDocumentSession _session;
     private readonly IDialogService _dialogs;
     private readonly RelationshipValidator _validator;
+    private readonly IFamilyStorage _storage;
     private readonly ISettingsService _settings;
 
     private CancellationTokenSource? _searchCts;
@@ -59,6 +64,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IDocumentSession session,
         IDialogService dialogs,
         RelationshipValidator validator,
+        IFamilyStorage storage,
         ISettingsService settings)
     {
         _localization = localization;
@@ -67,11 +73,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _session = session;
         _dialogs = dialogs;
         _validator = validator;
+        _storage = storage;
         _settings = settings;
 
         _selectedLanguage = _localization.CurrentLanguage;
         _selectedTheme = _theme.CurrentTheme;
         _selectedNamingStyle = NamingStyles.First(s => s.Style == _kinshipFormatter.Style);
+
+        LoadRecentFiles();
 
         _localization.LanguageChanged += OnLanguageChanged;
         _session.DocumentChanged += OnDocumentChanged;
@@ -80,22 +89,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         RefreshPersons();
     }
 
-    /// <summary>Відфільтрований і відсортований список осіб для лівої панелі.</summary>
     public ObservableCollection<Person> Persons { get; } = new();
 
-    /// <summary>Батьки обраної особи.</summary>
     public ObservableCollection<Person> Parents { get; } = new();
 
-    /// <summary>Діти обраної особи.</summary>
     public ObservableCollection<Person> Children { get; } = new();
 
-    /// <summary>Подружжя обраної особи.</summary>
     public ObservableCollection<Person> Spouses { get; } = new();
 
-    /// <summary>Чи є обрана особа (для показу панелі зв'язків).</summary>
+    public ObservableCollection<string> RecentFiles { get; } = new();
+
     public bool HasSelectedPerson => SelectedPerson is not null;
 
-    /// <summary>Немає обраної особи (для показу вітального напису).</summary>
     public bool NoSelection => SelectedPerson is null;
 
     public IReadOnlyList<LanguageOption> AvailableLanguages => _localization.AvailableLanguages;
@@ -106,21 +111,33 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public string TodayFormatted => DateTime.Today.ToString("D", _localization.CurrentCulture);
 
-    /// <summary>Заголовок документа з індикатором незбережених змін.</summary>
-    public string DocumentStatus
+    /// <summary>Заголовок вікна: назва застосунку — документ [*].</summary>
+    public string Title =>
+        $"{_localization.GetString("MainWindow_Title")} — {DocumentName}{(_session.Current.IsDirty ? " *" : string.Empty)}";
+
+    public string DocumentStatus => _session.Current.IsDirty ? $"{DocumentName} *" : DocumentName;
+
+    public string PersonsCountText =>
+        string.Format(_localization.GetString("StatusBar_PersonsCount"), _session.Current.Persons.Count);
+
+    public bool HasUnsavedChanges => _session.Current.IsDirty;
+
+    private string DocumentName
     {
         get
         {
-            var title = string.IsNullOrWhiteSpace(_session.Current.Meta.Title)
+            if (!string.IsNullOrEmpty(_session.FilePath))
+            {
+                return Path.GetFileNameWithoutExtension(_session.FilePath);
+            }
+
+            return string.IsNullOrWhiteSpace(_session.Current.Meta.Title)
                 ? _localization.GetString("Doc_Untitled")
                 : _session.Current.Meta.Title;
-            return _session.Current.IsDirty ? $"{title} *" : title;
         }
     }
 
-    /// <summary>Лічильник осіб, локалізований («Осіб: N»).</summary>
-    public string PersonsCountText =>
-        string.Format(_localization.GetString("StatusBar_PersonsCount"), _session.Current.Persons.Count);
+    private string FileFilter => _localization.GetString("File_Filter");
 
     private static IReadOnlyList<KinshipNamingStyleOption> NamingStyles { get; } = new[]
     {
@@ -130,11 +147,118 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private bool HasSelection => SelectedPerson is not null;
 
+    // ---- Файлові команди (T-2.5) ----------------------------------------
+
     [RelayCommand]
-    private void NewDocument()
+    private async Task New()
     {
-        _session.NewDocument(string.Empty);
+        if (await PromptSaveIfDirtyAsync())
+        {
+            _session.NewDocument(string.Empty);
+        }
     }
+
+    [RelayCommand]
+    private async Task Open()
+    {
+        if (!await PromptSaveIfDirtyAsync())
+        {
+            return;
+        }
+
+        if (_dialogs.AskOpenPath(FileFilter) is { } path)
+        {
+            await OpenPathAsync(path);
+        }
+    }
+
+    [RelayCommand]
+    private async Task Save() => await SaveInternalAsync();
+
+    [RelayCommand]
+    private async Task SaveAs() => await SaveAsInternalAsync();
+
+    [RelayCommand]
+    private async Task OpenRecent(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || !await PromptSaveIfDirtyAsync())
+        {
+            return;
+        }
+
+        await OpenPathAsync(path);
+    }
+
+    [RelayCommand]
+    private void Exit() => Application.Current.MainWindow?.Close();
+
+    /// <summary>Запит про незбережені зміни. true — можна продовжити (збережено або відкинуто).</summary>
+    public async Task<bool> PromptSaveIfDirtyAsync()
+    {
+        if (!HasUnsavedChanges)
+        {
+            return true;
+        }
+
+        return _dialogs.ConfirmSaveChanges(
+            _localization.GetString("SaveChanges_Message"),
+            _localization.GetString("SaveChanges_Title")) switch
+        {
+            SaveChangesResult.Save => await SaveInternalAsync(),
+            SaveChangesResult.Discard => true,
+            _ => false,
+        };
+    }
+
+    private async Task<bool> SaveInternalAsync() =>
+        string.IsNullOrEmpty(_session.FilePath)
+            ? await SaveAsInternalAsync()
+            : await WriteAsync(_session.FilePath);
+
+    private async Task<bool> SaveAsInternalAsync()
+    {
+        var suggested = DocumentName + ".familytree";
+        if (_dialogs.AskSavePath(FileFilter, suggested) is not { } path)
+        {
+            return false;
+        }
+
+        _session.FilePath = path;
+        return await WriteAsync(path);
+    }
+
+    private async Task<bool> WriteAsync(string path)
+    {
+        try
+        {
+            await _storage.SaveAsync(_session.Current, path);
+            AddRecent(path);
+            RaiseDocumentInfo();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
+            return false;
+        }
+    }
+
+    private async Task OpenPathAsync(string path)
+    {
+        try
+        {
+            var document = await _storage.LoadAsync(path);
+            _session.SetDocument(document, path);
+            AddRecent(path);
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
+            RemoveRecent(path);
+        }
+    }
+
+    // ---- CRUD осіб (T-2.1..T-2.3) ---------------------------------------
 
     [RelayCommand]
     private void AddPerson()
@@ -188,6 +312,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _session.Current.Persons.RemoveAll(p => p.Id == person.Id);
         _session.MarkContentChanged();
     }
+
+    // ---- Зв'язки (T-2.4) ------------------------------------------------
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void AddParent()
@@ -276,17 +402,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Відкриває діалог вибору особи; повертає обрану або null.</summary>
     private Person? PickPerson(RelationshipRole role, Person basePerson)
     {
         var editor = new RelationshipEditorViewModel(role, basePerson, _session.Current.Persons);
         return _dialogs.ShowRelationshipEditor(editor) ? editor.SelectedCandidate : null;
     }
 
-    /// <summary>
-    /// Обробляє результат валідації: помилки — блокують із повідомленням;
-    /// попередження — показуються із запитом продовжити. Повертає true, якщо дію дозволено.
-    /// </summary>
     private bool Accept(ValidationResult result)
     {
         if (!result.IsValid)
@@ -308,6 +429,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string Describe(IReadOnlyList<ValidationMessage> messages) =>
         string.Join(Environment.NewLine, messages.Select(m =>
             string.Format(_localization.GetString(m.Key), m.Arguments.ToArray())));
+
+    // ---- Перемикачі (мова/тема/стиль) -----------------------------------
 
     partial void OnSelectedPersonChanged(Person? value) => RefreshRelations();
 
@@ -348,6 +471,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _settings.Current.KinshipNamingStyle = value.Style == KinshipNamingStyle.Detailed ? "detailed" : "standard";
         _settings.Save();
     }
+
+    // ---- Внутрішнє -------------------------------------------------------
 
     private async void DebounceSearch()
     {
@@ -399,7 +524,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         OnPropertyChanged(nameof(PersonsCountText));
-        OnPropertyChanged(nameof(DocumentStatus));
+        RaiseDocumentInfo();
     }
 
     private void SelectById(Guid id)
@@ -447,6 +572,43 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void LoadRecentFiles()
+    {
+        RecentFiles.Clear();
+        foreach (var path in _settings.Current.RecentFiles.Where(File.Exists))
+        {
+            RecentFiles.Add(path);
+        }
+    }
+
+    private void AddRecent(string path)
+    {
+        var full = Path.GetFullPath(path);
+        _settings.Current.RecentFiles.RemoveAll(p => string.Equals(p, full, StringComparison.OrdinalIgnoreCase));
+        _settings.Current.RecentFiles.Insert(0, full);
+        if (_settings.Current.RecentFiles.Count > MaxRecentFiles)
+        {
+            _settings.Current.RecentFiles.RemoveRange(MaxRecentFiles, _settings.Current.RecentFiles.Count - MaxRecentFiles);
+        }
+
+        _settings.Save();
+        LoadRecentFiles();
+    }
+
+    private void RemoveRecent(string path)
+    {
+        _settings.Current.RecentFiles.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
+        _settings.Save();
+        LoadRecentFiles();
+    }
+
+    private void RaiseDocumentInfo()
+    {
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(DocumentStatus));
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+    }
+
     private void OnDocumentChanged(object? sender, EventArgs e)
     {
         SearchText = null;
@@ -465,7 +627,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(AvailableThemes));
         OnPropertyChanged(nameof(AvailableNamingStyles));
         OnPropertyChanged(nameof(PersonsCountText));
-        OnPropertyChanged(nameof(DocumentStatus));
+        RaiseDocumentInfo();
     }
 
     public void Dispose()

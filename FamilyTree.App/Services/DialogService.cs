@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Windows;
 using FamilyTree.App.ViewModels;
+using Microsoft.Win32;
 
 namespace FamilyTree.App.Services;
 
@@ -19,6 +20,32 @@ public sealed class DialogService : IDialogService
 
     public void ShowMessage(string message, string title) =>
         MessageBox.Show(ActiveWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+
+    public SaveChangesResult ConfirmSaveChanges(string message, string title) =>
+        MessageBox.Show(ActiveWindow!, message, title, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning) switch
+        {
+            MessageBoxResult.Yes => SaveChangesResult.Save,
+            MessageBoxResult.No => SaveChangesResult.Discard,
+            _ => SaveChangesResult.Cancel,
+        };
+
+    public string? AskOpenPath(string filter)
+    {
+        var dialog = new OpenFileDialog { Filter = filter, CheckFileExists = true };
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
+    }
+
+    public string? AskSavePath(string filter, string suggestedName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Filter = filter,
+            FileName = suggestedName,
+            DefaultExt = ".familytree",
+            AddExtension = true,
+        };
+        return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
+    }
 
     private static bool ShowDialog(Window window)
     {
