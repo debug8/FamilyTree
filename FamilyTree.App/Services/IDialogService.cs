@@ -10,6 +10,12 @@ public interface IDialogService
     /// <summary>Показує редактор особи. Повертає true, якщо користувач зберіг зміни.</summary>
     bool ShowPersonEditor(PersonEditorViewModel viewModel);
 
+    /// <summary>Показує діалог додавання зв'язку. Повертає true, якщо підтверджено.</summary>
+    bool ShowRelationshipEditor(RelationshipEditorViewModel viewModel);
+
     /// <summary>Показує запит підтвердження (Так/Ні).</summary>
     bool Confirm(string message, string title);
+
+    /// <summary>Показує інформаційне повідомлення (напр. помилку валідації).</summary>
+    void ShowMessage(string message, string title);
 }

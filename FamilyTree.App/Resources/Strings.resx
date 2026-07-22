@@ -157,6 +157,36 @@
   <data name="Gender_Unknown" xml:space="preserve">
     <value>Не вказано</value>
   </data>
+  <data name="Rel_Parents" xml:space="preserve">
+    <value>Батьки</value>
+  </data>
+  <data name="Rel_Children" xml:space="preserve">
+    <value>Діти</value>
+  </data>
+  <data name="Rel_Spouses" xml:space="preserve">
+    <value>Подружжя</value>
+  </data>
+  <data name="Rel_AddParent" xml:space="preserve">
+    <value>Додати батька/матір</value>
+  </data>
+  <data name="Rel_AddChild" xml:space="preserve">
+    <value>Додати дитину</value>
+  </data>
+  <data name="Rel_AddSpouse" xml:space="preserve">
+    <value>Додати подружжя</value>
+  </data>
+  <data name="Rel_MarriageDate" xml:space="preserve">
+    <value>Дата шлюбу</value>
+  </data>
+  <data name="Rel_DivorceDate" xml:space="preserve">
+    <value>Дата розлучення</value>
+  </data>
+  <data name="Validation_Title" xml:space="preserve">
+    <value>Перевірка зв'язку</value>
+  </data>
+  <data name="Validation_Continue" xml:space="preserve">
+    <value>Продовжити попри попередження?</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>

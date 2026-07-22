@@ -5,6 +5,7 @@ using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
 using FamilyTree.Domain.Kinship;
+using FamilyTree.Domain.Validation;
 using FamilyTree.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,6 +45,9 @@ public partial class App : Application
         services.AddSingleton<CommonAncestorFinder>();
         services.AddSingleton<IKinshipFormatter, UkrainianKinshipFormatter>();
         services.AddSingleton<KinshipCalculator>();
+
+        // Валідація зв'язків
+        services.AddSingleton<RelationshipValidator>();
 
         // Сесія документа та діалоги
         services.AddSingleton<IDocumentSession, DocumentSession>();

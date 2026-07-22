@@ -102,11 +102,82 @@
             </DockPanel>
         </Border>
 
-        <!-- Центральна область (дерево / «Хто кому» — Етап 4) -->
+        <!-- Центральна область: вітання або зв'язки обраної особи -->
         <Grid>
             <TextBlock Text="{loc:Localize MainWindow_Welcome}"
                        Style="{StaticResource HeadingTextStyle}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding NoSelection, Converter={StaticResource BoolToVisibility}}" />
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding HasSelectedPerson, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Margin="24">
+                    <TextBlock Text="{Binding SelectedPerson.FullName}" Style="{StaticResource HeadingTextStyle}" Margin="0,0,0,16" />
+
+                    <!-- Батьки -->
+                    <DockPanel Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
+                                Command="{Binding AddParentCommand}" Padding="10,4" />
+                        <TextBlock Text="{loc:Localize Rel_Parents}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Parents}" Margin="0,0,0,16">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
+                                            Command="{Binding DataContext.RemoveParentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Діти -->
+                    <DockPanel Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
+                                Command="{Binding AddChildCommand}" Padding="10,4" />
+                        <TextBlock Text="{loc:Localize Rel_Children}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Children}" Margin="0,0,0,16">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
+                                            Command="{Binding DataContext.RemoveChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Подружжя -->
+                    <DockPanel Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
+                                Command="{Binding AddSpouseCommand}" Padding="10,4" />
+                        <TextBlock Text="{loc:Localize Rel_Spouses}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Spouses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
+                                            Command="{Binding DataContext.RemoveSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
     </DockPanel>

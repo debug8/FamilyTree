@@ -157,6 +157,36 @@
   <data name="Gender_Unknown" xml:space="preserve">
     <value>Unspecified</value>
   </data>
+  <data name="Rel_Parents" xml:space="preserve">
+    <value>Parents</value>
+  </data>
+  <data name="Rel_Children" xml:space="preserve">
+    <value>Children</value>
+  </data>
+  <data name="Rel_Spouses" xml:space="preserve">
+    <value>Spouses</value>
+  </data>
+  <data name="Rel_AddParent" xml:space="preserve">
+    <value>Add parent</value>
+  </data>
+  <data name="Rel_AddChild" xml:space="preserve">
+    <value>Add child</value>
+  </data>
+  <data name="Rel_AddSpouse" xml:space="preserve">
+    <value>Add spouse</value>
+  </data>
+  <data name="Rel_MarriageDate" xml:space="preserve">
+    <value>Marriage date</value>
+  </data>
+  <data name="Rel_DivorceDate" xml:space="preserve">
+    <value>Divorce date</value>
+  </data>
+  <data name="Validation_Title" xml:space="preserve">
+    <value>Relationship check</value>
+  </data>
+  <data name="Validation_Continue" xml:space="preserve">
+    <value>Continue despite warnings?</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>
