@@ -3,38 +3,34 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
         Title="{loc:Localize MainWindow_Title}"
-        Height="600" Width="900"
+        Height="640" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}">
     <DockPanel>
 
-        <!-- Верхня панель: перемикачі мови та теми -->
+        <!-- Верхня панель: перемикачі мови, теми, стилю назв -->
         <Border DockPanel.Dock="Top"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,10">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Content="{loc:Localize Common_New}"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{Binding NewDocumentCommand}"
+                        Margin="0,0,24,0" />
 
-                <TextBlock Text="{loc:Localize Settings_Language}"
-                           Style="{StaticResource SecondaryTextStyle}"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0" />
+                <TextBlock Text="{loc:Localize Settings_Language}" Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
                 <ComboBox Style="{StaticResource InputComboBoxStyle}"
                           ItemsSource="{Binding AvailableLanguages}"
                           SelectedItem="{Binding SelectedLanguage}"
                           DisplayMemberPath="DisplayName" />
 
-                <TextBlock Text="{loc:Localize Settings_Theme}"
-                           Style="{StaticResource SecondaryTextStyle}"
-                           VerticalAlignment="Center"
-                           Margin="20,0,8,0" />
-                <ComboBox Style="{StaticResource InputComboBoxStyle}"
-                          MinWidth="120"
-                          ItemsSource="{Binding AvailableThemes}"
-                          SelectedItem="{Binding SelectedTheme}">
+                <TextBlock Text="{loc:Localize Settings_Theme}" Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="20,0,8,0" />
+                <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="120"
+                          ItemsSource="{Binding AvailableThemes}" SelectedItem="{Binding SelectedTheme}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding NameKey, Converter={StaticResource LocalizeConverter}}" />
@@ -42,48 +38,75 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
-                <TextBlock Text="{loc:Localize Settings_Naming}"
-                           Style="{StaticResource SecondaryTextStyle}"
-                           VerticalAlignment="Center"
-                           Margin="20,0,8,0" />
-                <ComboBox Style="{StaticResource InputComboBoxStyle}"
-                          MinWidth="170"
-                          ItemsSource="{Binding AvailableNamingStyles}"
-                          SelectedItem="{Binding SelectedNamingStyle}">
+                <TextBlock Text="{loc:Localize Settings_Naming}" Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="20,0,8,0" />
+                <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="170"
+                          ItemsSource="{Binding AvailableNamingStyles}" SelectedItem="{Binding SelectedNamingStyle}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding NameKey, Converter={StaticResource LocalizeConverter}}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-
             </StackPanel>
         </Border>
 
         <!-- Статус-бар -->
-        <StatusBar DockPanel.Dock="Bottom"
-                   Background="{DynamicResource SurfaceBrush}">
+        <StatusBar DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}">
             <StatusBarItem>
-                <TextBlock Text="{loc:Localize StatusBar_NoFile}"
-                           Style="{StaticResource SecondaryTextStyle}" />
+                <TextBlock Text="{Binding DocumentStatus}" Style="{StaticResource SecondaryTextStyle}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Text="{Binding PersonsCountText}" Style="{StaticResource SecondaryTextStyle}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{loc:Localize StatusBar_Today}"
-                               Style="{StaticResource SecondaryTextStyle}"
-                               Margin="0,0,6,0" />
-                    <TextBlock Text="{Binding TodayFormatted}"
-                               Style="{StaticResource SecondaryTextStyle}" />
+                    <TextBlock Text="{loc:Localize StatusBar_Today}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding TodayFormatted}" Style="{StaticResource SecondaryTextStyle}" />
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>
 
-        <!-- Центральна область -->
+        <!-- Ліва панель: список осіб -->
+        <Border DockPanel.Dock="Left" Width="320"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="12">
+                <!-- Кнопки CRUD -->
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="{loc:Localize Common_Add}" Style="{StaticResource PrimaryButtonStyle}"
+                            Command="{Binding AddPersonCommand}" Margin="0,0,6,0" />
+                    <Button Content="{loc:Localize Common_Edit}" Command="{Binding EditPersonCommand}" Margin="0,0,6,0" Padding="12,7" />
+                    <Button Content="{loc:Localize Common_Delete}" Command="{Binding DeletePersonCommand}" Padding="12,7" />
+                </StackPanel>
+
+                <!-- Пошук -->
+                <TextBox DockPanel.Dock="Top" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,10"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Tag="{loc:Localize PersonList_SearchHint}" />
+
+                <!-- Список -->
+                <ListBox ItemsSource="{Binding Persons}" SelectedItem="{Binding SelectedPerson}"
+                         BorderThickness="0" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,4">
+                                <TextBlock Text="{Binding FullName}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" />
+                                <TextBlock Text="{Binding Converter={StaticResource PersonYearsConverter}}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Центральна область (дерево / «Хто кому» — Етап 4) -->
         <Grid>
             <TextBlock Text="{loc:Localize MainWindow_Welcome}"
                        Style="{StaticResource HeadingTextStyle}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center" />
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
     </DockPanel>

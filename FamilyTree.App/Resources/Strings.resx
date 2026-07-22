@@ -85,6 +85,78 @@
   <data name="Naming_Detailed" xml:space="preserve">
     <value>Детальні (по лінії)</value>
   </data>
+  <data name="Common_New" xml:space="preserve">
+    <value>Нова родина</value>
+  </data>
+  <data name="Common_Add" xml:space="preserve">
+    <value>Додати</value>
+  </data>
+  <data name="Common_Edit" xml:space="preserve">
+    <value>Редагувати</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Common_Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+  <data name="Doc_Untitled" xml:space="preserve">
+    <value>Нова родина</value>
+  </data>
+  <data name="PersonList_SearchHint" xml:space="preserve">
+    <value>Пошук за прізвищем або ім'ям…</value>
+  </data>
+  <data name="Person_Delete_Title" xml:space="preserve">
+    <value>Видалення особи</value>
+  </data>
+  <data name="Person_Delete_Confirm" xml:space="preserve">
+    <value>Видалити «{0}»? Буде також вилучено зв'язків: {1}.</value>
+  </data>
+  <data name="Person_Editor_Title_New" xml:space="preserve">
+    <value>Нова особа</value>
+  </data>
+  <data name="Person_Editor_Title_Edit" xml:space="preserve">
+    <value>Редагування особи</value>
+  </data>
+  <data name="Person_LastName" xml:space="preserve">
+    <value>Прізвище</value>
+  </data>
+  <data name="Person_FirstName" xml:space="preserve">
+    <value>Ім'я</value>
+  </data>
+  <data name="Person_MiddleName" xml:space="preserve">
+    <value>По батькові</value>
+  </data>
+  <data name="Person_MaidenName" xml:space="preserve">
+    <value>Дівоче прізвище</value>
+  </data>
+  <data name="Person_Gender" xml:space="preserve">
+    <value>Стать</value>
+  </data>
+  <data name="Person_BirthDate" xml:space="preserve">
+    <value>Дата народження</value>
+  </data>
+  <data name="Person_BirthPlace" xml:space="preserve">
+    <value>Місце народження</value>
+  </data>
+  <data name="Person_DeathDate" xml:space="preserve">
+    <value>Дата смерті</value>
+  </data>
+  <data name="Person_Notes" xml:space="preserve">
+    <value>Нотатки</value>
+  </data>
+  <data name="Gender_Male" xml:space="preserve">
+    <value>Чоловіча</value>
+  </data>
+  <data name="Gender_Female" xml:space="preserve">
+    <value>Жіноча</value>
+  </data>
+  <data name="Gender_Unknown" xml:space="preserve">
+    <value>Не вказано</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>

@@ -1,5 +1,6 @@
 using System.Windows;
 using FamilyTree.App.Localization;
+using FamilyTree.App.Services;
 using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
@@ -43,6 +44,10 @@ public partial class App : Application
         services.AddSingleton<CommonAncestorFinder>();
         services.AddSingleton<IKinshipFormatter, UkrainianKinshipFormatter>();
         services.AddSingleton<KinshipCalculator>();
+
+        // Сесія документа та діалоги
+        services.AddSingleton<IDocumentSession, DocumentSession>();
+        services.AddSingleton<IDialogService, DialogService>();
 
         // ViewModel-и
         services.AddSingleton<MainViewModel>();
