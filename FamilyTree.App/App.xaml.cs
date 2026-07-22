@@ -3,6 +3,7 @@ using FamilyTree.App.Localization;
 using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
+using FamilyTree.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -34,13 +35,14 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IThemeService, ThemeService>();
 
+        // Сховище документа
+        services.AddSingleton<IFamilyStorage, JsonFamilyStorage>();
+
         // ViewModel-и
         services.AddSingleton<MainViewModel>();
 
         // Вікна
         services.AddSingleton<MainWindow>();
-
-        // TODO (Етап 1): IFamilyStorage, доменні сервіси
     }
 
     protected override async void OnStartup(StartupEventArgs e)

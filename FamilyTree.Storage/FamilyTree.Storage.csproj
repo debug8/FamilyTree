@@ -11,4 +11,8 @@
     <ProjectReference Include="..\FamilyTree.Domain\FamilyTree.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="FamilyTree.Tests" />
+  </ItemGroup>
+
 </Project>
