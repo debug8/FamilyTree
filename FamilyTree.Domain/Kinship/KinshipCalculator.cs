@@ -3,7 +3,7 @@ namespace FamilyTree.Domain.Kinship;
 /// <summary>
 /// T-3.2 — обчислення родинного зв'язку особи-родича відносно кореневої особи (розд. 4.3):
 /// пошук НСП, класифікація пари (a, b), уточнення рідні/зведені сиблінги (4.4),
-/// базове подружжя, делегування назви форматеру.
+/// лінія (по батькові/по матері), базове подружжя, делегування назви форматеру.
 /// </summary>
 public sealed class KinshipCalculator
 {
@@ -25,18 +25,17 @@ public sealed class KinshipCalculator
 
         if (root.Id == relative.Id)
         {
-            return Build(KinshipKind.SamePerson, 0, 0, SiblingKind.NotSibling, relative.Gender, Array.Empty<Guid>());
+            return Build(KinshipKind.SamePerson, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>());
         }
 
         var nca = _ancestorFinder.FindNearestSet(root.Id, relative.Id, graph);
 
         if (!nca.Found)
         {
-            // Кровного зв'язку немає — можливо, це подружжя.
             var kind = graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id)
                 ? KinshipKind.Spouse
                 : KinshipKind.None;
-            return Build(kind, 0, 0, SiblingKind.NotSibling, relative.Gender, Array.Empty<Guid>());
+            return Build(kind, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>());
         }
 
         var a = nca.StepsFromA;
@@ -50,15 +49,17 @@ public sealed class KinshipCalculator
             ? ClassifySiblings(graph, root.Id, relative.Id)
             : SiblingKind.NotSibling;
 
-        return Build(relationKind, a, b, siblingKind, relative.Gender, nca.AncestorIds);
+        var lineage = DetermineLineage(graph, root.Id, a, nca.AncestorIds);
+
+        return Build(relationKind, a, b, siblingKind, lineage, relative.Gender, nca.AncestorIds);
     }
 
     private KinshipResult Build(
-        KinshipKind kind, int a, int b, SiblingKind siblingKind, Gender gender, IReadOnlyList<Guid> ancestors)
+        KinshipKind kind, int a, int b, SiblingKind siblingKind, Lineage lineage, Gender gender, IReadOnlyList<Guid> ancestors)
     {
-        var context = new KinshipContext(kind, a, b, gender, siblingKind);
+        var context = new KinshipContext(kind, a, b, gender, siblingKind, lineage);
         var name = _formatter.Format(in context);
-        return new KinshipResult(kind, a, b, siblingKind, name, ancestors);
+        return new KinshipResult(kind, a, b, siblingKind, lineage, name, ancestors);
     }
 
     private static SiblingKind ClassifySiblings(FamilyGraph graph, Guid firstId, Guid secondId)
@@ -76,6 +77,49 @@ public sealed class KinshipCalculator
                 _ => SiblingKind.HalfUnknown,
             },
             _ => SiblingKind.NotSibling,
+        };
+    }
+
+    /// <summary>
+    /// Визначає лінію: через кого з батьків кореневої особи веде шлях до спільного предка.
+    /// Має сенс, коли зв'язок іде вгору принаймні на 1 крок (a ≥ 1). Якщо через обох —
+    /// <see cref="Lineage.Mixed"/> (напр. рідні сиблінги); якщо стать батька невідома — Unknown.
+    /// </summary>
+    private static Lineage DetermineLineage(FamilyGraph graph, Guid rootId, int stepsUp, IReadOnlyList<Guid> ncaIds)
+    {
+        if (stepsUp < 1)
+        {
+            return Lineage.Unknown;
+        }
+
+        var ncaSet = ncaIds.ToHashSet();
+        var genders = new HashSet<Gender>();
+
+        foreach (var parent in graph.GetParents(rootId))
+        {
+            var distances = CommonAncestorFinder.AncestorDistances(parent.Id, graph);
+            var leadsToNca = ncaSet.Any(id => distances.TryGetValue(id, out var d) && d == stepsUp - 1);
+            if (leadsToNca)
+            {
+                genders.Add(parent.Gender);
+            }
+        }
+
+        if (genders.Count == 0)
+        {
+            return Lineage.Unknown;
+        }
+
+        if (genders.Count > 1)
+        {
+            return Lineage.Mixed;
+        }
+
+        return genders.Single() switch
+        {
+            Gender.Male => Lineage.Paternal,
+            Gender.Female => Lineage.Maternal,
+            _ => Lineage.Unknown,
         };
     }
 }

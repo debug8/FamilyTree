@@ -21,15 +21,35 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
 
     public string CultureCode => "uk";
 
+    public KinshipNamingStyle Style { get; set; } = KinshipNamingStyle.Standard;
+
     public string Format(in KinshipContext context)
     {
         var c = context; // локальна копія: in-параметр не можна захоплювати в лямбду (CS1628)
-        return c.Kind switch
+        var name = c.Kind switch
         {
             KinshipKind.SamePerson => "та сама особа",
             KinshipKind.None => "родинний зв'язок не встановлено",
             KinshipKind.Spouse => Pick(c.RelativeGender, "чоловік", "дружина"),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
+        };
+
+        return Style == KinshipNamingStyle.Detailed ? WithLineage(name, c) : name;
+    }
+
+    /// <summary>Додає уточнення лінії до бічних зв'язків старшої гілки та кузенів (a ≥ 2).</summary>
+    private static string WithLineage(string name, KinshipContext c)
+    {
+        if (c.Kind != KinshipKind.Collateral || c.StepsUp < 2)
+        {
+            return name;
+        }
+
+        return c.Lineage switch
+        {
+            Lineage.Paternal => name + " (по батькові)",
+            Lineage.Maternal => name + " (по матері)",
+            _ => name,
         };
     }
 

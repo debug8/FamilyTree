@@ -3,6 +3,7 @@ using FamilyTree.App.Localization;
 using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
+using FamilyTree.Domain.Kinship;
 using FamilyTree.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +39,11 @@ public partial class App : Application
         // Сховище документа
         services.AddSingleton<IFamilyStorage, JsonFamilyStorage>();
 
+        // Ядро родства
+        services.AddSingleton<CommonAncestorFinder>();
+        services.AddSingleton<IKinshipFormatter, UkrainianKinshipFormatter>();
+        services.AddSingleton<KinshipCalculator>();
+
         // ViewModel-и
         services.AddSingleton<MainViewModel>();
 
@@ -60,6 +66,12 @@ public partial class App : Application
         // 1b. Застосувати збережену тему (невідомий код — тихий відкат на світлу).
         var theme = _host.Services.GetRequiredService<IThemeService>();
         theme.SetTheme(settings.Current.Theme);
+
+        // 1c. Застосувати збережений стиль назв родства.
+        var formatter = _host.Services.GetRequiredService<IKinshipFormatter>();
+        formatter.Style = settings.Current.KinshipNamingStyle == "detailed"
+            ? KinshipNamingStyle.Detailed
+            : KinshipNamingStyle.Standard;
 
         // 2. Ініціалізувати XAML-проксі локалізації ДО створення вікна
         //    (markup extension {loc:Localize} звертається до LocalizationSource.Instance).

@@ -76,6 +76,15 @@
   <data name="Theme_Dark" xml:space="preserve">
     <value>Dark</value>
   </data>
+  <data name="Settings_Naming" xml:space="preserve">
+    <value>Kinship names</value>
+  </data>
+  <data name="Naming_Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Naming_Detailed" xml:space="preserve">
+    <value>Detailed (by lineage)</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

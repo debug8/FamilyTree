@@ -7,6 +7,7 @@ namespace FamilyTree.Domain.Kinship;
 /// <param name="StepsUp">a — кроки вгору від кореневої особи до спільного предка.</param>
 /// <param name="StepsDown">b — кроки вгору від родича до того самого предка.</param>
 /// <param name="SiblingKind">Уточнення для сиблінгів (рідні/зведені).</param>
+/// <param name="Lineage">Лінія спорідненості (по батькові/по матері) для бічних зв'язків.</param>
 /// <param name="DisplayName">Локалізована назва зв'язку (через <see cref="IKinshipFormatter"/>).</param>
 /// <param name="CommonAncestorIds">Спільні предки (для пояснення шляху — T-3.3).</param>
 public sealed record KinshipResult(
@@ -14,9 +15,6 @@ public sealed record KinshipResult(
     int StepsUp,
     int StepsDown,
     SiblingKind SiblingKind,
+    Lineage Lineage,
     string DisplayName,
-    IReadOnlyList<Guid> CommonAncestorIds)
-{
-    public static KinshipResult Simple(KinshipKind kind, string name) =>
-        new(kind, 0, 0, SiblingKind.NotSibling, name, Array.Empty<Guid>());
-}
+    IReadOnlyList<Guid> CommonAncestorIds);

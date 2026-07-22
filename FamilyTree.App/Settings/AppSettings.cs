@@ -11,4 +11,7 @@ public sealed class AppSettings
 
     /// <summary>Код теми оформлення (light, dark). За замовчуванням — світла.</summary>
     public string Theme { get; set; } = "light";
+
+    /// <summary>Стиль назв родства (standard, detailed). За замовчуванням — стандартний.</summary>
+    public string KinshipNamingStyle { get; set; } = "standard";
 }

@@ -74,7 +74,11 @@ public sealed class CommonAncestorFinder
 
     /// <summary>
     /// Відстані від особи до кожного її предка (сама особа — 0). BFS угору гарантує мінімум.
+    /// Публічно — щоб калькулятор міг визначати лінію спорідненості.
     /// </summary>
+    public static IReadOnlyDictionary<Guid, int> AncestorDistances(Guid start, FamilyGraph graph) =>
+        CollectAncestorDistances(start, graph);
+
     private static Dictionary<Guid, int> CollectAncestorDistances(Guid start, FamilyGraph graph)
     {
         var distances = new Dictionary<Guid, int> { [start] = 0 };
