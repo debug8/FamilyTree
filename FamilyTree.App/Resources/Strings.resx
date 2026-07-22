@@ -67,6 +67,15 @@
   <data name="Settings_Language" xml:space="preserve">
     <value>Мова</value>
   </data>
+  <data name="Settings_Theme" xml:space="preserve">
+    <value>Тема</value>
+  </data>
+  <data name="Theme_Light" xml:space="preserve">
+    <value>Світла</value>
+  </data>
+  <data name="Theme_Dark" xml:space="preserve">
+    <value>Темна</value>
+  </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Сьогодні</value>
   </data>

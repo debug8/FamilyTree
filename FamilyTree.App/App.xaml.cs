@@ -1,6 +1,7 @@
 using System.Windows;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Settings;
+using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +32,7 @@ public partial class App : Application
         // Сервіси застосунку
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<IThemeService, ThemeService>();
 
         // ViewModel-и
         services.AddSingleton<MainViewModel>();
@@ -52,6 +54,10 @@ public partial class App : Application
 
         var localization = _host.Services.GetRequiredService<ILocalizationService>();
         localization.SetLanguage(settings.Current.Language);
+
+        // 1b. Застосувати збережену тему (невідомий код — тихий відкат на світлу).
+        var theme = _host.Services.GetRequiredService<IThemeService>();
+        theme.SetTheme(settings.Current.Theme);
 
         // 2. Ініціалізувати XAML-проксі локалізації ДО створення вікна
         //    (markup extension {loc:Localize} звертається до LocalizationSource.Instance).
