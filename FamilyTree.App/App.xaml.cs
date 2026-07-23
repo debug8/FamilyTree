@@ -41,6 +41,7 @@ public partial class App : Application
 
         // Сховище документа
         services.AddSingleton<IFamilyStorage, JsonFamilyStorage>();
+        services.AddSingleton<FamilyMerger>();
 
         // Ядро родства
         services.AddSingleton<CommonAncestorFinder>();

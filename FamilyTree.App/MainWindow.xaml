@@ -35,6 +35,8 @@
                     </MenuItem.ItemContainerStyle>
                 </MenuItem>
                 <Separator />
+                <MenuItem Header="{loc:Localize Menu_Import}" Command="{Binding ImportCommand}" />
+                <Separator />
                 <MenuItem Header="{loc:Localize Menu_Exit}" Command="{Binding ExitCommand}" />
             </MenuItem>
         </Menu>

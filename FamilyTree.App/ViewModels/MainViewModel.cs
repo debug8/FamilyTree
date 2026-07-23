@@ -31,6 +31,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly RelationshipValidator _validator;
     private readonly IFamilyStorage _storage;
+    private readonly FamilyMerger _merger;
     private readonly TreeViewModel _tree;
     private readonly WhoIsWhoViewModel _whoIsWho;
     private readonly ISettingsService _settings;
@@ -74,6 +75,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IDialogService dialogs,
         RelationshipValidator validator,
         IFamilyStorage storage,
+        FamilyMerger merger,
         TreeViewModel tree,
         WhoIsWhoViewModel whoIsWho,
         ISettingsService settings)
@@ -85,6 +87,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _dialogs = dialogs;
         _validator = validator;
         _storage = storage;
+        _merger = merger;
         _tree = tree;
         _whoIsWho = whoIsWho;
         _settings = settings;
@@ -219,6 +222,46 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         await OpenPathAsync(path);
+    }
+
+    [RelayCommand]
+    private async Task Import()
+    {
+        if (_dialogs.AskOpenPath(FileFilter) is not { } path)
+        {
+            return;
+        }
+
+        FamilyDocument source;
+        try
+        {
+            source = await _storage.LoadAsync(path);
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
+            return;
+        }
+
+        var plan = _merger.Plan(_session.Current, source);
+        var report = plan.ToReport();
+
+        var confirm = string.Format(
+            _localization.GetString("Import_Confirm"),
+            report.AddedPersons,
+            report.DuplicatePersons,
+            report.AddedParentLinks + report.AddedSpouseLinks);
+        if (!_dialogs.Confirm(confirm, _localization.GetString("Import_Title")))
+        {
+            return;
+        }
+
+        _merger.Apply(_session.Current, plan);
+        _session.MarkContentChanged();
+
+        var done = string.Format(
+            _localization.GetString("Import_Done"), report.AddedPersons, report.DuplicatePersons);
+        _dialogs.ShowMessage(done, _localization.GetString("Import_Title"));
     }
 
     [RelayCommand]
