@@ -44,7 +44,7 @@ public partial class App : Application
 
         // Ядро родства
         services.AddSingleton<CommonAncestorFinder>();
-        services.AddSingleton<IKinshipFormatter, UkrainianKinshipFormatter>();
+        services.AddSingleton<IKinshipFormatter, Kinship.CultureKinshipFormatter>();
         services.AddSingleton<KinshipCalculator>();
 
         // Валідація зв'язків

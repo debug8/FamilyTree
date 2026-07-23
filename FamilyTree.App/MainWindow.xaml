@@ -109,7 +109,8 @@
                     <Button DockPanel.Dock="Right" Width="30" Height="30" Margin="6,0,0,0"
                             Command="{Binding ToggleSortDirectionCommand}"
                             Content="{Binding SortDirectionGlyph}" FontSize="14"
-                            ToolTip="{loc:Localize Sort_Direction}" />
+                            ToolTip="{loc:Localize Sort_Direction}"
+                            Padding="0"/>
                     <ComboBox Style="{StaticResource InputComboBoxStyle}"
                               ItemsSource="{Binding AvailableSortOptions}" SelectedItem="{Binding SelectedSort}"
                               ItemTemplate="{StaticResource OptionDisplayTemplate}" />
