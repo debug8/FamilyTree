@@ -73,6 +73,9 @@ public partial class TreeViewModel : ObservableObject
 
     public ObservableCollection<TreeEdgeViewModel> Edges { get; } = new();
 
+    /// <summary>Рамки навколо подружжя в чинному шлюбі (позаду карток).</summary>
+    public ObservableCollection<CoupleBoxViewModel> Couples { get; } = new();
+
     /// <summary>Задає кореневу особу й перебудовує дерево.</summary>
     public void SetRoot(Guid? rootId)
     {
@@ -105,6 +108,7 @@ public partial class TreeViewModel : ObservableObject
     {
         Nodes.Clear();
         Edges.Clear();
+        Couples.Clear();
 
         if (_rootId is not { } rootId)
         {
@@ -141,16 +145,77 @@ public partial class TreeViewModel : ObservableObject
             });
         }
 
+        const double couplePad = 6;
         var halfW = TreeLayoutEngine.NodeWidth / 2;
         var halfH = TreeLayoutEngine.NodeHeight / 2;
+
+        // Активні подружжя → рамка + якір знизу рамки; розлучені → пунктирне ребро.
+        var coupleAnchors = new List<(Guid A, Guid B, double X, double Y)>();
+        var childToParents = new Dictionary<Guid, List<Guid>>();
+
         foreach (var edge in layout.Edges)
         {
-            var a = positions[edge.FromId];
-            var b = positions[edge.ToId];
-            Edges.Add(new TreeEdgeViewModel(
-                a.X + halfW, a.Y + halfH,
-                b.X + halfW, b.Y + halfH,
-                edge.Kind == EdgeKind.Spouse));
+            if (edge.Kind == EdgeKind.Spouse)
+            {
+                var a = positions[edge.FromId];
+                var b = positions[edge.ToId];
+                if (graph.IsSpouseActive(edge.FromId, edge.ToId))
+                {
+                    var left = Math.Min(a.X, b.X) - couplePad;
+                    var top = Math.Min(a.Y, b.Y) - couplePad;
+                    var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
+                    var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
+                    Couples.Add(new CoupleBoxViewModel(left, top, width, height));
+                    coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
+                }
+                else
+                {
+                    Edges.Add(new TreeEdgeViewModel(a.X + halfW, a.Y + halfH, b.X + halfW, b.Y + halfH, IsSpouse: true));
+                }
+
+                continue;
+            }
+
+            // ParentChild: From — батько/мати, To — дитина.
+            if (!childToParents.TryGetValue(edge.ToId, out var parents))
+            {
+                parents = new List<Guid>();
+                childToParents[edge.ToId] = parents;
+            }
+
+            parents.Add(edge.FromId);
+        }
+
+        foreach (var (childId, parentIds) in childToParents)
+        {
+            var child = positions[childId];
+            var childX = child.X + halfW;
+            var childY = child.Y;
+            var handled = new HashSet<Guid>();
+
+            // Спільна дитина активної пари — одне ребро від рамки шлюбу.
+            foreach (var couple in coupleAnchors)
+            {
+                if (parentIds.Contains(couple.A) && parentIds.Contains(couple.B))
+                {
+                    Edges.Add(new TreeEdgeViewModel(couple.X, couple.Y, childX, childY, IsSpouse: false));
+                    handled.Add(couple.A);
+                    handled.Add(couple.B);
+                }
+            }
+
+            // Решта батьків (одинокі чи розлучені) — окреме ребро від низу картки.
+            foreach (var parentId in parentIds)
+            {
+                if (handled.Contains(parentId))
+                {
+                    continue;
+                }
+
+                var parent = positions[parentId];
+                Edges.Add(new TreeEdgeViewModel(
+                    parent.X + halfW, parent.Y + TreeLayoutEngine.NodeHeight, childX, childY, IsSpouse: false));
+            }
         }
 
         CanvasWidth = layout.Width;

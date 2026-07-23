@@ -14,6 +14,7 @@ public sealed class FamilyGraph
     private readonly Dictionary<Guid, List<Guid>> _parents = new();   // дитина -> батьки
     private readonly Dictionary<Guid, List<Guid>> _children = new();  // батько/мати -> діти
     private readonly Dictionary<Guid, List<Guid>> _spouses = new();   // особа -> подружжя (симетрично)
+    private readonly Dictionary<(Guid, Guid), bool> _spouseActive = new(); // пара -> чинний шлюб
 
     public FamilyGraph(
         IEnumerable<Person> persons,
@@ -47,6 +48,7 @@ public sealed class FamilyGraph
 
             AddEdge(_spouses, link.Person1Id, link.Person2Id);
             AddEdge(_spouses, link.Person2Id, link.Person1Id);
+            _spouseActive[OrderPair(link.Person1Id, link.Person2Id)] = link.IsActive;
         }
     }
 
@@ -76,6 +78,13 @@ public sealed class FamilyGraph
 
     /// <summary>Подружжя особи (симетричний зв'язок).</summary>
     public IReadOnlyList<Person> GetSpouses(Guid personId) => Neighbors(_spouses, personId);
+
+    /// <summary>Чи чинний шлюб між двома особами (false — розлучені або не подружжя).</summary>
+    public bool IsSpouseActive(Guid a, Guid b) =>
+        _spouseActive.TryGetValue(OrderPair(a, b), out var active) && active;
+
+    private static (Guid, Guid) OrderPair(Guid a, Guid b) =>
+        a.CompareTo(b) <= 0 ? (a, b) : (b, a);
 
     /// <summary>
     /// Сиблінги — особи, що мають щонайменше одного спільного батька/матір (без самої особи).

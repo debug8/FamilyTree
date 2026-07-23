@@ -30,7 +30,9 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
         {
             KinshipKind.SamePerson => "та сама особа",
             KinshipKind.None => "родинний зв'язок не встановлено",
-            KinshipKind.Spouse => Pick(c.RelativeGender, "чоловік", "дружина"),
+            KinshipKind.Spouse => c.IsFormerSpouse
+                ? Pick(c.RelativeGender, "колишній чоловік", "колишня дружина")
+                : Pick(c.RelativeGender, "чоловік", "дружина"),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 

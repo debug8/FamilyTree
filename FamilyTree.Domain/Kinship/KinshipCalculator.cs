@@ -32,10 +32,10 @@ public sealed class KinshipCalculator
 
         if (!nca.Found)
         {
-            var kind = graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id)
-                ? KinshipKind.Spouse
-                : KinshipKind.None;
-            return Build(kind, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>());
+            var isSpouse = graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id);
+            var kind = isSpouse ? KinshipKind.Spouse : KinshipKind.None;
+            var former = isSpouse && !graph.IsSpouseActive(root.Id, relative.Id);
+            return Build(kind, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>(), former);
         }
 
         var a = nca.StepsFromA;
@@ -55,9 +55,10 @@ public sealed class KinshipCalculator
     }
 
     private KinshipResult Build(
-        KinshipKind kind, int a, int b, SiblingKind siblingKind, Lineage lineage, Gender gender, IReadOnlyList<Guid> ancestors)
+        KinshipKind kind, int a, int b, SiblingKind siblingKind, Lineage lineage, Gender gender,
+        IReadOnlyList<Guid> ancestors, bool isFormerSpouse = false)
     {
-        var context = new KinshipContext(kind, a, b, gender, siblingKind, lineage);
+        var context = new KinshipContext(kind, a, b, gender, siblingKind, lineage, isFormerSpouse);
         var name = _formatter.Format(in context);
         return new KinshipResult(kind, a, b, siblingKind, lineage, name, ancestors);
     }

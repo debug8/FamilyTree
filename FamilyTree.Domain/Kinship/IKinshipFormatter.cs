@@ -9,13 +9,15 @@ namespace FamilyTree.Domain.Kinship;
 /// <param name="RelativeGender">Стать особи, яку називаємо.</param>
 /// <param name="SiblingKind">Уточнення рідні/зведені для сиблінгів.</param>
 /// <param name="Lineage">Лінія (по батькові/по матері) — для детального стилю.</param>
+/// <param name="IsFormerSpouse">Чи це колишнє подружжя (шлюб розірвано).</param>
 public readonly record struct KinshipContext(
     KinshipKind Kind,
     int StepsUp,
     int StepsDown,
     Gender RelativeGender,
     SiblingKind SiblingKind,
-    Lineage Lineage);
+    Lineage Lineage,
+    bool IsFormerSpouse = false);
 
 /// <summary>
 /// Форматер назв родинних зв'язків — по одному на мову (розд. 2.4, 4.3, 4.7).

@@ -25,7 +25,9 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
         {
             KinshipKind.SamePerson => "the same person",
             KinshipKind.None => "no relation",
-            KinshipKind.Spouse => Pick(c.RelativeGender, "husband", "wife"),
+            KinshipKind.Spouse => c.IsFormerSpouse
+                ? Pick(c.RelativeGender, "ex-husband", "ex-wife")
+                : Pick(c.RelativeGender, "husband", "wife"),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 

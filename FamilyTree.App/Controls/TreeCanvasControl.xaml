@@ -37,6 +37,26 @@
                     <ScaleTransform x:Name="SceneScale" />
                 </Canvas.LayoutTransform>
 
+                <!-- Рамки подружжя (чинний шлюб) — позаду карток -->
+                <ItemsControl ItemsSource="{Binding Couples}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
+                                    Background="{DynamicResource BackgroundBrush}"
+                                    BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1.5" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <!-- Ребра -->
                 <ItemsControl ItemsSource="{Binding Edges}">
                     <ItemsControl.ItemsPanel>
