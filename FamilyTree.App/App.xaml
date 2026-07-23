@@ -17,6 +17,39 @@
             <DataTemplate x:Key="OptionDisplayTemplate">
                 <TextBlock Text="{Binding DisplayName}" />
             </DataTemplate>
+
+            <!-- Іконка застосунку: синій бейдж із гліфом родового дерева (три вузли). -->
+            <DrawingImage x:Key="AppIcon">
+                <DrawingImage.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="#2E5D8A">
+                            <GeometryDrawing.Geometry>
+                                <RectangleGeometry Rect="0,0,48,48" RadiusX="10" RadiusY="10" />
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                        <GeometryDrawing>
+                            <GeometryDrawing.Pen>
+                                <Pen Brush="White" Thickness="2.5" LineJoin="Round" />
+                            </GeometryDrawing.Pen>
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <LineGeometry StartPoint="24,15" EndPoint="14,33" />
+                                    <LineGeometry StartPoint="24,15" EndPoint="34,33" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                        <GeometryDrawing Brush="White">
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <EllipseGeometry Center="24,13" RadiusX="5.5" RadiusY="5.5" />
+                                    <EllipseGeometry Center="13,35" RadiusX="5.5" RadiusY="5.5" />
+                                    <EllipseGeometry Center="35,35" RadiusX="5.5" RadiusY="5.5" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                    </DrawingGroup>
+                </DrawingImage.Drawing>
+            </DrawingImage>
             <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
             <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />

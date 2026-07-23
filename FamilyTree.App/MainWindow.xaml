@@ -4,6 +4,7 @@
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
         xmlns:controls="clr-namespace:FamilyTree.App.Controls"
         Title="{Binding Title}"
+        Icon="{StaticResource AppIcon}"
         Height="640" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}">
