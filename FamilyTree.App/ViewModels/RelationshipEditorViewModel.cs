@@ -22,6 +22,10 @@ public partial class RelationshipEditorViewModel : ObservableObject
     private DateTime? _marriageDate;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDivorceDate))]
+    private bool _isMarried = true;
+
+    [ObservableProperty]
     private DateTime? _divorceDate;
 
     public RelationshipEditorViewModel(RelationshipRole role, Person basePerson, IEnumerable<Person> allPersons)
@@ -38,6 +42,9 @@ public partial class RelationshipEditorViewModel : ObservableObject
 
     public bool IsSpouse => Role == RelationshipRole.Spouse;
 
+    /// <summary>Показувати дату розлучення (лише для подружжя, коли шлюб не чинний).</summary>
+    public bool ShowDivorceDate => IsSpouse && !IsMarried;
+
     public string TitleKey => Role switch
     {
         RelationshipRole.Parent => "Rel_AddParent",
@@ -51,7 +58,16 @@ public partial class RelationshipEditorViewModel : ObservableObject
 
     public DateOnly? MarriageDateOnly => MarriageDate is { } d ? DateOnly.FromDateTime(d) : null;
 
-    public DateOnly? DivorceDateOnly => DivorceDate is { } d ? DateOnly.FromDateTime(d) : null;
+    public DateOnly? DivorceDateOnly =>
+        !IsMarried && DivorceDate is { } d ? DateOnly.FromDateTime(d) : null;
+
+    partial void OnIsMarriedChanged(bool value)
+    {
+        if (value)
+        {
+            DivorceDate = null;
+        }
+    }
 
     partial void OnSearchTextChanged(string? value) => RefreshCandidates();
 

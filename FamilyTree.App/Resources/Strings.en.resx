@@ -196,6 +196,9 @@
   <data name="Rel_MarriageDate" xml:space="preserve">
     <value>Marriage date</value>
   </data>
+  <data name="Rel_IsMarried" xml:space="preserve">
+    <value>Married</value>
+  </data>
   <data name="Rel_DivorceDate" xml:space="preserve">
     <value>Divorce date</value>
   </data>

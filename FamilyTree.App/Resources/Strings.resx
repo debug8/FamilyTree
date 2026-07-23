@@ -196,6 +196,9 @@
   <data name="Rel_MarriageDate" xml:space="preserve">
     <value>Дата шлюбу</value>
   </data>
+  <data name="Rel_IsMarried" xml:space="preserve">
+    <value>В шлюбі</value>
+  </data>
   <data name="Rel_DivorceDate" xml:space="preserve">
     <value>Дата розлучення</value>
   </data>

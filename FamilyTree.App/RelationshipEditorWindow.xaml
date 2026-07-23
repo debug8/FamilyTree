@@ -36,8 +36,14 @@
                     Visibility="{Binding IsSpouse, Converter={StaticResource BoolToVisibility}}">
             <TextBlock Text="{loc:Localize Rel_MarriageDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,3" />
             <DatePicker SelectedDate="{Binding MarriageDate}" HorizontalAlignment="Left" MinWidth="200" />
-            <TextBlock Text="{loc:Localize Rel_DivorceDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,8,0,3" />
-            <DatePicker SelectedDate="{Binding DivorceDate}" HorizontalAlignment="Left" MinWidth="200" />
+
+            <CheckBox Content="{loc:Localize Rel_IsMarried}" IsChecked="{Binding IsMarried}"
+                      Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,0" />
+
+            <StackPanel Visibility="{Binding ShowDivorceDate, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{loc:Localize Rel_DivorceDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,8,0,3" />
+                <DatePicker SelectedDate="{Binding DivorceDate}" HorizontalAlignment="Left" MinWidth="200" />
+            </StackPanel>
         </StackPanel>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
