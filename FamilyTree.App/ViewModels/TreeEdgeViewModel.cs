@@ -9,7 +9,7 @@ public partial class TreeEdgeViewModel : ObservableObject
 
     public TreeEdgeViewModel(
         double x1, double y1, double x2, double y2, bool isSpouse,
-        IReadOnlySet<Guid>? parentIds = null, IReadOnlySet<Guid>? endpointIds = null)
+        IReadOnlySet<Guid>? parentIds = null, IReadOnlySet<Guid>? endpointIds = null, string? tooltip = null)
     {
         X1 = x1;
         Y1 = y1;
@@ -18,6 +18,7 @@ public partial class TreeEdgeViewModel : ObservableObject
         IsSpouse = isSpouse;
         ParentIds = parentIds ?? NoParents;
         EndpointIds = endpointIds ?? NoParents;
+        Tooltip = tooltip;
     }
 
     public double X1 { get; }
@@ -35,6 +36,9 @@ public partial class TreeEdgeViewModel : ObservableObject
 
     /// <summary>Ідентифікатори осіб на обох кінцях ребра — для підсвітки при наведенні на ребро.</summary>
     public IReadOnlySet<Guid> EndpointIds { get; }
+
+    /// <summary>Підказка при наведенні: батьки й дитина (або подружжя). null — без підказки.</summary>
+    public string? Tooltip { get; }
 
     /// <summary>Підсвічене ребро (наведення на батька чи рамку шлюбу).</summary>
     [ObservableProperty]

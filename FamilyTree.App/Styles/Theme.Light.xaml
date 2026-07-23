@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="BackgroundBrush" Color="#F5F6F8" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="BorderBrush" Color="#D4D8DE" />
+    <SolidColorBrush x:Key="TreeEdgeBrush" Color="#5A626C" />
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1E2226" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C636B" />

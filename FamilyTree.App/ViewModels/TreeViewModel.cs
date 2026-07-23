@@ -238,7 +238,8 @@ public partial class TreeViewModel : ObservableObject
                 else
                 {
                     Edges.Add(new TreeEdgeViewModel(a.X + halfW, a.Y + halfH, b.X + halfW, b.Y + halfH, isSpouse: true,
-                        endpointIds: new HashSet<Guid> { edge.FromId, edge.ToId }));
+                        endpointIds: new HashSet<Guid> { edge.FromId, edge.ToId },
+                        tooltip: SpouseTooltip(edge.FromId, edge.ToId, persons)));
                 }
 
                 continue;
@@ -268,7 +269,8 @@ public partial class TreeViewModel : ObservableObject
                 {
                     Edges.Add(new TreeEdgeViewModel(couple.X, couple.Y, childX, childY, isSpouse: false,
                         parentIds: new HashSet<Guid> { couple.A, couple.B },
-                        endpointIds: new HashSet<Guid> { couple.A, couple.B, childId }));
+                        endpointIds: new HashSet<Guid> { couple.A, couple.B, childId },
+                        tooltip: EdgeTooltip(new[] { couple.A, couple.B }, childId, persons)));
                     handled.Add(couple.A);
                     handled.Add(couple.B);
                 }
@@ -286,7 +288,8 @@ public partial class TreeViewModel : ObservableObject
                 Edges.Add(new TreeEdgeViewModel(
                     parent.X + halfW, parent.Y + TreeLayoutEngine.NodeHeight, childX, childY, isSpouse: false,
                     parentIds: new HashSet<Guid> { parentId },
-                    endpointIds: new HashSet<Guid> { parentId, childId }));
+                    endpointIds: new HashSet<Guid> { parentId, childId },
+                    tooltip: EdgeTooltip(new[] { parentId }, childId, persons)));
             }
         }
 
@@ -382,6 +385,27 @@ public partial class TreeViewModel : ObservableObject
 
         return string.Join("; ", parts);
     }
+
+    /// <summary>Підказка ребра «батько–дитина»: «Батьки: X, Y \n Дитина: Z».</summary>
+    private string? EdgeTooltip(IEnumerable<Guid> parentIds, Guid childId, IReadOnlyDictionary<Guid, Person> persons)
+    {
+        var parents = string.Join(", ", parentIds
+            .Where(persons.ContainsKey)
+            .Select(id => persons[id].FullName));
+        if (!persons.TryGetValue(childId, out var child) || parents.Length == 0)
+        {
+            return null;
+        }
+
+        return $"{_localization.GetString("Tree_Edge_Parents")}: {parents}\n" +
+               $"{_localization.GetString("Tree_Edge_Child")}: {child.FullName}";
+    }
+
+    /// <summary>Підказка пунктирного ребра колишнього подружжя: «Ім'я — Ім'я».</summary>
+    private static string? SpouseTooltip(Guid aId, Guid bId, IReadOnlyDictionary<Guid, Person> persons) =>
+        persons.TryGetValue(aId, out var a) && persons.TryGetValue(bId, out var b)
+            ? $"{a.FullName} — {b.FullName}"
+            : null;
 
     /// <summary>Короткий опис шлюбу для тултіпа рамки: «Ім'я ♥ Ім'я · у шлюбі з 2005».</summary>
     private string? BuildCoupleTooltip(Guid aId, Guid bId, FamilyDocument doc, IReadOnlyDictionary<Guid, Person> persons)

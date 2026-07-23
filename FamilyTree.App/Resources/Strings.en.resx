@@ -301,6 +301,12 @@
   <data name="Tree_Bands" xml:space="preserve">
     <value>Generation bands</value>
   </data>
+  <data name="Tree_Edge_Parents" xml:space="preserve">
+    <value>Parents</value>
+  </data>
+  <data name="Tree_Edge_Child" xml:space="preserve">
+    <value>Child</value>
+  </data>
   <data name="Tree_Card_Marriage" xml:space="preserve">
     <value>Marriage</value>
   </data>

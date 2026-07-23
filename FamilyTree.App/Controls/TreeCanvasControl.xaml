@@ -36,7 +36,7 @@
                       Background="{DynamicResource BackgroundBrush}"
                       PreviewMouseWheel="Scroller_PreviewMouseWheel"
                       MouseRightButtonDown="Pan_Start" MouseRightButtonUp="Pan_End" MouseMove="Pan_Move">
-            <ctrl:FamilyGraphSurface x:Name="Surface" Interactive="True"
+            <ctrl:FamilyGraphSurface x:Name="Surface" Interactive="True" Margin ="14"
                                      HorizontalAlignment="Left" VerticalAlignment="Top"
                                      NodesSource="{Binding Nodes}" EdgesSource="{Binding Edges}"
                                      CouplesSource="{Binding Couples}" BandsSource="{Binding Bands}"

@@ -62,13 +62,16 @@
                         <!-- Прозора товста лінія — зручна зона наведення -->
                         <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
                               Stroke="Transparent" StrokeThickness="10"
+                              ToolTip="{Binding Tooltip}"
+                              ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
+                              ToolTipService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
                               MouseEnter="Edge_MouseEnter" MouseLeave="Surface_PointerLeave" />
                         <!-- Видима лінія -->
                         <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
                               IsHitTestVisible="False">
                             <Line.Style>
                                 <Style TargetType="Line">
-                                    <Setter Property="Stroke" Value="{DynamicResource BorderBrush}" />
+                                    <Setter Property="Stroke" Value="{DynamicResource TreeEdgeBrush}" />
                                     <Setter Property="StrokeThickness" Value="1.5" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsSpouse}" Value="True">

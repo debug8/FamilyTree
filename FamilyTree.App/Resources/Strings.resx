@@ -301,6 +301,12 @@
   <data name="Tree_Bands" xml:space="preserve">
     <value>Смуги поколінь</value>
   </data>
+  <data name="Tree_Edge_Parents" xml:space="preserve">
+    <value>Батьки</value>
+  </data>
+  <data name="Tree_Edge_Child" xml:space="preserve">
+    <value>Дитина</value>
+  </data>
   <data name="Tree_Card_Marriage" xml:space="preserve">
     <value>Шлюб</value>
   </data>
