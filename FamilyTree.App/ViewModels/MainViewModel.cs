@@ -49,6 +49,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? _searchText;
 
     [ObservableProperty]
+    private PersonSortOption _selectedSort = SortOptions[0];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SortDirectionGlyph))]
+    private bool _sortDescending;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(EditPersonCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeletePersonCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddParentCommand))]
@@ -115,6 +122,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public IReadOnlyList<KinshipNamingStyleOption> AvailableNamingStyles => NamingStyles.ToList();
 
+    /// <summary>Варіанти сортування списку осіб (локалізовані назви оновлюються при зміні мови).</summary>
+    public IReadOnlyList<PersonSortOption> AvailableSortOptions => SortOptions.ToList();
+
+    /// <summary>Стрілка напрямку сортування: ▲ за зростанням, ▼ за спаданням.</summary>
+    public string SortDirectionGlyph => SortDescending ? "▼" : "▲";
+
     public string TodayFormatted => DateTime.Today.ToString("D", _localization.CurrentCulture);
 
     /// <summary>Заголовок вікна: назва застосунку — документ [*].</summary>
@@ -149,6 +162,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         new KinshipNamingStyleOption(KinshipNamingStyle.Standard, "Naming_Standard"),
         new KinshipNamingStyleOption(KinshipNamingStyle.Detailed, "Naming_Detailed"),
+    };
+
+    private static IReadOnlyList<PersonSortOption> SortOptions { get; } = new[]
+    {
+        new PersonSortOption(PersonSortField.LastName, "Sort_LastName"),
+        new PersonSortOption(PersonSortField.FirstName, "Sort_FirstName"),
+        new PersonSortOption(PersonSortField.BirthDate, "Sort_BirthDate"),
     };
 
     private bool HasSelection => SelectedPerson is not null;
@@ -446,6 +466,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     partial void OnSearchTextChanged(string? value) => DebounceSearch();
 
+    partial void OnSelectedSortChanged(PersonSortOption value) => RefreshPersons();
+
+    partial void OnSortDescendingChanged(bool value) => RefreshPersons();
+
+    [RelayCommand]
+    private void ToggleSortDirection() => SortDescending = !SortDescending;
+
     partial void OnSelectedLanguageChanged(LanguageOption value)
     {
         if (value is null)
@@ -518,10 +545,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 p.FirstName.Contains(term, StringComparison.CurrentCultureIgnoreCase));
         }
 
-        var ordered = query
-            .OrderBy(p => p.LastName, StringComparer.CurrentCulture)
-            .ThenBy(p => p.FirstName, StringComparer.CurrentCulture)
-            .ToList();
+        var descending = SortDescending;
+        var ordered = (SelectedSort?.Field switch
+        {
+            PersonSortField.FirstName => Direction(query, p => p.FirstName, StringComparer.CurrentCulture, descending)
+                .ThenBy(p => p.LastName, StringComparer.CurrentCulture),
+            PersonSortField.BirthDate => Direction(
+                    query,
+                    p => p.BirthDate ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
+                    Comparer<DateOnly>.Default,
+                    descending)
+                .ThenBy(p => p.LastName, StringComparer.CurrentCulture),
+            _ => Direction(query, p => p.LastName, StringComparer.CurrentCulture, descending)
+                .ThenBy(p => p.FirstName, StringComparer.CurrentCulture),
+        }).ToList();
 
         Persons.Clear();
         foreach (var person in ordered)
@@ -537,6 +574,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(PersonsCountText));
         RaiseDocumentInfo();
     }
+
+    private static IOrderedEnumerable<Person> Direction<TKey>(
+        IEnumerable<Person> source, Func<Person, TKey> key, IComparer<TKey> comparer, bool descending) =>
+        descending ? source.OrderByDescending(key, comparer) : source.OrderBy(key, comparer);
 
     private void SelectById(Guid id)
     {
@@ -637,6 +678,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(TodayFormatted));
         OnPropertyChanged(nameof(AvailableThemes));
         OnPropertyChanged(nameof(AvailableNamingStyles));
+        OnPropertyChanged(nameof(AvailableSortOptions));
         OnPropertyChanged(nameof(PersonsCountText));
         RaiseDocumentInfo();
     }

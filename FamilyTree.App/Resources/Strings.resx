@@ -109,6 +109,21 @@
   <data name="PersonList_SearchHint" xml:space="preserve">
     <value>Пошук за прізвищем або ім'ям…</value>
   </data>
+  <data name="Sort_Label" xml:space="preserve">
+    <value>Сортувати</value>
+  </data>
+  <data name="Sort_LastName" xml:space="preserve">
+    <value>За прізвищем</value>
+  </data>
+  <data name="Sort_FirstName" xml:space="preserve">
+    <value>За ім'ям</value>
+  </data>
+  <data name="Sort_BirthDate" xml:space="preserve">
+    <value>За датою народження</value>
+  </data>
+  <data name="Sort_Direction" xml:space="preserve">
+    <value>Напрямок сортування (за зростанням / за спаданням)</value>
+  </data>
   <data name="Person_Delete_Title" xml:space="preserve">
     <value>Видалення особи</value>
   </data>

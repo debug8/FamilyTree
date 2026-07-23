@@ -109,6 +109,21 @@
   <data name="PersonList_SearchHint" xml:space="preserve">
     <value>Search by last or first name…</value>
   </data>
+  <data name="Sort_Label" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Sort_LastName" xml:space="preserve">
+    <value>By last name</value>
+  </data>
+  <data name="Sort_FirstName" xml:space="preserve">
+    <value>By first name</value>
+  </data>
+  <data name="Sort_BirthDate" xml:space="preserve">
+    <value>By birth date</value>
+  </data>
+  <data name="Sort_Direction" xml:space="preserve">
+    <value>Sort direction (ascending / descending)</value>
+  </data>
   <data name="Person_Delete_Title" xml:space="preserve">
     <value>Delete person</value>
   </data>
