@@ -10,6 +10,8 @@ namespace FamilyTree.Domain.Kinship;
 /// <param name="SiblingKind">Уточнення рідні/зведені для сиблінгів.</param>
 /// <param name="Lineage">Лінія (по батькові/по матері) — для детального стилю.</param>
 /// <param name="IsFormerSpouse">Чи це колишнє подружжя (шлюб розірвано).</param>
+/// <param name="Affinity">Різновид свояцтва (для <see cref="KinshipKind.Affinity"/>).</param>
+/// <param name="PivotGender">Стать сполучної особи X (подружжя/сиблінг/дядько) — для свояцтва.</param>
 public readonly record struct KinshipContext(
     KinshipKind Kind,
     int StepsUp,
@@ -17,7 +19,9 @@ public readonly record struct KinshipContext(
     Gender RelativeGender,
     SiblingKind SiblingKind,
     Lineage Lineage,
-    bool IsFormerSpouse = false);
+    bool IsFormerSpouse = false,
+    AffinityKind Affinity = AffinityKind.NotAffinity,
+    Gender PivotGender = Gender.Unknown);
 
 /// <summary>
 /// Форматер назв родинних зв'язків — по одному на мову (розд. 2.4, 4.3, 4.7).

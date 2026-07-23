@@ -140,7 +140,7 @@ public partial class TreeViewModel : ObservableObject
                 Y = node.Y,
                 FullName = person.FullName,
                 Years = FormatYears(person),
-                RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph).DisplayName,
+                RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph, includeAffinity: true).DisplayName,
                 IsRoot = isRoot,
             });
         }

@@ -28,6 +28,7 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
             KinshipKind.Spouse => c.IsFormerSpouse
                 ? Pick(c.RelativeGender, "ex-husband", "ex-wife")
                 : Pick(c.RelativeGender, "husband", "wife"),
+            KinshipKind.Affinity => BuildAffinity(c),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 
@@ -106,6 +107,24 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
             Lineage.Paternal => name + " (paternal)",
             Lineage.Maternal => name + " (maternal)",
             _ => name,
+        };
+    }
+
+    /// <summary>
+    /// Свояцтво (розд. 4.5). Англійська система «-in-law» не розрізняє бік родини,
+    /// тому не потребує статі сполучної особи (окрім описового uncle/aunt by marriage).
+    /// </summary>
+    private static string BuildAffinity(KinshipContext c)
+    {
+        var g = c.RelativeGender;
+        return c.Affinity switch
+        {
+            AffinityKind.SpouseParent => Pick(g, "father-in-law", "mother-in-law"),
+            AffinityKind.ChildSpouse => Pick(g, "son-in-law", "daughter-in-law"),
+            AffinityKind.SpouseSibling => Pick(g, "brother-in-law", "sister-in-law"),
+            AffinityKind.SiblingSpouse => Pick(g, "brother-in-law", "sister-in-law"),
+            AffinityKind.UncleAuntSpouse => Pick(g, "uncle (by marriage)", "aunt (by marriage)"),
+            _ => "relative by marriage",
         };
     }
 

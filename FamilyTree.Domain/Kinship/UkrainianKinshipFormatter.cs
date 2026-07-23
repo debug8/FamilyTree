@@ -33,6 +33,7 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
             KinshipKind.Spouse => c.IsFormerSpouse
                 ? Pick(c.RelativeGender, "колишній чоловік", "колишня дружина")
                 : Pick(c.RelativeGender, "чоловік", "дружина"),
+            KinshipKind.Affinity => BuildAffinity(c),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 
@@ -125,6 +126,35 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
             _ => Pra(d - 2) + Pick(g, "внучатий племінник", "внучата племінниця"),
         };
         return k == 1 ? nephewWord : $"{Ordinal(k, g)} {nephewWord}";
+    }
+
+    /// <summary>
+    /// Свояцтво (розд. 4.5): g — стать особи-B, pivot — стать сполучної особи X.
+    /// </summary>
+    private static string BuildAffinity(KinshipContext c)
+    {
+        var g = c.RelativeGender;
+        var pivot = c.PivotGender;
+        return c.Affinity switch
+        {
+            // B — батько/мати мого подружжя. Подружжя-жінка → батьки дружини (тесть/теща);
+            // подружжя-чоловік → батьки чоловіка (свекор/свекруха).
+            AffinityKind.SpouseParent => pivot == Gender.Female
+                ? Pick(g, "тесть", "теща")
+                : Pick(g, "свекор", "свекруха"),
+            // B — брат/сестра мого подружжя. Подружжя-чоловік → дівер/зовиця;
+            // подружжя-жінка → шурин/своячка.
+            AffinityKind.SpouseSibling => pivot == Gender.Male
+                ? Pick(g, "дівер", "зовиця")
+                : Pick(g, "шурин", "своячка"),
+            // B — подружжя моєї дитини: зять (чоловік дочки) / невістка (дружина сина).
+            AffinityKind.ChildSpouse => Pick(g, "зять", "невістка"),
+            // B — подружжя мого сиблінга: зять-шваґер (чоловік сестри) / невістка-братова (дружина брата).
+            AffinityKind.SiblingSpouse => Pick(g, "зять", "невістка"),
+            // B — подружжя дядька/тітки (описово).
+            AffinityKind.UncleAuntSpouse => Pick(g, "чоловік тітки", "дружина дядька"),
+            _ => "свояк / родичка через шлюб",
+        };
     }
 
     private static string Pick(Gender g, string male, string female) =>

@@ -22,7 +22,9 @@ public sealed class KinshipPathExplainer
         ArgumentNullException.ThrowIfNull(relative);
         ArgumentNullException.ThrowIfNull(graph);
 
-        var result = _calculator.Compute(root, relative, graph);
+        // Свояцтво (розд. 4.5) враховуємо в підсумку: якщо кровного зв'язку немає,
+        // назва може бути «тесть», «зять» тощо (кровного ланцюжка кроків при цьому не буде).
+        var result = _calculator.Compute(root, relative, graph, includeAffinity: true);
         var summary = $"{relative.FullName} — {result.DisplayName} ({root.FullName})";
 
         if (root.Id == relative.Id)

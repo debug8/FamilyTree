@@ -51,9 +51,21 @@ public class KinshipPathExplainerTests : IClassFixture<KinshipTestFamily>
     }
 
     [Fact]
-    public void Unrelated_has_empty_chain()
+    public void Affinity_has_name_but_no_blood_chain()
     {
+        // Катя — дружина Тараса, Леся — сестра Тараса → Леся є зовицею Катерини (свояцтво).
+        // Кровного ланцюжка немає, тож PersonChain порожній, але назва є (розд. 4.5).
         var path = Explain("Катя", "Леся");
+
+        path.PersonChain.ShouldBeEmpty();
+        path.Summary.ShouldContain("зовиця");
+    }
+
+    [Fact]
+    public void No_relation_when_truly_unrelated()
+    {
+        // Дарина (гілка матері Олени) та Роман (гілка Гната) — різні роди, без шлюбу між ними.
+        var path = Explain("Дарина", "Роман");
 
         path.PersonChain.ShouldBeEmpty();
         path.Summary.ShouldContain("родинний зв'язок не встановлено");

@@ -17,7 +17,8 @@ public sealed class KinshipCalculator
     }
 
     /// <summary>Визначає, ким є <paramref name="relative"/> для кореневої особи <paramref name="root"/>.</summary>
-    public KinshipResult Compute(Person root, Person relative, FamilyGraph graph)
+    /// <param name="includeAffinity">Шукати зв'язки через шлюб (свояцтво, розд. 4.5), якщо кровного немає.</param>
+    public KinshipResult Compute(Person root, Person relative, FamilyGraph graph, bool includeAffinity = false)
     {
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(relative);
@@ -33,9 +34,18 @@ public sealed class KinshipCalculator
         if (!nca.Found)
         {
             var isSpouse = graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id);
-            var kind = isSpouse ? KinshipKind.Spouse : KinshipKind.None;
-            var former = isSpouse && !graph.IsSpouseActive(root.Id, relative.Id);
-            return Build(kind, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>(), former);
+            if (isSpouse)
+            {
+                var former = !graph.IsSpouseActive(root.Id, relative.Id);
+                return Build(KinshipKind.Spouse, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>(), former);
+            }
+
+            if (includeAffinity && TryAffinity(root, relative, graph) is { } affinity)
+            {
+                return affinity;
+            }
+
+            return Build(KinshipKind.None, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>());
         }
 
         var a = nca.StepsFromA;
@@ -62,6 +72,92 @@ public sealed class KinshipCalculator
         var name = _formatter.Format(in context);
         return new KinshipResult(kind, a, b, siblingKind, lineage, name, ancestors);
     }
+
+    /// <summary>
+    /// Свояцтво (розд. 4.5): шукає сполучну особу X такою, що
+    /// A —(кров)— X —(шлюб)— B (патерн A) або A —(шлюб)— X —(кров)— B (патерн B).
+    /// Обирає найближчий варіант (за сумою кроків кровного плеча). null — свояцтва немає.
+    /// </summary>
+    private KinshipResult? TryAffinity(Person root, Person relative, FamilyGraph graph)
+    {
+        var best = AffinityKind.NotAffinity;
+        var pivotGender = Gender.Unknown;
+        var bestDistance = int.MaxValue;
+
+        // Патерн A: X одружений із B(relative), X — кровний родич A(root).
+        foreach (var x in graph.GetSpouses(relative.Id))
+        {
+            if (x.Id == root.Id)
+            {
+                continue;
+            }
+
+            var link = _ancestorFinder.FindNearestSet(root.Id, x.Id, graph);
+            if (!link.Found)
+            {
+                continue;
+            }
+
+            var (kind, distance) = MapPatternA(link.StepsFromA, link.StepsFromB);
+            if (kind != AffinityKind.NotAffinity && distance < bestDistance)
+            {
+                best = kind;
+                bestDistance = distance;
+                pivotGender = x.Gender;
+            }
+        }
+
+        // Патерн B: X одружений із A(root), B(relative) — кровний родич X.
+        foreach (var x in graph.GetSpouses(root.Id))
+        {
+            if (x.Id == relative.Id)
+            {
+                continue;
+            }
+
+            var link = _ancestorFinder.FindNearestSet(x.Id, relative.Id, graph);
+            if (!link.Found)
+            {
+                continue;
+            }
+
+            var (kind, distance) = MapPatternB(link.StepsFromA, link.StepsFromB);
+            if (kind != AffinityKind.NotAffinity && distance < bestDistance)
+            {
+                best = kind;
+                bestDistance = distance;
+                pivotGender = x.Gender;
+            }
+        }
+
+        if (best == AffinityKind.NotAffinity)
+        {
+            return null;
+        }
+
+        var context = new KinshipContext(
+            KinshipKind.Affinity, 0, 0, relative.Gender, SiblingKind.NotSibling, Lineage.Unknown,
+            IsFormerSpouse: false, Affinity: best, PivotGender: pivotGender);
+        var name = _formatter.Format(in context);
+        return new KinshipResult(KinshipKind.Affinity, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, name, Array.Empty<Guid>());
+    }
+
+    /// <summary>Кровне плече root→X (X одружений із relative): a кроків від root, b — від X.</summary>
+    private static (AffinityKind Kind, int Distance) MapPatternA(int a, int b) => (a, b) switch
+    {
+        (0, 1) => (AffinityKind.ChildSpouse, 1),     // X — дитина root → B подружжя моєї дитини
+        (1, 1) => (AffinityKind.SiblingSpouse, 2),   // X — сиблінг root → B подружжя мого сиблінга
+        (2, 1) => (AffinityKind.UncleAuntSpouse, 3), // X — дядько/тітка root → B подружжя дядька/тітки
+        _ => (AffinityKind.NotAffinity, int.MaxValue),
+    };
+
+    /// <summary>Кровне плече X→relative (X одружений із root): a кроків від X, b — від relative.</summary>
+    private static (AffinityKind Kind, int Distance) MapPatternB(int a, int b) => (a, b) switch
+    {
+        (1, 0) => (AffinityKind.SpouseParent, 1),    // relative — батько/мати X → тесть/свекор…
+        (1, 1) => (AffinityKind.SpouseSibling, 2),   // relative — сиблінг X → дівер/шурин…
+        _ => (AffinityKind.NotAffinity, int.MaxValue),
+    };
 
     private static SiblingKind ClassifySiblings(FamilyGraph graph, Guid firstId, Guid secondId)
     {
