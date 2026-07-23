@@ -310,6 +310,9 @@
   <data name="WhoIsWho_Path" xml:space="preserve">
     <value>Relationship path</value>
   </data>
+  <data name="WhoIsWho_Graph" xml:space="preserve">
+    <value>Path diagram</value>
+  </data>
   <data name="WhoIsWho_Hint" xml:space="preserve">
     <value>Pick two people to see their kinship and the path between them.</value>
   </data>

@@ -310,6 +310,9 @@
   <data name="WhoIsWho_Path" xml:space="preserve">
     <value>Шлях зв'язку</value>
   </data>
+  <data name="WhoIsWho_Graph" xml:space="preserve">
+    <value>Схема шляху</value>
+  </data>
   <data name="WhoIsWho_Hint" xml:space="preserve">
     <value>Оберіть дві особи, щоб побачити родинний зв'язок і шлях між ними.</value>
   </data>

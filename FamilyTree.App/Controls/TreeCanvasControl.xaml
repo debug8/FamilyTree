@@ -1,7 +1,8 @@
 <UserControl x:Class="FamilyTree.App.Controls.TreeCanvasControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:FamilyTree.App.Localization">
+             xmlns:loc="clr-namespace:FamilyTree.App.Localization"
+             xmlns:ctrl="clr-namespace:FamilyTree.App.Controls">
     <DockPanel>
         <!-- Панель керування -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
@@ -31,178 +32,11 @@
                       Background="{DynamicResource BackgroundBrush}"
                       PreviewMouseWheel="Scroller_PreviewMouseWheel"
                       MouseRightButtonDown="Pan_Start" MouseRightButtonUp="Pan_End" MouseMove="Pan_Move">
-            <Canvas x:Name="Scene" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
-                    HorizontalAlignment="Left" VerticalAlignment="Top">
-                <Canvas.LayoutTransform>
-                    <ScaleTransform x:Name="SceneScale" />
-                </Canvas.LayoutTransform>
-
-                <!-- Рамки подружжя (чинний шлюб) — позаду карток -->
-                <ItemsControl ItemsSource="{Binding Couples}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
-                                    Background="#22D64545" BorderBrush="#D64545" BorderThickness="1.5"
-                                    ToolTip="{Binding Tooltip}"
-                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
-                                    MouseEnter="Couple_MouseEnter" MouseLeave="ClearHighlight" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Ребра -->
-                <ItemsControl ItemsSource="{Binding Edges}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Canvas>
-                                <!-- Прозора товста лінія — зручна зона наведення -->
-                                <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
-                                      Stroke="Transparent" StrokeThickness="10"
-                                      MouseEnter="Edge_MouseEnter" MouseLeave="ClearHighlight" />
-                                <!-- Видима лінія -->
-                                <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
-                                      IsHitTestVisible="False">
-                                    <Line.Style>
-                                        <Style TargetType="Line">
-                                            <Setter Property="Stroke" Value="{DynamicResource BorderBrush}" />
-                                            <Setter Property="StrokeThickness" Value="1.5" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsSpouse}" Value="True">
-                                                    <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
-                                                    <Setter Property="StrokeDashArray" Value="3 2" />
-                                                </DataTrigger>
-                                                <!-- Наведення на особу/шлюб/ребро → помаранчева підсвітка -->
-                                                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-                                                    <Setter Property="Stroke" Value="#FF8C00" />
-                                                    <Setter Property="StrokeThickness" Value="3.5" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Line.Style>
-                                </Line>
-                            </Canvas>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Вузли -->
-                <ItemsControl ItemsSource="{Binding Nodes}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="8"
-                                    Background="{DynamicResource SurfaceBrush}" BorderThickness="1.5"
-                                    MouseLeftButtonDown="Node_MouseLeftButtonDown" Cursor="Hand"
-                                    MouseEnter="Node_MouseEnter" MouseLeave="ClearHighlight"
-                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="60000"
-                                    ToolTipService.BetweenShowDelay="0">
-                                <Border.ToolTip>
-                                    <ToolTip Background="Transparent" BorderThickness="0" Padding="0" HasDropShadow="True">
-                                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14"
-                                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" MaxWidth="380">
-                                            <StackPanel Orientation="Horizontal">
-                                                <!-- Місце під фото -->
-                                                <Border Width="92" Height="112" CornerRadius="6" Margin="0,0,14,0"
-                                                        Background="{DynamicResource BackgroundBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                                        VerticalAlignment="Top">
-                                                    <Grid>
-                                                        <TextBlock Text="{loc:Localize Tree_Card_Photo}" FontSize="11"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <Image Source="{Binding PhotoPath}" Stretch="UniformToFill" />
-                                                    </Grid>
-                                                </Border>
-
-                                                <!-- Дані особи -->
-                                                <StackPanel MaxWidth="250">
-                                                    <TextBlock Text="{Binding FullName}" FontSize="15" FontWeight="Bold"
-                                                               TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                    <TextBlock Text="{Binding RelationBadge}" FontSize="12" Margin="0,1,0,6"
-                                                               Foreground="{DynamicResource PrimaryBrush}"
-                                                               Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
-
-                                                    <TextBlock Text="{Binding DetailMaiden}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailMaiden, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailGender}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailGender, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailBirth}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailBirth, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailDeath}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailDeath, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailMarriage}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailMarriage, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailChildren}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                               Visibility="{Binding DetailChildren, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                    <TextBlock Text="{Binding DetailNotes}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
-                                                               FontStyle="Italic" Foreground="{DynamicResource TextSecondaryBrush}"
-                                                               Visibility="{Binding DetailNotes, Converter={StaticResource NullToCollapsedConverter}}" />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                    </ToolTip>
-                                </Border.ToolTip>
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsRoot}" Value="True">
-                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                                <Setter Property="BorderThickness" Value="2.5" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-                                                <Setter Property="BorderThickness" Value="2.5" />
-                                            </DataTrigger>
-                                            <!-- Наведення на суміжне ребро → помаранчева рамка -->
-                                            <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-                                                <Setter Property="BorderBrush" Value="#FF8C00" />
-                                                <Setter Property="BorderThickness" Value="2.5" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <StackPanel Margin="10,8" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding RelationBadge}" FontSize="11"
-                                               Foreground="{DynamicResource PrimaryBrush}"
-                                               Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
-                                    <TextBlock Text="{Binding FullName}" FontSize="13" FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis"
-                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                    <TextBlock Text="{Binding Years}" FontSize="11"
-                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Canvas>
+            <ctrl:FamilyGraphSurface x:Name="Surface" Interactive="True"
+                                     HorizontalAlignment="Left" VerticalAlignment="Top"
+                                     NodesSource="{Binding Nodes}" EdgesSource="{Binding Edges}"
+                                     CouplesSource="{Binding Couples}"
+                                     SceneWidth="{Binding CanvasWidth}" SceneHeight="{Binding CanvasHeight}" />
         </ScrollViewer>
     </DockPanel>
 </UserControl>
