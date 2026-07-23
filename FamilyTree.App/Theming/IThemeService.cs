@@ -1,11 +1,15 @@
+using FamilyTree.App.Localization;
+
 namespace FamilyTree.App.Theming;
 
-/// <summary>
-/// Опис однієї теми оформлення.
-/// </summary>
-/// <param name="Code">Ідентифікатор теми ("light", "dark"). Зберігається в налаштуваннях.</param>
-/// <param name="NameKey">Ключ ресурсу з локалізованою назвою (напр. Theme_Light).</param>
-public sealed record ThemeOption(string Code, string NameKey);
+/// <summary>Опис однієї теми оформлення (Code — "light"/"dark", NameKey — ключ назви).</summary>
+public sealed class ThemeOption : LocalizedOption
+{
+    public ThemeOption(string code, string nameKey)
+        : base(nameKey) => Code = code;
+
+    public string Code { get; }
+}
 
 /// <summary>
 /// Сервіс тем оформлення: живе перемикання світлої/темної теми

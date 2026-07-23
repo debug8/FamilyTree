@@ -12,6 +12,11 @@
 
             <loc:LocalizeConverter x:Key="LocalizeConverter" />
             <conv:PersonYearsConverter x:Key="PersonYearsConverter" />
+
+            <!-- Спільний шаблон пунктів комбобоксів: показує DisplayName (оновлюється живо). -->
+            <DataTemplate x:Key="OptionDisplayTemplate">
+                <TextBlock Text="{Binding DisplayName}" />
+            </DataTemplate>
             <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
             <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />

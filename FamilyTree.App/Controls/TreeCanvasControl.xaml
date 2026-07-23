@@ -8,13 +8,8 @@
             <TextBlock Text="{loc:Localize Tree_Mode}" Style="{StaticResource SecondaryTextStyle}"
                        VerticalAlignment="Center" Margin="0,0,6,0" />
             <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="120"
-                      ItemsSource="{Binding AvailableModes}" SelectedItem="{Binding SelectedMode}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding NameKey, Converter={StaticResource LocalizeConverter}}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+                      ItemsSource="{Binding AvailableModes}" SelectedItem="{Binding SelectedMode}"
+                      ItemTemplate="{StaticResource OptionDisplayTemplate}" />
 
             <TextBlock Text="{loc:Localize Tree_Depth}" Style="{StaticResource SecondaryTextStyle}"
                        VerticalAlignment="Center" Margin="16,0,6,0" />

@@ -1,10 +1,13 @@
+using FamilyTree.App.Localization;
 using FamilyTree.Domain.Kinship;
 
 namespace FamilyTree.App.ViewModels;
 
-/// <summary>
-/// Пункт вибору стилю назв родства для UI.
-/// </summary>
-/// <param name="Style">Стиль форматера.</param>
-/// <param name="NameKey">Ключ ресурсу з локалізованою назвою (Naming_Standard/Naming_Detailed).</param>
-public sealed record KinshipNamingStyleOption(KinshipNamingStyle Style, string NameKey);
+/// <summary>Пункт вибору стилю назв родства для UI.</summary>
+public sealed class KinshipNamingStyleOption : LocalizedOption
+{
+    public KinshipNamingStyleOption(KinshipNamingStyle style, string nameKey)
+        : base(nameKey) => Style = style;
+
+    public KinshipNamingStyle Style { get; }
+}

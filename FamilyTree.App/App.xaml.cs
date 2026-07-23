@@ -77,21 +77,21 @@ public partial class App : Application
         var localization = _host.Services.GetRequiredService<ILocalizationService>();
         localization.SetLanguage(settings.Current.Language);
 
-        // 1b. Застосувати збережену тему (невідомий код — тихий відкат на світлу).
+        // 2. Ініціалізувати XAML-проксі локалізації ДО створення будь-яких сервісів/вікон
+        //    (markup extension {loc:Localize} і LocalizedOption звертаються до LocalizationSource.Instance).
+        LocalizationSource.Initialize(localization);
+
+        // 3. Застосувати збережену тему (невідомий код — тихий відкат на світлу).
         var theme = _host.Services.GetRequiredService<IThemeService>();
         theme.SetTheme(settings.Current.Theme);
 
-        // 1c. Застосувати збережений стиль назв родства.
+        // 4. Застосувати збережений стиль назв родства.
         var formatter = _host.Services.GetRequiredService<IKinshipFormatter>();
         formatter.Style = settings.Current.KinshipNamingStyle == "detailed"
             ? KinshipNamingStyle.Detailed
             : KinshipNamingStyle.Standard;
 
-        // 2. Ініціалізувати XAML-проксі локалізації ДО створення вікна
-        //    (markup extension {loc:Localize} звертається до LocalizationSource.Instance).
-        LocalizationSource.Initialize(localization);
-
-        // 3. Показати головне вікно.
+        // 5. Показати головне вікно.
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
