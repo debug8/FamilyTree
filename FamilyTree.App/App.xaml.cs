@@ -46,6 +46,7 @@ public partial class App : Application
         services.AddSingleton<CommonAncestorFinder>();
         services.AddSingleton<IKinshipFormatter, Kinship.CultureKinshipFormatter>();
         services.AddSingleton<KinshipCalculator>();
+        services.AddSingleton<KinshipPathExplainer>();
 
         // Валідація зв'язків
         services.AddSingleton<RelationshipValidator>();
