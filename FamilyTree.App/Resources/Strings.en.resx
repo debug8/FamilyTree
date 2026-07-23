@@ -229,6 +229,24 @@
   <data name="Tree_Fit" xml:space="preserve">
     <value>Fit to screen</value>
   </data>
+  <data name="Tree_Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Tree_Depth" xml:space="preserve">
+    <value>Generations</value>
+  </data>
+  <data name="Tree_AllDepths" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Tree_Mode_Ancestors" xml:space="preserve">
+    <value>Ancestors</value>
+  </data>
+  <data name="Tree_Mode_Descendants" xml:space="preserve">
+    <value>Descendants</value>
+  </data>
+  <data name="Tree_Mode_Full" xml:space="preserve">
+    <value>All relatives</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

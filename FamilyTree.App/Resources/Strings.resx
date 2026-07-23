@@ -229,6 +229,24 @@
   <data name="Tree_Fit" xml:space="preserve">
     <value>Вписати в екран</value>
   </data>
+  <data name="Tree_Mode" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="Tree_Depth" xml:space="preserve">
+    <value>Поколінь</value>
+  </data>
+  <data name="Tree_AllDepths" xml:space="preserve">
+    <value>Усі</value>
+  </data>
+  <data name="Tree_Mode_Ancestors" xml:space="preserve">
+    <value>Предки</value>
+  </data>
+  <data name="Tree_Mode_Descendants" xml:space="preserve">
+    <value>Нащадки</value>
+  </data>
+  <data name="Tree_Mode_Full" xml:space="preserve">
+    <value>Усі родичі</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>
