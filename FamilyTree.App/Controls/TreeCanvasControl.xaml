@@ -31,18 +31,16 @@
             <Button Content="100%" Padding="10,4" Click="Reset_Click" />
         </StackPanel>
 
-        <Border x:Name="Viewport" ClipToBounds="True" Background="{DynamicResource BackgroundBrush}"
-                MouseWheel="Viewport_MouseWheel"
-                MouseRightButtonDown="Viewport_PanStart" MouseRightButtonUp="Viewport_PanEnd"
-                MouseMove="Viewport_PanMove" Cursor="Arrow">
+        <ScrollViewer x:Name="Scroller"
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      Background="{DynamicResource BackgroundBrush}"
+                      PreviewMouseWheel="Scroller_PreviewMouseWheel"
+                      MouseRightButtonDown="Pan_Start" MouseRightButtonUp="Pan_End" MouseMove="Pan_Move">
             <Canvas x:Name="Scene" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
                     HorizontalAlignment="Left" VerticalAlignment="Top">
-                <Canvas.RenderTransform>
-                    <TransformGroup>
-                        <ScaleTransform x:Name="SceneScale" />
-                        <TranslateTransform x:Name="SceneTranslate" />
-                    </TransformGroup>
-                </Canvas.RenderTransform>
+                <Canvas.LayoutTransform>
+                    <ScaleTransform x:Name="SceneScale" />
+                </Canvas.LayoutTransform>
 
                 <!-- Ребра -->
                 <ItemsControl ItemsSource="{Binding Edges}">
@@ -115,6 +113,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </Canvas>
-        </Border>
+        </ScrollViewer>
     </DockPanel>
 </UserControl>

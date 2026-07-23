@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
 using FamilyTree.Domain;
+using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Layout;
 
 namespace FamilyTree.App.ViewModels;
@@ -25,6 +26,7 @@ public partial class TreeViewModel : ObservableObject
     private readonly IDocumentSession _session;
     private readonly TreeLayoutEngine _engine;
     private readonly ILocalizationService _localization;
+    private readonly KinshipCalculator _kinship;
 
     [ObservableProperty]
     private TreeMode _mode = TreeMode.Descendants;
@@ -43,15 +45,23 @@ public partial class TreeViewModel : ObservableObject
 
     private Guid? _rootId;
 
-    public TreeViewModel(IDocumentSession session, TreeLayoutEngine engine, ILocalizationService localization)
+    public TreeViewModel(IDocumentSession session, TreeLayoutEngine engine, ILocalizationService localization, KinshipCalculator kinship)
     {
         _session = session;
         _engine = engine;
         _localization = localization;
+        _kinship = kinship;
         _session.DocumentChanged += (_, _) => Rebuild();
         _session.ContentChanged += (_, _) => Rebuild();
-        _localization.LanguageChanged += (_, _) => OnPropertyChanged(nameof(AvailableModes));
+        _localization.LanguageChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(AvailableModes));
+            Rebuild(); // бейджі родства перекладаються
+        };
     }
+
+    /// <summary>Перебудувати дерево (напр. після зміни стилю назв родства).</summary>
+    public void Refresh() => Rebuild();
 
     /// <summary>Доступні режими дерева (локалізовані назви оновлюються при зміні мови).</summary>
     public IReadOnlyList<TreeModeOption> AvailableModes => ModeOptions.ToList();
@@ -113,17 +123,21 @@ public partial class TreeViewModel : ObservableObject
         var layout = _engine.Build(graph, rootId, Mode, Depth);
         var persons = doc.Persons.ToDictionary(p => p.Id);
         var positions = layout.Nodes.ToDictionary(n => n.PersonId);
+        var rootPerson = persons[rootId];
+        var youBadge = _localization.GetString("Tree_You");
 
         foreach (var node in layout.Nodes)
         {
             var person = persons[node.PersonId];
+            var isRoot = node.PersonId == rootId;
             Nodes.Add(new TreeNodeViewModel(node.PersonId)
             {
                 X = node.X,
                 Y = node.Y,
                 FullName = person.FullName,
                 Years = FormatYears(person),
-                IsRoot = node.PersonId == rootId,
+                RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph).DisplayName,
+                IsRoot = isRoot,
             });
         }
 

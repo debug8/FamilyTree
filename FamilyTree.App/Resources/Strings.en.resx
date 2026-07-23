@@ -247,6 +247,9 @@
   <data name="Tree_Mode_Full" xml:space="preserve">
     <value>All relatives</value>
   </data>
+  <data name="Tree_You" xml:space="preserve">
+    <value>me</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

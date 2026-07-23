@@ -480,6 +480,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _kinshipFormatter.Style = value.Style;
         _settings.Current.KinshipNamingStyle = value.Style == KinshipNamingStyle.Detailed ? "detailed" : "standard";
         _settings.Save();
+        _tree.Refresh(); // оновити бейджі родства на дереві
     }
 
     // ---- Внутрішнє -------------------------------------------------------

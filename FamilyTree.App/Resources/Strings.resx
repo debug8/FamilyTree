@@ -247,6 +247,9 @@
   <data name="Tree_Mode_Full" xml:space="preserve">
     <value>Усі родичі</value>
   </data>
+  <data name="Tree_You" xml:space="preserve">
+    <value>я</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>
