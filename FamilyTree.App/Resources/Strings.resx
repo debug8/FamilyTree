@@ -220,6 +220,15 @@
   <data name="SaveChanges_Message" xml:space="preserve">
     <value>У документі є незбережені зміни. Зберегти їх?</value>
   </data>
+  <data name="Tab_Person" xml:space="preserve">
+    <value>Особа</value>
+  </data>
+  <data name="Tab_Tree" xml:space="preserve">
+    <value>Дерево</value>
+  </data>
+  <data name="Tree_Fit" xml:space="preserve">
+    <value>Вписати в екран</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>Особа не може бути власним батьком або матір'ю.</value>
   </data>

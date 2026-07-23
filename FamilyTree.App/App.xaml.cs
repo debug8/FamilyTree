@@ -5,6 +5,7 @@ using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
 using FamilyTree.Domain.Kinship;
+using FamilyTree.Domain.Layout;
 using FamilyTree.Domain.Validation;
 using FamilyTree.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,6 +53,10 @@ public partial class App : Application
         // Сесія документа та діалоги
         services.AddSingleton<IDocumentSession, DocumentSession>();
         services.AddSingleton<IDialogService, DialogService>();
+
+        // Візуалізація дерева
+        services.AddSingleton<TreeLayoutEngine>();
+        services.AddSingleton<TreeViewModel>();
 
         // ViewModel-и
         services.AddSingleton<MainViewModel>();

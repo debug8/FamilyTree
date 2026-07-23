@@ -220,6 +220,15 @@
   <data name="SaveChanges_Message" xml:space="preserve">
     <value>The document has unsaved changes. Save them?</value>
   </data>
+  <data name="Tab_Person" xml:space="preserve">
+    <value>Person</value>
+  </data>
+  <data name="Tab_Tree" xml:space="preserve">
+    <value>Tree</value>
+  </data>
+  <data name="Tree_Fit" xml:space="preserve">
+    <value>Fit to screen</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

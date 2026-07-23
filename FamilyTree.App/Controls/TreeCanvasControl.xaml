@@ -1,0 +1,98 @@
+<UserControl x:Class="FamilyTree.App.Controls.TreeCanvasControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:FamilyTree.App.Localization">
+    <DockPanel>
+        <!-- Панель керування масштабом -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
+            <Button Content="{loc:Localize Tree_Fit}" Padding="10,4" Margin="0,0,6,0" Click="Fit_Click" />
+            <Button Content="100%" Padding="10,4" Click="Reset_Click" />
+        </StackPanel>
+
+        <Border x:Name="Viewport" ClipToBounds="True" Background="{DynamicResource BackgroundBrush}"
+                MouseWheel="Viewport_MouseWheel"
+                MouseRightButtonDown="Viewport_PanStart" MouseRightButtonUp="Viewport_PanEnd"
+                MouseMove="Viewport_PanMove" Cursor="Arrow">
+            <Canvas x:Name="Scene" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Canvas.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="SceneScale" />
+                        <TranslateTransform x:Name="SceneTranslate" />
+                    </TransformGroup>
+                </Canvas.RenderTransform>
+
+                <!-- Ребра -->
+                <ItemsControl ItemsSource="{Binding Edges}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
+                                  StrokeThickness="1.5">
+                                <Line.Style>
+                                    <Style TargetType="Line">
+                                        <Setter Property="Stroke" Value="{DynamicResource BorderBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSpouse}" Value="True">
+                                                <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+                                                <Setter Property="StrokeDashArray" Value="3 2" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Line.Style>
+                            </Line>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Вузли -->
+                <ItemsControl ItemsSource="{Binding Nodes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="8"
+                                    Background="{DynamicResource SurfaceBrush}" BorderThickness="1.5"
+                                    MouseLeftButtonDown="Node_MouseLeftButtonDown" Cursor="Hand">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRoot}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                <Setter Property="BorderThickness" Value="2.5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                <Setter Property="BorderThickness" Value="2.5" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel Margin="10,8" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding RelationBadge}" FontSize="11"
+                                               Foreground="{DynamicResource PrimaryBrush}"
+                                               Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
+                                    <TextBlock Text="{Binding FullName}" FontSize="13" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <TextBlock Text="{Binding Years}" FontSize="11"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Canvas>
+        </Border>
+    </DockPanel>
+</UserControl>

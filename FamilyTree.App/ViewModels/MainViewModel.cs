@@ -31,6 +31,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly RelationshipValidator _validator;
     private readonly IFamilyStorage _storage;
+    private readonly TreeViewModel _tree;
     private readonly ISettingsService _settings;
 
     private CancellationTokenSource? _searchCts;
@@ -65,6 +66,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IDialogService dialogs,
         RelationshipValidator validator,
         IFamilyStorage storage,
+        TreeViewModel tree,
         ISettingsService settings)
     {
         _localization = localization;
@@ -74,6 +76,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _dialogs = dialogs;
         _validator = validator;
         _storage = storage;
+        _tree = tree;
         _settings = settings;
 
         _selectedLanguage = _localization.CurrentLanguage;
@@ -98,6 +101,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<Person> Spouses { get; } = new();
 
     public ObservableCollection<string> RecentFiles { get; } = new();
+
+    /// <summary>ViewModel вкладки «Дерево».</summary>
+    public TreeViewModel Tree => _tree;
 
     public bool HasSelectedPerson => SelectedPerson is not null;
 
@@ -432,7 +438,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     // ---- Перемикачі (мова/тема/стиль) -----------------------------------
 
-    partial void OnSelectedPersonChanged(Person? value) => RefreshRelations();
+    partial void OnSelectedPersonChanged(Person? value)
+    {
+        RefreshRelations();
+        _tree.SetRoot(value?.Id);
+    }
 
     partial void OnSearchTextChanged(string? value) => DebounceSearch();
 

@@ -12,6 +12,7 @@
 
             <loc:LocalizeConverter x:Key="LocalizeConverter" />
             <conv:PersonYearsConverter x:Key="PersonYearsConverter" />
+            <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         </ResourceDictionary>
     </Application.Resources>
