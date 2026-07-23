@@ -42,6 +42,10 @@ public partial class TreeViewModel : ObservableObject
     [ObservableProperty]
     private bool _showGenerationBands = true;
 
+    /// <summary>Перевернути дерево по вертикалі (предки знизу).</summary>
+    [ObservableProperty]
+    private bool _flipVertical;
+
     [ObservableProperty]
     private double _canvasWidth;
 
@@ -160,6 +164,8 @@ public partial class TreeViewModel : ObservableObject
 
     partial void OnShowGenerationBandsChanged(bool value) => Rebuild();
 
+    partial void OnFlipVerticalChanged(bool value) => Rebuild();
+
     private void Rebuild()
     {
         Nodes.Clear();
@@ -187,6 +193,12 @@ public partial class TreeViewModel : ObservableObject
         var rootPerson = persons[rootId];
         var youBadge = _localization.GetString("Tree_You");
 
+        // Вертикальний переворот (предки знизу): дзеркалимо Y відносно висоти полотна.
+        var flip = FlipVertical;
+        var flipH = layout.Height;
+        double BoxY(double y, double h) => flip ? flipH - y - h : y; // верхній лівий кут рамки
+        double PointY(double y) => flip ? flipH - y : y;             // окрема точка (кінець ребра)
+
         foreach (var node in layout.Nodes)
         {
             var person = persons[node.PersonId];
@@ -194,7 +206,7 @@ public partial class TreeViewModel : ObservableObject
             Nodes.Add(new TreeNodeViewModel(node.PersonId)
             {
                 X = node.X,
-                Y = node.Y,
+                Y = BoxY(node.Y, TreeLayoutEngine.NodeHeight),
                 FullName = person.FullName,
                 Years = FormatYears(person),
                 RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph, includeAffinity: true).DisplayName,
@@ -230,14 +242,15 @@ public partial class TreeViewModel : ObservableObject
                     var top = Math.Min(a.Y, b.Y) - couplePad;
                     var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
                     var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
-                    Couples.Add(new CoupleBoxViewModel(left, top, width, height,
+                    Couples.Add(new CoupleBoxViewModel(left, BoxY(top, height), width, height,
                         BuildCoupleTooltip(edge.FromId, edge.ToId, doc, persons),
                         edge.FromId, edge.ToId));
                     coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
                 }
                 else
                 {
-                    Edges.Add(new TreeEdgeViewModel(a.X + halfW, a.Y + halfH, b.X + halfW, b.Y + halfH, isSpouse: true,
+                    Edges.Add(new TreeEdgeViewModel(
+                        a.X + halfW, PointY(a.Y + halfH), b.X + halfW, PointY(b.Y + halfH), isSpouse: true,
                         endpointIds: new HashSet<Guid> { edge.FromId, edge.ToId },
                         tooltip: SpouseTooltip(edge.FromId, edge.ToId, persons)));
                 }
@@ -267,7 +280,7 @@ public partial class TreeViewModel : ObservableObject
             {
                 if (parentIds.Contains(couple.A) && parentIds.Contains(couple.B))
                 {
-                    Edges.Add(new TreeEdgeViewModel(couple.X, couple.Y, childX, childY, isSpouse: false,
+                    Edges.Add(new TreeEdgeViewModel(couple.X, PointY(couple.Y), childX, PointY(childY), isSpouse: false,
                         parentIds: new HashSet<Guid> { couple.A, couple.B },
                         endpointIds: new HashSet<Guid> { couple.A, couple.B, childId },
                         tooltip: EdgeTooltip(new[] { couple.A, couple.B }, childId, persons)));
@@ -286,7 +299,8 @@ public partial class TreeViewModel : ObservableObject
 
                 var parent = positions[parentId];
                 Edges.Add(new TreeEdgeViewModel(
-                    parent.X + halfW, parent.Y + TreeLayoutEngine.NodeHeight, childX, childY, isSpouse: false,
+                    parent.X + halfW, PointY(parent.Y + TreeLayoutEngine.NodeHeight), childX, PointY(childY),
+                    isSpouse: false,
                     parentIds: new HashSet<Guid> { parentId },
                     endpointIds: new HashSet<Guid> { parentId, childId },
                     tooltip: EdgeTooltip(new[] { parentId }, childId, persons)));
@@ -295,7 +309,7 @@ public partial class TreeViewModel : ObservableObject
 
         if (ShowGenerationBands)
         {
-            BuildBands(layout.Nodes.Select(n => n.Y), layout.Width);
+            BuildBands(layout.Nodes.Select(n => n.Y), layout.Width, flip, flipH);
         }
 
         CanvasWidth = layout.Width;
@@ -311,17 +325,19 @@ public partial class TreeViewModel : ObservableObject
     };
 
     /// <summary>Будує смугу-фон для кожного покоління (унікального Y-рядка).</summary>
-    private void BuildBands(IEnumerable<double> nodeYs, double width)
+    private void BuildBands(IEnumerable<double> nodeYs, double width, bool flip, double canvasHeight)
     {
         const double pad = TreeLayoutEngine.VerticalGap / 2;
+        const double height = TreeLayoutEngine.NodeHeight + 2 * pad;
         var rows = nodeYs.Distinct().OrderBy(y => y).ToList();
         for (var i = 0; i < rows.Count; i++)
         {
+            var top = rows[i] - pad;
             Bands.Add(new GenerationBandViewModel(
                 X: 0,
-                Y: rows[i] - pad,
+                Y: flip ? canvasHeight - top - height : top,
                 Width: width,
-                Height: TreeLayoutEngine.NodeHeight + 2 * pad,
+                Height: height,
                 Fill: BandPalette[i % BandPalette.Length]));
         }
     }

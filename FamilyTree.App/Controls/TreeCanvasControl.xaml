@@ -29,6 +29,9 @@
             <CheckBox Content="{loc:Localize Tree_Bands}" IsChecked="{Binding ShowGenerationBands}"
                       VerticalAlignment="Center" Margin="16,0,0,0"
                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <CheckBox Content="{loc:Localize Tree_Flip}" IsChecked="{Binding FlipVertical}"
+                      VerticalAlignment="Center" Margin="12,0,0,0"
+                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
         <ScrollViewer x:Name="Scroller"

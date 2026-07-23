@@ -301,6 +301,9 @@
   <data name="Tree_Bands" xml:space="preserve">
     <value>Generation bands</value>
   </data>
+  <data name="Tree_Flip" xml:space="preserve">
+    <value>Ancestors at bottom</value>
+  </data>
   <data name="Tree_Edge_Parents" xml:space="preserve">
     <value>Parents</value>
   </data>

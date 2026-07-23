@@ -33,7 +33,7 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
             KinshipKind.Spouse => c.IsFormerSpouse
                 ? Pick(c.RelativeGender, "колишній чоловік", "колишня дружина")
                 : Pick(c.RelativeGender, "чоловік", "дружина"),
-            KinshipKind.Affinity => BuildAffinity(c),
+            KinshipKind.Affinity => BuildAffinity(c, Style == KinshipNamingStyle.Detailed),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 
@@ -131,7 +131,7 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
     /// <summary>
     /// Свояцтво (розд. 4.5): g — стать особи-B, pivot — стать сполучної особи X.
     /// </summary>
-    private static string BuildAffinity(KinshipContext c)
+    private static string BuildAffinity(KinshipContext c, bool detailed)
     {
         var g = c.RelativeGender;
         var pivot = c.PivotGender;
@@ -149,8 +149,11 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
                 : Pick(g, "шурин", "своячка"),
             // B — подружжя моєї дитини: зять (чоловік дочки) / невістка (дружина сина).
             AffinityKind.ChildSpouse => Pick(g, "зять", "невістка"),
-            // B — подружжя мого сиблінга: зять-шваґер (чоловік сестри) / невістка-братова (дружина брата).
-            AffinityKind.SiblingSpouse => Pick(g, "зять", "невістка"),
+            // B — подружжя мого сиблінга. Чоловік сестри — «зять»; у детальному стилі —
+            // «шваґер (чоловік сестри)». Дружина брата — «невістка».
+            AffinityKind.SiblingSpouse => g == Gender.Male
+                ? (detailed ? "шваґер (чоловік сестри)" : "зять")
+                : "невістка",
             // B — подружжя дядька/тітки (описово).
             AffinityKind.UncleAuntSpouse => Pick(g, "чоловік тітки", "дружина дядька"),
             _ => "свояк / родичка через шлюб",
