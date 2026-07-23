@@ -4,16 +4,21 @@ using System.Text.Json;
 // Запуск із Visual Studio: постав SeedGenerator стартовим проєктом і натисни ▶ (F5),
 // або з консолі: dotnet run --project tools/SeedGenerator
 // Файли пишуться в теку samples поруч із FamilyTree.sln.
+//
+// Керування розміром: generations — кількість поколінь (глибина); maxPersons — стеля осіб.
+// Змінюй ці числа у викликах нижче.
 
 var outputDir = ResolveSamplesDir();
 
-GenerateFile(target: 100, seed: 100, title: "Родина (100 осіб)", fileName: "rodyna-100.familytree");
-GenerateFile(target: 500, seed: 500, title: "Родина (500 осіб)", fileName: "rodyna-500.familytree");
+GenerateFile(generations: 4, maxPersons: 150, seed: 4, title: "Родина (4 покоління)", fileName: "rodyna-4pok.familytree");
+GenerateFile(generations: 6, maxPersons: 600, seed: 6, title: "Родина (6 поколінь)", fileName: "rodyna-6pok.familytree");
 
 Console.WriteLine("Готово.");
 
-void GenerateFile(int target, int seed, string title, string fileName)
+void GenerateFile(int generations, int maxPersons, int seed, string title, string fileName)
 {
+    const int generationGap = 25;    // середня різниця поколінь, років
+    const int youngestBirthYear = 2010;
     var rnd = new Random(seed);
     var persons = new List<Dictionary<string, object?>>();
     var parentChildLinks = new List<Dictionary<string, object?>>();
@@ -24,6 +29,7 @@ void GenerateFile(int target, int seed, string title, string fileName)
     string[] surnames = { "Коваленко", "Шевченко", "Ткаченко", "Бондаренко", "Кравченко", "Мельник", "Поліщук", "Савчук", "Іваненко", "Мороз", "Гончар", "Лисенко", "Марченко", "Панченко", "Гриценко" };
 
     const string createdAt = "2024-01-01T00:00:00Z";
+    var baseYear = youngestBirthYear - (generations - 1) * generationGap;
 
     string NewId() => Guid.NewGuid().ToString();
     string Iso(int y, int m, int d) => $"{y:D4}-{m:D2}-{d:D2}";
@@ -60,9 +66,10 @@ void GenerateFile(int target, int seed, string title, string fileName)
         {
             p["maidenName"] = maiden;
         }
-        if (birthYear < 1945)
+        // Померлі — ті, хто прожив би вже понад ~85 років.
+        if (birthYear + 85 < 2024)
         {
-            p["deathDate"] = Iso(birthYear + rnd.Next(62, 92), rnd.Next(1, 13), rnd.Next(1, 28));
+            p["deathDate"] = Iso(birthYear + rnd.Next(63, 90), rnd.Next(1, 13), rnd.Next(1, 28));
         }
 
         persons.Add(p);
@@ -85,53 +92,54 @@ void GenerateFile(int target, int seed, string title, string fileName)
         ["marriageDate"] = Iso(year, rnd.Next(1, 13), rnd.Next(1, 28)),
     });
 
-    var queue = new Queue<(string FatherId, string FatherFirst, string MotherId, string Surname, int BirthYear)>();
+    // Черга подружніх пар: (fatherId, fatherFirst, motherId, childrenSurname, generation, parentsBirthYear)
+    var queue = new Queue<(string FatherId, string FatherFirst, string MotherId, string Surname, int Generation, int BirthYear)>();
 
     var founderSurname = surnames[rnd.Next(surnames.Length)];
-    var husband = AddPerson(founderSurname, female: false, 1900, fatherFirst: null, maiden: null);
-    var wife = AddPerson(founderSurname, female: true, 1902, fatherFirst: null, maiden: surnames[rnd.Next(surnames.Length)]);
-    Marry((string)husband["id"]!, (string)wife["id"]!, 1922);
-    queue.Enqueue(((string)husband["id"]!, (string)husband["firstName"]!, (string)wife["id"]!, founderSurname, 1902));
+    var husband = AddPerson(founderSurname, female: false, baseYear, fatherFirst: null, maiden: null);
+    var wife = AddPerson(founderSurname, female: true, baseYear + rnd.Next(-2, 3), fatherFirst: null, maiden: surnames[rnd.Next(surnames.Length)]);
+    Marry((string)husband["id"]!, (string)wife["id"]!, baseYear + rnd.Next(22, 28));
+    queue.Enqueue(((string)husband["id"]!, (string)husband["firstName"]!, (string)wife["id"]!, founderSurname, 0, baseYear));
 
-    while (persons.Count < target && queue.Count > 0)
+    while (queue.Count > 0 && persons.Count < maxPersons)
     {
-        var (fatherId, fatherFirst, motherId, surname, parentsBy) = queue.Dequeue();
-        var childrenCount = rnd.Next(1, 6);
-        var childBase = Math.Min(parentsBy + 24 + rnd.Next(0, 4), 2016);
-        var marriedAny = false;
+        var (fatherId, fatherFirst, motherId, surname, generation, parentsBy) = queue.Dequeue();
+        if (generation >= generations - 1)
+        {
+            continue; // останнє покоління дітей не має
+        }
 
-        for (var c = 0; c < childrenCount && persons.Count < target; c++)
+        var childrenCount = rnd.Next(2, 5); // 2..4
+        var childGeneration = generation + 1;
+
+        for (var c = 0; c < childrenCount && persons.Count < maxPersons; c++)
         {
             var female = rnd.NextDouble() < 0.5;
-            var childBy = Math.Min(childBase + rnd.Next(0, 4), 2018);
-            var child = AddPerson(surname, female, childBy, fatherFirst, maiden: null);
+            var childBirth = parentsBy + rnd.Next(24, 43); // батькам 24–42 роки
+            var child = AddPerson(surname, female, childBirth, fatherFirst, maiden: null);
             var childId = (string)child["id"]!;
             Link(fatherId, childId);
             Link(motherId, childId);
 
-            // Гарантуємо продовження роду: щонайменше одна дитина в парі одружується
-            // (доки не досягнуто цілі), тож черга не порожніє передчасно.
-            var forceMarry = !marriedAny && c == childrenCount - 1;
-            if (persons.Count < target && (rnd.NextDouble() < 0.85 || forceMarry))
+            // Одружуємо лише тих, хто НЕ в останньому поколінні (щоб мали власних дітей).
+            if (childGeneration < generations - 1 && persons.Count < maxPersons)
             {
-                var marryYear = childBy + rnd.Next(22, 28);
+                var marryYear = childBirth + rnd.Next(20, 30); // шлюб у 20–29 років
                 if (female)
                 {
                     var hSurname = surnames[rnd.Next(surnames.Length)];
-                    var spouse = AddPerson(hSurname, female: false, childBy + rnd.Next(-3, 4), fatherFirst: null, maiden: null);
+                    var spouse = AddPerson(hSurname, female: false, childBirth + rnd.Next(-3, 4), fatherFirst: null, maiden: null);
                     var spouseId = (string)spouse["id"]!;
                     Marry(childId, spouseId, marryYear);
-                    queue.Enqueue((spouseId, (string)spouse["firstName"]!, childId, hSurname, childBy));
+                    queue.Enqueue((spouseId, (string)spouse["firstName"]!, childId, hSurname, childGeneration, childBirth));
                 }
                 else
                 {
-                    var spouse = AddPerson(surname, female: true, childBy + rnd.Next(-3, 4), fatherFirst: null, maiden: surnames[rnd.Next(surnames.Length)]);
+                    var spouse = AddPerson(surname, female: true, childBirth + rnd.Next(-3, 4), fatherFirst: null, maiden: surnames[rnd.Next(surnames.Length)]);
                     var spouseId = (string)spouse["id"]!;
                     Marry(childId, spouseId, marryYear);
-                    queue.Enqueue((childId, (string)child["firstName"]!, spouseId, surname, childBy));
+                    queue.Enqueue((childId, (string)child["firstName"]!, spouseId, surname, childGeneration, childBirth));
                 }
-
-                marriedAny = true;
             }
         }
     }
@@ -153,7 +161,7 @@ void GenerateFile(int target, int seed, string title, string fileName)
 
     var path = Path.Combine(outputDir, fileName);
     File.WriteAllText(path, JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }));
-    Console.WriteLine($"{fileName}: {persons.Count} осіб, {parentChildLinks.Count} зв'язків, {spouseLinks.Count} шлюбів → {path}");
+    Console.WriteLine($"{fileName}: {generations} поколінь, {persons.Count} осіб, {parentChildLinks.Count} зв'язків, {spouseLinks.Count} шлюбів → {path}");
 }
 
 static string ResolveSamplesDir()
