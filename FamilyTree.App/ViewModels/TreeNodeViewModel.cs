@@ -51,4 +51,8 @@ public partial class TreeNodeViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected;
+
+    /// <summary>Підсвічений вузол (наведення на суміжне ребро).</summary>
+    [ObservableProperty]
+    private bool _isHighlighted;
 }

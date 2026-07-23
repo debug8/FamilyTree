@@ -100,6 +100,38 @@ public partial class TreeCanvasControl : UserControl
         }
     }
 
+    private void Node_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TreeNodeViewModel node } && DataContext is TreeViewModel vm)
+        {
+            vm.HighlightChildrenOf(node.PersonId);
+        }
+    }
+
+    private void Couple_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: CoupleBoxViewModel couple } && DataContext is TreeViewModel vm)
+        {
+            vm.HighlightChildrenOfCouple(couple.MemberA, couple.MemberB);
+        }
+    }
+
+    private void Edge_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TreeEdgeViewModel edge } && DataContext is TreeViewModel vm)
+        {
+            vm.HighlightEdge(edge);
+        }
+    }
+
+    private void ClearHighlight(object sender, MouseEventArgs e)
+    {
+        if (DataContext is TreeViewModel vm)
+        {
+            vm.ClearHighlight();
+        }
+    }
+
     private void Fit_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not TreeViewModel vm || vm.CanvasWidth <= 0 || vm.CanvasHeight <= 0)

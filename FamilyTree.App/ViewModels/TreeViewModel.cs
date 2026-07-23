@@ -94,6 +94,52 @@ public partial class TreeViewModel : ObservableObject
         }
     }
 
+    /// <summary>Підсвітити ребра, що йдуть до дітей вказаної особи.</summary>
+    public void HighlightChildrenOf(Guid parentId)
+    {
+        foreach (var edge in Edges)
+        {
+            edge.IsHighlighted = edge.ParentIds.Contains(parentId);
+        }
+    }
+
+    /// <summary>Підсвітити ребра до спільних дітей подружжя (від рамки шлюбу).</summary>
+    public void HighlightChildrenOfCouple(Guid a, Guid b)
+    {
+        foreach (var edge in Edges)
+        {
+            edge.IsHighlighted = edge.ParentIds.Contains(a) && edge.ParentIds.Contains(b);
+        }
+    }
+
+    /// <summary>Підсвітити ребро та обидві особи, які воно з'єднує.</summary>
+    public void HighlightEdge(TreeEdgeViewModel edge)
+    {
+        foreach (var e in Edges)
+        {
+            e.IsHighlighted = ReferenceEquals(e, edge);
+        }
+
+        foreach (var node in Nodes)
+        {
+            node.IsHighlighted = edge.EndpointIds.Contains(node.PersonId);
+        }
+    }
+
+    /// <summary>Зняти підсвітку з усіх ребер і вузлів.</summary>
+    public void ClearHighlight()
+    {
+        foreach (var edge in Edges)
+        {
+            edge.IsHighlighted = false;
+        }
+
+        foreach (var node in Nodes)
+        {
+            node.IsHighlighted = false;
+        }
+    }
+
     partial void OnSelectedModeChanged(TreeModeOption value)
     {
         if (value is not null)
@@ -176,12 +222,14 @@ public partial class TreeViewModel : ObservableObject
                     var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
                     var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
                     Couples.Add(new CoupleBoxViewModel(left, top, width, height,
-                        BuildCoupleTooltip(edge.FromId, edge.ToId, doc, persons)));
+                        BuildCoupleTooltip(edge.FromId, edge.ToId, doc, persons),
+                        edge.FromId, edge.ToId));
                     coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
                 }
                 else
                 {
-                    Edges.Add(new TreeEdgeViewModel(a.X + halfW, a.Y + halfH, b.X + halfW, b.Y + halfH, IsSpouse: true));
+                    Edges.Add(new TreeEdgeViewModel(a.X + halfW, a.Y + halfH, b.X + halfW, b.Y + halfH, isSpouse: true,
+                        endpointIds: new HashSet<Guid> { edge.FromId, edge.ToId }));
                 }
 
                 continue;
@@ -209,7 +257,9 @@ public partial class TreeViewModel : ObservableObject
             {
                 if (parentIds.Contains(couple.A) && parentIds.Contains(couple.B))
                 {
-                    Edges.Add(new TreeEdgeViewModel(couple.X, couple.Y, childX, childY, IsSpouse: false));
+                    Edges.Add(new TreeEdgeViewModel(couple.X, couple.Y, childX, childY, isSpouse: false,
+                        parentIds: new HashSet<Guid> { couple.A, couple.B },
+                        endpointIds: new HashSet<Guid> { couple.A, couple.B, childId }));
                     handled.Add(couple.A);
                     handled.Add(couple.B);
                 }
@@ -225,7 +275,9 @@ public partial class TreeViewModel : ObservableObject
 
                 var parent = positions[parentId];
                 Edges.Add(new TreeEdgeViewModel(
-                    parent.X + halfW, parent.Y + TreeLayoutEngine.NodeHeight, childX, childY, IsSpouse: false));
+                    parent.X + halfW, parent.Y + TreeLayoutEngine.NodeHeight, childX, childY, isSpouse: false,
+                    parentIds: new HashSet<Guid> { parentId },
+                    endpointIds: new HashSet<Guid> { parentId, childId }));
             }
         }
 

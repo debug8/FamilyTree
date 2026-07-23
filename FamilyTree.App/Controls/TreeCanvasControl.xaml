@@ -53,7 +53,8 @@
                             <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
                                     Background="#22D64545" BorderBrush="#D64545" BorderThickness="1.5"
                                     ToolTip="{Binding Tooltip}"
-                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000" />
+                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
+                                    MouseEnter="Couple_MouseEnter" MouseLeave="ClearHighlight" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -65,20 +66,33 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
-                                  StrokeThickness="1.5">
-                                <Line.Style>
-                                    <Style TargetType="Line">
-                                        <Setter Property="Stroke" Value="{DynamicResource BorderBrush}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsSpouse}" Value="True">
-                                                <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
-                                                <Setter Property="StrokeDashArray" Value="3 2" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Line.Style>
-                            </Line>
+                            <Canvas>
+                                <!-- Прозора товста лінія — зручна зона наведення -->
+                                <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
+                                      Stroke="Transparent" StrokeThickness="10"
+                                      MouseEnter="Edge_MouseEnter" MouseLeave="ClearHighlight" />
+                                <!-- Видима лінія -->
+                                <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
+                                      IsHitTestVisible="False">
+                                    <Line.Style>
+                                        <Style TargetType="Line">
+                                            <Setter Property="Stroke" Value="{DynamicResource BorderBrush}" />
+                                            <Setter Property="StrokeThickness" Value="1.5" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSpouse}" Value="True">
+                                                    <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+                                                    <Setter Property="StrokeDashArray" Value="3 2" />
+                                                </DataTrigger>
+                                                <!-- Наведення на особу/шлюб/ребро → помаранчева підсвітка -->
+                                                <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                                    <Setter Property="Stroke" Value="#FF8C00" />
+                                                    <Setter Property="StrokeThickness" Value="3.5" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Line.Style>
+                                </Line>
+                            </Canvas>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -99,6 +113,7 @@
                             <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="8"
                                     Background="{DynamicResource SurfaceBrush}" BorderThickness="1.5"
                                     MouseLeftButtonDown="Node_MouseLeftButtonDown" Cursor="Hand"
+                                    MouseEnter="Node_MouseEnter" MouseLeave="ClearHighlight"
                                     ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="60000"
                                     ToolTipService.BetweenShowDelay="0">
                                 <Border.ToolTip>
@@ -163,6 +178,11 @@
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                 <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                <Setter Property="BorderThickness" Value="2.5" />
+                                            </DataTrigger>
+                                            <!-- Наведення на суміжне ребро → помаранчева рамка -->
+                                            <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#FF8C00" />
                                                 <Setter Property="BorderThickness" Value="2.5" />
                                             </DataTrigger>
                                         </Style.Triggers>
