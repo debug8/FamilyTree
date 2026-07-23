@@ -407,7 +407,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void RemoveParent(Person? parent)
     {
-        if (SelectedPerson is { } child && parent is not null)
+        if (SelectedPerson is { } child && parent is not null
+            && ConfirmRemoveRelation("Relation_RemoveParent_Confirm", parent.FullName, child.FullName))
         {
             _session.Current.ParentChildLinks.RemoveAll(l => l.ParentId == parent.Id && l.ChildId == child.Id);
             _session.MarkContentChanged();
@@ -417,7 +418,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void RemoveChild(Person? child)
     {
-        if (SelectedPerson is { } parent && child is not null)
+        if (SelectedPerson is { } parent && child is not null
+            && ConfirmRemoveRelation("Relation_RemoveChild_Confirm", child.FullName, parent.FullName))
         {
             _session.Current.ParentChildLinks.RemoveAll(l => l.ParentId == parent.Id && l.ChildId == child.Id);
             _session.MarkContentChanged();
@@ -425,13 +427,43 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void EditSpouse(Person? spouse)
+    {
+        if (SelectedPerson is not { } person || spouse is null)
+        {
+            return;
+        }
+
+        var link = _session.Current.SpouseLinks.FirstOrDefault(l => l.Involves(person.Id) && l.Involves(spouse.Id));
+        if (link is null)
+        {
+            return;
+        }
+
+        var editor = RelationshipEditorViewModel.ForSpouseEdit(person, spouse, link.MarriageDate, link.DivorceDate);
+        if (_dialogs.ShowRelationshipEditor(editor))
+        {
+            link.MarriageDate = editor.MarriageDateOnly;
+            link.DivorceDate = editor.DivorceDateOnly;
+            _session.MarkContentChanged();
+        }
+    }
+
+    [RelayCommand]
     private void RemoveSpouse(Person? spouse)
     {
-        if (SelectedPerson is { } person && spouse is not null)
+        if (SelectedPerson is { } person && spouse is not null
+            && ConfirmRemoveRelation("Relation_RemoveSpouse_Confirm", spouse.FullName, person.FullName))
         {
             _session.Current.SpouseLinks.RemoveAll(l => l.Involves(person.Id) && l.Involves(spouse.Id));
             _session.MarkContentChanged();
         }
+    }
+
+    private bool ConfirmRemoveRelation(string messageKey, string relativeName, string personName)
+    {
+        var message = string.Format(_localization.GetString(messageKey), relativeName, personName);
+        return _dialogs.Confirm(message, _localization.GetString("Relation_Remove_Title"));
     }
 
     private Person? PickPerson(RelationshipRole role, Person basePerson)

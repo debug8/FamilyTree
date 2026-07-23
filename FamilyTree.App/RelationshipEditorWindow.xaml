@@ -18,7 +18,8 @@
         <TextBox Grid.Row="0" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,10"
                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
 
-        <ListBox Grid.Row="1" ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate}"
+        <ListBox Grid.Row="1" IsEnabled="{Binding CanPickCandidate}"
+                 ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate}"
                  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource SurfaceBrush}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -49,7 +50,7 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="{loc:Localize Common_Cancel}" MinWidth="90" Margin="0,0,10,0"
                     IsCancel="True" Click="Cancel_Click" />
-            <Button Content="{loc:Localize Common_Add}" MinWidth="90"
+            <Button Content="{Binding ConfirmKey, Converter={StaticResource LocalizeConverter}}" MinWidth="90"
                     Style="{StaticResource PrimaryButtonStyle}"
                     IsEnabled="{Binding CanConfirm}" Click="Confirm_Click" />
         </StackPanel>

@@ -51,8 +51,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
-                                    Background="{DynamicResource BackgroundBrush}"
-                                    BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1.5" />
+                                    Background="#22D64545"
+                                    BorderBrush="#D64545" BorderThickness="1.5" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

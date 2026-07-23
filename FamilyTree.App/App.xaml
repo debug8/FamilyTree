@@ -53,6 +53,10 @@
             <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
             <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+            <!-- Іконки (viewBox 24) для кнопок дій -->
+            <StreamGeometry x:Key="TrashGeometry">M6 7 H18 L16.8 21 H7.2 Z M4 5 H20 V6.8 H4 Z M9.5 3 H14.5 V4.8 H9.5 Z M9.5 9 H10.7 V19 H9.5 Z M13.3 9 H14.5 V19 H13.3 Z</StreamGeometry>
+            <StreamGeometry x:Key="PencilGeometry">M4 20 L4 16 L14 6 L18 10 L8 20 Z M15 5 L17 3 L21 7 L19 9 Z</StreamGeometry>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

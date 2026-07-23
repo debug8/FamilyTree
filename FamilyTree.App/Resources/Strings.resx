@@ -130,6 +130,18 @@
   <data name="Person_Delete_Confirm" xml:space="preserve">
     <value>Видалити «{0}»? Буде також вилучено зв'язків: {1}.</value>
   </data>
+  <data name="Relation_Remove_Title" xml:space="preserve">
+    <value>Видалення зв'язку</value>
+  </data>
+  <data name="Relation_RemoveParent_Confirm" xml:space="preserve">
+    <value>Вилучити «{0}» зі списку батьків особи «{1}»?</value>
+  </data>
+  <data name="Relation_RemoveChild_Confirm" xml:space="preserve">
+    <value>Вилучити «{0}» зі списку дітей особи «{1}»?</value>
+  </data>
+  <data name="Relation_RemoveSpouse_Confirm" xml:space="preserve">
+    <value>Вилучити подружній зв'язок «{0}» з особою «{1}»?</value>
+  </data>
   <data name="Person_Editor_Title_New" xml:space="preserve">
     <value>Нова особа</value>
   </data>
@@ -192,6 +204,9 @@
   </data>
   <data name="Rel_AddSpouse" xml:space="preserve">
     <value>Додати подружжя</value>
+  </data>
+  <data name="Rel_EditSpouse" xml:space="preserve">
+    <value>Редагувати подружжя</value>
   </data>
   <data name="Rel_MarriageDate" xml:space="preserve">
     <value>Дата шлюбу</value>

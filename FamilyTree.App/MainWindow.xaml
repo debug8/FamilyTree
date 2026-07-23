@@ -148,65 +148,90 @@
                     <TextBlock Text="{Binding SelectedPerson.FullName}" Style="{StaticResource HeadingTextStyle}" Margin="0,0,0,16" />
 
                     <!-- Батьки -->
-                    <DockPanel Margin="0,0,0,4">
-                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
-                                Command="{Binding AddParentCommand}" Padding="10,4" />
+                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                         <TextBlock Text="{loc:Localize Rel_Parents}" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                    </DockPanel>
+                                <Button DockPanel.Dock="Left" Content="{loc:Localize Common_Add}"
+                                Command="{Binding AddParentCommand}" Padding="10,4" Margin="10,2" />
+                            </StackPanel>
                     <ItemsControl ItemsSource="{Binding Parents}" Margin="0,0,0,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="0,2">
-                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
-                                            Command="{Binding DataContext.RemoveParentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}" />
-                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                <Grid Margin="0,3" HorizontalAlignment="Left">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding FullName}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
                                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                                </DockPanel>
+                                    <Button Grid.Column="1" ToolTip="{loc:Localize Common_Delete}" Padding="6,3" Margin="6,0,0,0"
+                                            Command="{Binding DataContext.RemoveParentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                              Width="15" Height="15" Stretch="Uniform" />
+                                    </Button>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
                     <!-- Діти -->
-                    <DockPanel Margin="0,0,0,4">
-                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
-                                Command="{Binding AddChildCommand}" Padding="10,4" />
-                        <TextBlock Text="{loc:Localize Rel_Children}" FontWeight="SemiBold"
+                            <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                                <TextBlock Text="{loc:Localize Rel_Children}" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                    </DockPanel>
+                                <Button DockPanel.Dock="Left" Content="{loc:Localize Common_Add}"
+                                        Command="{Binding AddChildCommand}" Padding="10,4" Margin="10,4" />
+                            </StackPanel>
                     <ItemsControl ItemsSource="{Binding Children}" Margin="0,0,0,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="0,2">
-                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
-                                            Command="{Binding DataContext.RemoveChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}" />
-                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                <Grid Margin="0,3" HorizontalAlignment="Left">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding FullName}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
                                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                                </DockPanel>
+                                    <Button Grid.Column="1" ToolTip="{loc:Localize Common_Delete}" Padding="6,3" Margin="6,0,0,0"
+                                            Command="{Binding DataContext.RemoveChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                              Width="15" Height="15" Stretch="Uniform" />
+                                    </Button>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
                     <!-- Подружжя -->
-                    <DockPanel Margin="0,0,0,4">
-                        <Button DockPanel.Dock="Right" Content="{loc:Localize Common_Add}"
-                                Command="{Binding AddSpouseCommand}" Padding="10,4" />
+                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                         <TextBlock Text="{loc:Localize Rel_Spouses}" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                    </DockPanel>
+                        <Button DockPanel.Dock="Left" Content="{loc:Localize Common_Add}"
+                                Command="{Binding AddSpouseCommand}" Padding="10,4" Margin="10,4" />
+                    </StackPanel>
                     <ItemsControl ItemsSource="{Binding Spouses}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="0,2">
-                                    <Button DockPanel.Dock="Right" Content="✕" Padding="6,0" MinWidth="24"
-                                            Command="{Binding DataContext.RemoveSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}" />
-                                    <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
+                                        <StackPanel Margin="0,2" Orientation="Horizontal">
+                                            <TextBlock Text="{Binding FullName}" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                                </DockPanel>
-                            </DataTemplate>
+                                            <Button DockPanel.Dock="Right" ToolTip="{loc:Localize Common_Edit}" Padding="6,3" Margin="10,4"
+                                                Command="{Binding DataContext.EditSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}">
+                                                <Path Data="{StaticResource PencilGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                    Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                            <Button DockPanel.Dock="Right" ToolTip="{loc:Localize Common_Delete}" Padding="6,3" Margin="10,4"
+                                                Command="{Binding DataContext.RemoveSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}">
+                                                <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                    Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>

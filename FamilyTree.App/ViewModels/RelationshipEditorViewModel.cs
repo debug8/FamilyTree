@@ -40,17 +40,43 @@ public partial class RelationshipEditorViewModel : ObservableObject
 
     public Person BasePerson { get; }
 
+    /// <summary>Режим редагування наявного зв'язку (особу-контрагента вибрано й зафіксовано).</summary>
+    public bool IsEditMode { get; private init; }
+
+    /// <summary>Чи можна змінювати особу-контрагента (ні — у режимі редагування).</summary>
+    public bool CanPickCandidate => !IsEditMode;
+
+    /// <summary>Ключ підпису кнопки підтвердження.</summary>
+    public string ConfirmKey => IsEditMode ? "Common_Save" : "Common_Add";
+
     public bool IsSpouse => Role == RelationshipRole.Spouse;
+
+    /// <summary>Створює VM для редагування дат наявного подружжя.</summary>
+    public static RelationshipEditorViewModel ForSpouseEdit(
+        Person basePerson, Person spouse, DateOnly? marriageDate, DateOnly? divorceDate)
+    {
+        var vm = new RelationshipEditorViewModel(RelationshipRole.Spouse, basePerson, new[] { spouse })
+        {
+            IsEditMode = true,
+        };
+        vm.SelectedCandidate = spouse;
+        vm.IsMarried = divorceDate is null;
+        vm.MarriageDate = marriageDate is { } m ? m.ToDateTime(TimeOnly.MinValue) : null;
+        vm.DivorceDate = divorceDate is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
+        return vm;
+    }
 
     /// <summary>Показувати дату розлучення (лише для подружжя, коли шлюб не чинний).</summary>
     public bool ShowDivorceDate => IsSpouse && !IsMarried;
 
-    public string TitleKey => Role switch
-    {
-        RelationshipRole.Parent => "Rel_AddParent",
-        RelationshipRole.Child => "Rel_AddChild",
-        _ => "Rel_AddSpouse",
-    };
+    public string TitleKey => IsEditMode
+        ? "Rel_EditSpouse"
+        : Role switch
+        {
+            RelationshipRole.Parent => "Rel_AddParent",
+            RelationshipRole.Child => "Rel_AddChild",
+            _ => "Rel_AddSpouse",
+        };
 
     public ObservableCollection<Person> Candidates { get; } = new();
 
