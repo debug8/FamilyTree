@@ -40,6 +40,10 @@ public partial class PersonEditorViewModel : ObservableValidator
     private string? _birthPlace;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDeathDate))]
+    private bool _isAlive = true;
+
+    [ObservableProperty]
     private DateTime? _deathDate;
 
     [ObservableProperty]
@@ -59,6 +63,7 @@ public partial class PersonEditorViewModel : ObservableValidator
             _birthDate = ToDateTime(existing.BirthDate);
             _birthPlace = existing.BirthPlace;
             _deathDate = ToDateTime(existing.DeathDate);
+            _isAlive = existing.DeathDate is null;
             _notes = existing.Notes;
         }
 
@@ -70,6 +75,9 @@ public partial class PersonEditorViewModel : ObservableValidator
     }
 
     public bool IsEditMode => _existing is not null;
+
+    /// <summary>Показувати поле дати смерті (лише коли особа не жива).</summary>
+    public bool ShowDeathDate => !IsAlive;
 
     /// <summary>Результат після успішного збереження (особа, створена чи оновлена).</summary>
     public Person? Result { get; private set; }
@@ -112,12 +120,20 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.MaidenName = Normalize(MaidenName);
         person.BirthDate = ToDateOnly(BirthDate);
         person.BirthPlace = Normalize(BirthPlace);
-        person.DeathDate = ToDateOnly(DeathDate);
+        person.DeathDate = IsAlive ? null : ToDateOnly(DeathDate);
         person.Notes = Normalize(Notes);
         person.UpdatedAt = DateTime.UtcNow;
 
         Result = person;
         return person;
+    }
+
+    partial void OnIsAliveChanged(bool value)
+    {
+        if (value)
+        {
+            DeathDate = null;
+        }
     }
 
     private static string? Normalize(string? value) =>

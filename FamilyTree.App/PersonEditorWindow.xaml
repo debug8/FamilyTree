@@ -56,8 +56,13 @@
                 <TextBox Style="{StaticResource InputTextBoxStyle}"
                          Text="{Binding BirthPlace, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Text="{loc:Localize Person_DeathDate}" Style="{StaticResource FieldLabel}" />
-                <DatePicker SelectedDate="{Binding DeathDate}" HorizontalAlignment="Left" MinWidth="200" />
+                <CheckBox Content="{loc:Localize Person_IsAlive}" IsChecked="{Binding IsAlive}"
+                          Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,14,0,0" />
+
+                <StackPanel Visibility="{Binding ShowDeathDate, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{loc:Localize Person_DeathDate}" Style="{StaticResource FieldLabel}" />
+                    <DatePicker SelectedDate="{Binding DeathDate}" HorizontalAlignment="Left" MinWidth="200" />
+                </StackPanel>
 
                 <TextBlock Text="{loc:Localize Person_Notes}" Style="{StaticResource FieldLabel}" />
                 <TextBox Style="{StaticResource InputTextBoxStyle}"

@@ -157,6 +157,9 @@
   <data name="Person_BirthPlace" xml:space="preserve">
     <value>Birth place</value>
   </data>
+  <data name="Person_IsAlive" xml:space="preserve">
+    <value>Alive</value>
+  </data>
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Death date</value>
   </data>
