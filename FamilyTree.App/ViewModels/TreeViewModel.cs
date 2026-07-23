@@ -40,6 +40,9 @@ public partial class TreeViewModel : ObservableObject
     private int _depth = 3;
 
     [ObservableProperty]
+    private bool _showGenerationBands = true;
+
+    [ObservableProperty]
     private double _canvasWidth;
 
     [ObservableProperty]
@@ -77,6 +80,9 @@ public partial class TreeViewModel : ObservableObject
 
     /// <summary>Рамки навколо подружжя в чинному шлюбі (позаду карток).</summary>
     public ObservableCollection<CoupleBoxViewModel> Couples { get; } = new();
+
+    /// <summary>Напівпрозорі смуги-фони поколінь (позаду всього).</summary>
+    public ObservableCollection<GenerationBandViewModel> Bands { get; } = new();
 
     /// <summary>Задає кореневу особу й перебудовує дерево.</summary>
     public void SetRoot(Guid? rootId)
@@ -152,11 +158,14 @@ public partial class TreeViewModel : ObservableObject
 
     partial void OnDepthChanged(int value) => Rebuild();
 
+    partial void OnShowGenerationBandsChanged(bool value) => Rebuild();
+
     private void Rebuild()
     {
         Nodes.Clear();
         Edges.Clear();
         Couples.Clear();
+        Bands.Clear();
 
         if (_rootId is not { } rootId)
         {
@@ -281,8 +290,37 @@ public partial class TreeViewModel : ObservableObject
             }
         }
 
+        if (ShowGenerationBands)
+        {
+            BuildBands(layout.Nodes.Select(n => n.Y), layout.Width);
+        }
+
         CanvasWidth = layout.Width;
         CanvasHeight = layout.Height;
+    }
+
+    /// <summary>Дві напівпрозорі смуги поколінь, що чергуються: світліша та темніша
+    /// (один відтінок, трохи насичений — працює в обох темах).</summary>
+    private static readonly string[] BandPalette =
+    {
+        "#1A3A8FD6", // світліша
+        "#3A2F72B0", // темніша
+    };
+
+    /// <summary>Будує смугу-фон для кожного покоління (унікального Y-рядка).</summary>
+    private void BuildBands(IEnumerable<double> nodeYs, double width)
+    {
+        const double pad = TreeLayoutEngine.VerticalGap / 2;
+        var rows = nodeYs.Distinct().OrderBy(y => y).ToList();
+        for (var i = 0; i < rows.Count; i++)
+        {
+            Bands.Add(new GenerationBandViewModel(
+                X: 0,
+                Y: rows[i] - pad,
+                Width: width,
+                Height: TreeLayoutEngine.NodeHeight + 2 * pad,
+                Fill: BandPalette[i % BandPalette.Length]));
+        }
     }
 
     private static string FormatYears(Person person)

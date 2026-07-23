@@ -25,6 +25,10 @@
 
             <Button Content="{loc:Localize Tree_Fit}" Padding="10,4" Margin="16,0,6,0" Click="Fit_Click" />
             <Button Content="100%" Padding="10,4" Click="Reset_Click" />
+
+            <CheckBox Content="{loc:Localize Tree_Bands}" IsChecked="{Binding ShowGenerationBands}"
+                      VerticalAlignment="Center" Margin="16,0,0,0"
+                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
         <ScrollViewer x:Name="Scroller"
@@ -35,7 +39,7 @@
             <ctrl:FamilyGraphSurface x:Name="Surface" Interactive="True"
                                      HorizontalAlignment="Left" VerticalAlignment="Top"
                                      NodesSource="{Binding Nodes}" EdgesSource="{Binding Edges}"
-                                     CouplesSource="{Binding Couples}"
+                                     CouplesSource="{Binding Couples}" BandsSource="{Binding Bands}"
                                      SceneWidth="{Binding CanvasWidth}" SceneHeight="{Binding CanvasHeight}" />
         </ScrollViewer>
     </DockPanel>

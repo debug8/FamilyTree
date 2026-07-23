@@ -23,6 +23,9 @@ public partial class FamilyGraphSurface : UserControl
     public static readonly DependencyProperty CouplesSourceProperty = DependencyProperty.Register(
         nameof(CouplesSource), typeof(IEnumerable), typeof(FamilyGraphSurface));
 
+    public static readonly DependencyProperty BandsSourceProperty = DependencyProperty.Register(
+        nameof(BandsSource), typeof(IEnumerable), typeof(FamilyGraphSurface));
+
     public static readonly DependencyProperty SceneWidthProperty = DependencyProperty.Register(
         nameof(SceneWidth), typeof(double), typeof(FamilyGraphSurface), new PropertyMetadata(0.0));
 
@@ -71,6 +74,13 @@ public partial class FamilyGraphSurface : UserControl
     {
         get => (IEnumerable?)GetValue(CouplesSourceProperty);
         set => SetValue(CouplesSourceProperty, value);
+    }
+
+    /// <summary>Смуги-фони поколінь (малюються позаду всього).</summary>
+    public IEnumerable? BandsSource
+    {
+        get => (IEnumerable?)GetValue(BandsSourceProperty);
+        set => SetValue(BandsSourceProperty, value);
     }
 
     public double SceneWidth

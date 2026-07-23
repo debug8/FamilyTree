@@ -286,6 +286,9 @@
   <data name="Tree_You" xml:space="preserve">
     <value>я</value>
   </data>
+  <data name="Tree_Bands" xml:space="preserve">
+    <value>Смуги поколінь</value>
+  </data>
   <data name="Tree_Card_Marriage" xml:space="preserve">
     <value>Шлюб</value>
   </data>

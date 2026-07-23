@@ -9,6 +9,25 @@
             Height="{Binding SceneHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
             HorizontalAlignment="Left" VerticalAlignment="Top">
 
+        <!-- Смуги-фони поколінь (найглибший шар) -->
+        <ItemsControl ItemsSource="{Binding BandsSource, RelativeSource={RelativeSource AncestorType=UserControl}}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left" Value="{Binding X}" />
+                    <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Rectangle Width="{Binding Width}" Height="{Binding Height}" Fill="{Binding Fill}"
+                               IsHitTestVisible="False" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- Рамки подружжя (чинний шлюб) -->
         <ItemsControl ItemsSource="{Binding CouplesSource, RelativeSource={RelativeSource AncestorType=UserControl}}">
             <ItemsControl.ItemsPanel>
