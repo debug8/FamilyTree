@@ -286,6 +286,18 @@
   <data name="Tree_You" xml:space="preserve">
     <value>я</value>
   </data>
+  <data name="Tree_Card_Marriage" xml:space="preserve">
+    <value>Шлюб</value>
+  </data>
+  <data name="Tree_Card_Children" xml:space="preserve">
+    <value>Дітей</value>
+  </data>
+  <data name="Tree_Card_Photo" xml:space="preserve">
+    <value>Фото</value>
+  </data>
+  <data name="Tree_Card_MarriedSince" xml:space="preserve">
+    <value>У шлюбі з {0}</value>
+  </data>
   <data name="Tab_WhoIsWho" xml:space="preserve">
     <value>Хто кому</value>
   </data>

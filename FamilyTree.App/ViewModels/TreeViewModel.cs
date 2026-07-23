@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
 using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Layout;
+using FamilyTree.Storage;
 
 namespace FamilyTree.App.ViewModels;
 
@@ -142,6 +144,14 @@ public partial class TreeViewModel : ObservableObject
                 Years = FormatYears(person),
                 RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph, includeAffinity: true).DisplayName,
                 IsRoot = isRoot,
+                PhotoPath = ResolvePhoto(person.PhotoPath),
+                DetailMaiden = Line("Person_MaidenName", person.MaidenName),
+                DetailGender = Line("Person_Gender", GenderText(person.Gender)),
+                DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
+                DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDate(person.DeathDate)),
+                DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
+                DetailChildren = Line("Tree_Card_Children", graph.GetChildren(person.Id).Count.ToString(CultureInfo.CurrentCulture)),
+                DetailNotes = Line("Person_Notes", person.Notes),
             });
         }
 
@@ -165,7 +175,8 @@ public partial class TreeViewModel : ObservableObject
                     var top = Math.Min(a.Y, b.Y) - couplePad;
                     var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
                     var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
-                    Couples.Add(new CoupleBoxViewModel(left, top, width, height));
+                    Couples.Add(new CoupleBoxViewModel(left, top, width, height,
+                        BuildCoupleTooltip(edge.FromId, edge.ToId, doc, persons)));
                     coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
                 }
                 else
@@ -233,5 +244,101 @@ public partial class TreeViewModel : ObservableObject
             (null, not null) => $"–{death}",
             _ => $"{birth}–{death}",
         };
+    }
+
+    /// <summary>Рядок картки «Підпис: значення» або null, якщо значення порожнє (рядок ховається).</summary>
+    private string? Line(string labelKey, string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : $"{_localization.GetString(labelKey)}: {value}";
+
+    private string GenderText(Gender gender) => gender switch
+    {
+        Gender.Male => _localization.GetString("Gender_Male"),
+        Gender.Female => _localization.GetString("Gender_Female"),
+        _ => _localization.GetString("Gender_Unknown"),
+    };
+
+    private static string FormatDate(DateOnly? date) =>
+        date?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
+
+    /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
+    private static string FormatBirth(Person person)
+    {
+        var date = FormatDate(person.BirthDate);
+        var place = person.BirthPlace;
+        return (date, hasPlace: !string.IsNullOrWhiteSpace(place)) switch
+        {
+            ("", false) => string.Empty,
+            ("", true) => place!,
+            (_, false) => date,
+            _ => $"{date} · {place}",
+        };
+    }
+
+    /// <summary>Подружжя: «Ім'я (рік шлюбу — рік розлучення)», кілька — через «; ».</summary>
+    private static string FormatMarriages(Person person, FamilyDocument doc, IReadOnlyDictionary<Guid, Person> persons)
+    {
+        var parts = new List<string>();
+        foreach (var link in doc.SpouseLinks.Where(l => l.Involves(person.Id)))
+        {
+            var otherId = link.Person1Id == person.Id ? link.Person2Id : link.Person1Id;
+            if (!persons.TryGetValue(otherId, out var other))
+            {
+                continue;
+            }
+
+            var period = FormatMarriagePeriod(link);
+            parts.Add(period.Length > 0 ? $"{other.FullName} ({period})" : other.FullName);
+        }
+
+        return string.Join("; ", parts);
+    }
+
+    /// <summary>Короткий опис шлюбу для тултіпа рамки: «Ім'я ♥ Ім'я · у шлюбі з 2005».</summary>
+    private string? BuildCoupleTooltip(Guid aId, Guid bId, FamilyDocument doc, IReadOnlyDictionary<Guid, Person> persons)
+    {
+        if (!persons.TryGetValue(aId, out var a) || !persons.TryGetValue(bId, out var b))
+        {
+            return null;
+        }
+
+        var couple = $"{a.FullName}  ♥  {b.FullName}";
+        var link = doc.SpouseLinks.FirstOrDefault(l => l.Involves(aId) && l.Involves(bId));
+        if (link?.MarriageDate is not { } date)
+        {
+            return couple;
+        }
+
+        var since = string.Format(
+            _localization.GetString("Tree_Card_MarriedSince"),
+            date.ToString("d", CultureInfo.CurrentCulture));
+        return $"{couple}\n{since}";
+    }
+
+    private static string FormatMarriagePeriod(SpouseLink link)
+    {
+        var from = link.MarriageDate?.Year.ToString(CultureInfo.InvariantCulture);
+        var to = link.DivorceDate?.Year.ToString(CultureInfo.InvariantCulture);
+        return (from, to) switch
+        {
+            (null, null) => string.Empty,
+            (not null, null) => from!,
+            (null, not null) => $"… – {to}",
+            _ => $"{from} – {to}",
+        };
+    }
+
+    /// <summary>Абсолютний шлях до фото у папці даних (поки лише резолвинг; місце під фото).</summary>
+    private static string? ResolvePhoto(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+        {
+            return null;
+        }
+
+        return Path.IsPathRooted(relativePath)
+            ? relativePath
+            : Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "FamilyTree", relativePath);
     }
 }

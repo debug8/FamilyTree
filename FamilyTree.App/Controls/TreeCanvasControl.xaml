@@ -51,8 +51,9 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
-                                    Background="#22D64545"
-                                    BorderBrush="#D64545" BorderThickness="1.5" />
+                                    Background="#22D64545" BorderBrush="#D64545" BorderThickness="1.5"
+                                    ToolTip="{Binding Tooltip}"
+                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -97,7 +98,61 @@
                         <DataTemplate>
                             <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="8"
                                     Background="{DynamicResource SurfaceBrush}" BorderThickness="1.5"
-                                    MouseLeftButtonDown="Node_MouseLeftButtonDown" Cursor="Hand">
+                                    MouseLeftButtonDown="Node_MouseLeftButtonDown" Cursor="Hand"
+                                    ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="60000"
+                                    ToolTipService.BetweenShowDelay="0">
+                                <Border.ToolTip>
+                                    <ToolTip Background="Transparent" BorderThickness="0" Padding="0" HasDropShadow="True">
+                                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14"
+                                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" MaxWidth="380">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- Місце під фото -->
+                                                <Border Width="92" Height="112" CornerRadius="6" Margin="0,0,14,0"
+                                                        Background="{DynamicResource BackgroundBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                        VerticalAlignment="Top">
+                                                    <Grid>
+                                                        <TextBlock Text="{loc:Localize Tree_Card_Photo}" FontSize="11"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Image Source="{Binding PhotoPath}" Stretch="UniformToFill" />
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Дані особи -->
+                                                <StackPanel MaxWidth="250">
+                                                    <TextBlock Text="{Binding FullName}" FontSize="15" FontWeight="Bold"
+                                                               TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding RelationBadge}" FontSize="12" Margin="0,1,0,6"
+                                                               Foreground="{DynamicResource PrimaryBrush}"
+                                                               Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
+
+                                                    <TextBlock Text="{Binding DetailMaiden}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailMaiden, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailGender}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailGender, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailBirth}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailBirth, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailDeath}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailDeath, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailMarriage}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailMarriage, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailChildren}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               Visibility="{Binding DetailChildren, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                    <TextBlock Text="{Binding DetailNotes}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                                               FontStyle="Italic" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               Visibility="{Binding DetailNotes, Converter={StaticResource NullToCollapsedConverter}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </ToolTip>
+                                </Border.ToolTip>
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />

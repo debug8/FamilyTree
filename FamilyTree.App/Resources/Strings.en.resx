@@ -286,6 +286,18 @@
   <data name="Tree_You" xml:space="preserve">
     <value>me</value>
   </data>
+  <data name="Tree_Card_Marriage" xml:space="preserve">
+    <value>Marriage</value>
+  </data>
+  <data name="Tree_Card_Children" xml:space="preserve">
+    <value>Children</value>
+  </data>
+  <data name="Tree_Card_Photo" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="Tree_Card_MarriedSince" xml:space="preserve">
+    <value>Married since {0}</value>
+  </data>
   <data name="Tab_WhoIsWho" xml:space="preserve">
     <value>Who is who</value>
   </data>

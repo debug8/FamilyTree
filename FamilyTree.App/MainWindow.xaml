@@ -240,7 +240,7 @@
         </TabItem>
 
         <TabItem Header="{loc:Localize Tab_Tree}">
-            <controls:TreeCanvasControl DataContext="{Binding Tree}" />
+                <controls:TreeCanvasControl DataContext="{Binding Tree}"/>
         </TabItem>
 
         <TabItem Header="{loc:Localize Tab_WhoIsWho}">
