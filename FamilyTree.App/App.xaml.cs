@@ -58,6 +58,7 @@ public partial class App : Application
         // Візуалізація дерева
         services.AddSingleton<TreeLayoutEngine>();
         services.AddSingleton<TreeViewModel>();
+        services.AddSingleton<WhoIsWhoViewModel>();
 
         // ViewModel-и
         services.AddSingleton<MainViewModel>();

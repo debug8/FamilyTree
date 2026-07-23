@@ -268,6 +268,21 @@
   <data name="Tree_You" xml:space="preserve">
     <value>me</value>
   </data>
+  <data name="Tab_WhoIsWho" xml:space="preserve">
+    <value>Who is who</value>
+  </data>
+  <data name="WhoIsWho_Person1" xml:space="preserve">
+    <value>Person 1</value>
+  </data>
+  <data name="WhoIsWho_Person2" xml:space="preserve">
+    <value>Person 2 (their relation to Person 1)</value>
+  </data>
+  <data name="WhoIsWho_Path" xml:space="preserve">
+    <value>Relationship path</value>
+  </data>
+  <data name="WhoIsWho_Hint" xml:space="preserve">
+    <value>Pick two people to see their kinship and the path between them.</value>
+  </data>
   <data name="Validation_SelfParent" xml:space="preserve">
     <value>A person cannot be their own parent.</value>
   </data>

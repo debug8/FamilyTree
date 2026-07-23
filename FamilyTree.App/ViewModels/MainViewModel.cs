@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly RelationshipValidator _validator;
     private readonly IFamilyStorage _storage;
     private readonly TreeViewModel _tree;
+    private readonly WhoIsWhoViewModel _whoIsWho;
     private readonly ISettingsService _settings;
 
     private CancellationTokenSource? _searchCts;
@@ -74,6 +75,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         RelationshipValidator validator,
         IFamilyStorage storage,
         TreeViewModel tree,
+        WhoIsWhoViewModel whoIsWho,
         ISettingsService settings)
     {
         _localization = localization;
@@ -84,6 +86,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _validator = validator;
         _storage = storage;
         _tree = tree;
+        _whoIsWho = whoIsWho;
         _settings = settings;
 
         _selectedLanguage = _localization.CurrentLanguage;
@@ -111,6 +114,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>ViewModel вкладки «Дерево».</summary>
     public TreeViewModel Tree => _tree;
+
+    /// <summary>ViewModel вкладки «Хто кому».</summary>
+    public WhoIsWhoViewModel WhoIsWho => _whoIsWho;
 
     public bool HasSelectedPerson => SelectedPerson is not null;
 

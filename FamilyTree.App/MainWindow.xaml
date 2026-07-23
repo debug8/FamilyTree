@@ -217,6 +217,10 @@
         <TabItem Header="{loc:Localize Tab_Tree}">
             <controls:TreeCanvasControl DataContext="{Binding Tree}" />
         </TabItem>
+
+        <TabItem Header="{loc:Localize Tab_WhoIsWho}">
+            <controls:WhoIsWhoControl DataContext="{Binding WhoIsWho}" />
+        </TabItem>
         </TabControl>
 
     </DockPanel>
