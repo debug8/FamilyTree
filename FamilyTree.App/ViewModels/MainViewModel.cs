@@ -303,6 +303,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void OpenSettings()
+    {
+        var vm = new SettingsViewModel(_localization, _theme, _kinshipFormatter, _settings, _tree);
+        _dialogs.ShowSettings(vm);
+        vm.Detach();
+
+        // Діалог застосовує зміни вживу; тут лише синхронізуємо тулбар і список останніх файлів.
+        SelectedLanguage = _localization.CurrentLanguage;
+        SelectedTheme = _theme.CurrentTheme;
+        SelectedNamingStyle = NamingStyles.First(s => s.Style == _kinshipFormatter.Style);
+        LoadRecentFiles();
+    }
+
+    [RelayCommand]
     private void Exit() => Application.Current.MainWindow?.Close();
 
     /// <summary>Запит про незбережені зміни. true — можна продовжити (збережено або відкинуто).</summary>

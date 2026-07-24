@@ -16,6 +16,9 @@ public interface IDialogService
     /// <summary>Показує діалог налаштувань демо-родини. Повертає true, якщо підтверджено.</summary>
     bool ShowDemoFamilyEditor(DemoFamilyViewModel viewModel);
 
+    /// <summary>Показує екран налаштувань застосунку.</summary>
+    void ShowSettings(SettingsViewModel viewModel);
+
     /// <summary>Показує запит підтвердження (Так/Ні).</summary>
     bool Confirm(string message, string title);
 

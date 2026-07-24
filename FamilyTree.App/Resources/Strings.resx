@@ -244,6 +244,21 @@
   <data name="Menu_Import" xml:space="preserve">
     <value>Імпортувати з файлу…</value>
   </data>
+  <data name="Menu_Settings" xml:space="preserve">
+    <value>Налаштування…</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Налаштування</value>
+  </data>
+  <data name="Settings_DefaultDepth" xml:space="preserve">
+    <value>Глибина дерева за замовчуванням</value>
+  </data>
+  <data name="Settings_ClearRecent" xml:space="preserve">
+    <value>Очистити</value>
+  </data>
+  <data name="Common_Close" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Вихід</value>
   </data>

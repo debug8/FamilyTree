@@ -17,6 +17,9 @@ public sealed class DialogService : IDialogService
     public bool ShowDemoFamilyEditor(DemoFamilyViewModel viewModel) =>
         ShowDialog(new DemoFamilyWindow { DataContext = viewModel });
 
+    public void ShowSettings(SettingsViewModel viewModel) =>
+        ShowDialog(new SettingsWindow { DataContext = viewModel });
+
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
             == MessageBoxResult.Yes;

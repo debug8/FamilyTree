@@ -244,6 +244,21 @@
   <data name="Menu_Import" xml:space="preserve">
     <value>Import from file…</value>
   </data>
+  <data name="Menu_Settings" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings_DefaultDepth" xml:space="preserve">
+    <value>Default tree depth</value>
+  </data>
+  <data name="Settings_ClearRecent" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Common_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Exit</value>
   </data>

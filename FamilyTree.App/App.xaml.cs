@@ -112,6 +112,9 @@ public partial class App : Application
             ? KinshipNamingStyle.Detailed
             : KinshipNamingStyle.Standard;
 
+        // 4b. Застосувати збережену глибину дерева за замовчуванням.
+        _host.Services.GetRequiredService<TreeViewModel>().Depth = settings.Current.DefaultTreeDepth;
+
         // 5. Показати головне вікно.
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
