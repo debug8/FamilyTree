@@ -379,4 +379,13 @@
   <data name="StatusBar_PersonsCount" xml:space="preserve">
     <value>Persons: {0}</value>
   </data>
+  <data name="Error_Unexpected_Title" xml:space="preserve">
+    <value>Unexpected error</value>
+  </data>
+  <data name="Error_Unexpected_Message" xml:space="preserve">
+    <value>An unexpected error occurred. The application will try to keep running.
+
+Details have been saved to the log:
+{0}</value>
+  </data>
 </root>
