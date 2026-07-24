@@ -19,6 +19,9 @@ public interface IDialogService
     /// <summary>Показує екран налаштувань застосунку.</summary>
     void ShowSettings(SettingsViewModel viewModel);
 
+    /// <summary>Показує вікно «Про програму».</summary>
+    void ShowAbout(AboutViewModel viewModel);
+
     /// <summary>Показує запит підтвердження (Так/Ні).</summary>
     bool Confirm(string message, string title);
 

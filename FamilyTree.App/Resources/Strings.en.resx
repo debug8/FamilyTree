@@ -259,6 +259,24 @@
   <data name="Common_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="Menu_Help" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Menu_About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="About_Title" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="About_Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="About_Description" xml:space="preserve">
+    <value>A desktop application for building and viewing a family tree with automatic kinship calculation.</value>
+  </data>
+  <data name="About_Privacy" xml:space="preserve">
+    <value>All data is stored locally in your files and is never sent anywhere.</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Exit</value>
   </data>

@@ -317,6 +317,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void OpenAbout() => _dialogs.ShowAbout(new AboutViewModel());
+
+    [RelayCommand]
     private void Exit() => Application.Current.MainWindow?.Close();
 
     /// <summary>Запит про незбережені зміни. true — можна продовжити (збережено або відкинуто).</summary>

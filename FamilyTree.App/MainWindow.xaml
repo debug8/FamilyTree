@@ -42,6 +42,9 @@
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Exit}" Command="{Binding ExitCommand}" />
             </MenuItem>
+            <MenuItem Header="{loc:Localize Menu_Help}">
+                <MenuItem Header="{loc:Localize Menu_About}" Command="{Binding OpenAboutCommand}" />
+            </MenuItem>
         </Menu>
 
         <!-- Верхня панель: перемикачі мови, теми, стилю назв -->

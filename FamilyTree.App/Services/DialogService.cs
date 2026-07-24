@@ -20,6 +20,9 @@ public sealed class DialogService : IDialogService
     public void ShowSettings(SettingsViewModel viewModel) =>
         ShowDialog(new SettingsWindow { DataContext = viewModel });
 
+    public void ShowAbout(AboutViewModel viewModel) =>
+        ShowDialog(new AboutWindow { DataContext = viewModel });
+
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
             == MessageBoxResult.Yes;
