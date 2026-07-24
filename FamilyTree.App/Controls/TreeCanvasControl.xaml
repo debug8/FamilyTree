@@ -4,35 +4,63 @@
              xmlns:loc="clr-namespace:FamilyTree.App.Localization"
              xmlns:ctrl="clr-namespace:FamilyTree.App.Controls">
     <DockPanel>
-        <!-- Панель керування -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
-            <TextBlock Text="{loc:Localize Tree_Mode}" Style="{StaticResource SecondaryTextStyle}"
-                       VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="120"
-                      ItemsSource="{Binding AvailableModes}" SelectedItem="{Binding SelectedMode}"
-                      ItemTemplate="{StaticResource OptionDisplayTemplate}" />
+        <!-- Панель керування: основні контроли переносяться (WrapPanel),
+             масштаб+експорт виокремлені рамкою й притиснуті праворуч -->
+        <DockPanel DockPanel.Dock="Top" Margin="8">
 
-            <TextBlock Text="{loc:Localize Tree_Depth}" Style="{StaticResource SecondaryTextStyle}"
-                       VerticalAlignment="Center" Margin="16,0,6,0" />
-            <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="80"
-                      ItemsSource="{Binding DepthOptions}" SelectedItem="{Binding Depth}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource DepthLabelConverter}}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+            <!-- Масштаб + експорт (у рамці, праворуч) -->
+            <Border DockPanel.Dock="Right" VerticalAlignment="Top"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6"
+                    Padding="8,4" Margin="12,0,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Localize Tree_ExportScale}" Style="{StaticResource SecondaryTextStyle}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox x:Name="ExportScaleBox" Style="{StaticResource InputComboBoxStyle}"
+                              MinWidth="56" SelectedIndex="1" VerticalAlignment="Center">
+                        <ComboBoxItem Content="1×" />
+                        <ComboBoxItem Content="2×" />
+                        <ComboBoxItem Content="3×" />
+                        <ComboBoxItem Content="4×" />
+                        <ComboBoxItem Content="5×" />
+                    </ComboBox>
+                    <Button Content="{loc:Localize Tree_Export}" Padding="10,4" Margin="8,0,0,0" Click="ExportPng_Click" />
+                </StackPanel>
+            </Border>
 
-            <Button Content="{loc:Localize Tree_Fit}" Padding="10,4" Margin="16,0,6,0" Click="Fit_Click" />
-            <Button Content="100%" Padding="10,4" Click="Reset_Click" />
+            <!-- Основні контроли (переносяться на новий рядок за потреби) -->
+            <WrapPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,4">
+                    <TextBlock Text="{loc:Localize Tree_Mode}" Style="{StaticResource SecondaryTextStyle}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="120"
+                              ItemsSource="{Binding AvailableModes}" SelectedItem="{Binding SelectedMode}"
+                              ItemTemplate="{StaticResource OptionDisplayTemplate}" />
+                </StackPanel>
 
-            <CheckBox Content="{loc:Localize Tree_Bands}" IsChecked="{Binding ShowGenerationBands}"
-                      VerticalAlignment="Center" Margin="16,0,0,0"
-                      Foreground="{DynamicResource TextPrimaryBrush}" />
-            <CheckBox Content="{loc:Localize Tree_Flip}" IsChecked="{Binding FlipVertical}"
-                      VerticalAlignment="Center" Margin="12,0,0,0"
-                      Foreground="{DynamicResource TextPrimaryBrush}" />
-        </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,4">
+                    <TextBlock Text="{loc:Localize Tree_Depth}" Style="{StaticResource SecondaryTextStyle}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Style="{StaticResource InputComboBoxStyle}" MinWidth="80"
+                              ItemsSource="{Binding DepthOptions}" SelectedItem="{Binding Depth}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource DepthLabelConverter}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <Button Content="{loc:Localize Tree_Fit}" Padding="10,4" Margin="0,0,6,4" Click="Fit_Click" />
+                <Button Content="100%" Padding="10,4" Margin="0,0,16,4" Click="Reset_Click" />
+
+                <CheckBox Content="{loc:Localize Tree_Bands}" IsChecked="{Binding ShowGenerationBands}"
+                          VerticalAlignment="Center" Margin="0,0,12,4"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+                <CheckBox Content="{loc:Localize Tree_Flip}" IsChecked="{Binding FlipVertical}"
+                          VerticalAlignment="Center" Margin="0,0,0,4"
+                          Foreground="{DynamicResource TextPrimaryBrush}" />
+            </WrapPanel>
+        </DockPanel>
 
         <ScrollViewer x:Name="Scroller"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"

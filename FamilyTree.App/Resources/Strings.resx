@@ -427,4 +427,23 @@
   <data name="Demo_Done" xml:space="preserve">
     <value>Демо-родину створено. Осіб: {0}.</value>
   </data>
+  <data name="Tree_Export" xml:space="preserve">
+    <value>Експорт у PNG</value>
+  </data>
+  <data name="Tree_ExportScale" xml:space="preserve">
+    <value>Масштаб</value>
+  </data>
+  <data name="Export_Title" xml:space="preserve">
+    <value>Експорт дерева</value>
+  </data>
+  <data name="Export_Png_Filter" xml:space="preserve">
+    <value>Зображення PNG (*.png)|*.png</value>
+  </data>
+  <data name="Export_Empty" xml:space="preserve">
+    <value>Дерево порожнє — немає чого експортувати.</value>
+  </data>
+  <data name="Export_Done" xml:space="preserve">
+    <value>Дерево збережено:
+{0}</value>
+  </data>
 </root>
