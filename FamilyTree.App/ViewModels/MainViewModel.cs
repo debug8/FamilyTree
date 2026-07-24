@@ -322,6 +322,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Exit() => Application.Current.MainWindow?.Close();
 
+    /// <summary>
+    /// Відкриває файл за шляхом (напр. переданий у командному рядку через асоціацію .familytree).
+    /// Спершу пропонує зберегти незбережені зміни.
+    /// </summary>
+    public async Task OpenFileAsync(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !await PromptSaveIfDirtyAsync())
+        {
+            return;
+        }
+
+        await OpenPathAsync(path);
+    }
+
     /// <summary>Запит про незбережені зміни. true — можна продовжити (збережено або відкинуто).</summary>
     public async Task<bool> PromptSaveIfDirtyAsync()
     {

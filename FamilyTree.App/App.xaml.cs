@@ -1,3 +1,5 @@
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -119,6 +121,14 @@ public partial class App : Application
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         Theming.TitleBarThemer.Track(mainWindow, theme);
         mainWindow.Show();
+
+        // 6. Якщо застосунок запущено з файлом (асоціація .familytree) — відкрити його.
+        var startupFile = e.Args.FirstOrDefault(arg =>
+            arg.EndsWith(".familytree", StringComparison.OrdinalIgnoreCase) && File.Exists(arg));
+        if (startupFile is not null)
+        {
+            await _host.Services.GetRequiredService<MainViewModel>().OpenFileAsync(startupFile);
+        }
 
         base.OnStartup(e);
     }

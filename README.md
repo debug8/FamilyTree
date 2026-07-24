@@ -15,3 +15,13 @@
 - DI через `Microsoft.Extensions.Hosting` (Generic Host)
 - Зберігання: файл-документ `.familytree` (JSON), без СУБД
 - Тести: xUnit + Shouldly (моки — NSubstitute)
+
+## Збірка та інсталятор
+
+Реліз публікується одним самодостатнім `FamilyTree.exe` (з вбудованим .NET-рантаймом):
+
+```powershell
+dotnet publish FamilyTree.App/FamilyTree.App.csproj -c Release /p:PublishProfile=win-x64
+```
+
+Для інсталятора Windows (ярлики + асоціація `.familytree`) використай `installer\build-installer.ps1` (потрібен Inno Setup 6). Деталі — у [`docs/build-and-installer.md`](docs/build-and-installer.md).
