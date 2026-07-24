@@ -27,7 +27,7 @@
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Recent}" ItemsSource="{Binding RecentFiles}">
                     <MenuItem.ItemContainerStyle>
-                        <Style TargetType="MenuItem">
+                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
                             <Setter Property="Header" Value="{Binding}" />
                             <Setter Property="Command"
                                     Value="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Menu}}" />

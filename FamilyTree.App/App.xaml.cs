@@ -115,8 +115,9 @@ public partial class App : Application
         // 4b. Застосувати збережену глибину дерева за замовчуванням.
         _host.Services.GetRequiredService<TreeViewModel>().Depth = settings.Current.DefaultTreeDepth;
 
-        // 5. Показати головне вікно.
+        // 5. Показати головне вікно (із синхронізацією теми системного заголовка).
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+        Theming.TitleBarThemer.Track(mainWindow, theme);
         mainWindow.Show();
 
         base.OnStartup(e);

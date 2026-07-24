@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Windows;
+using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
 using Microsoft.Win32;
 
@@ -8,6 +9,10 @@ namespace FamilyTree.App.Services;
 /// <inheritdoc />
 public sealed class DialogService : IDialogService
 {
+    private readonly IThemeService _theme;
+
+    public DialogService(IThemeService theme) => _theme = theme;
+
     public bool ShowPersonEditor(PersonEditorViewModel viewModel) =>
         ShowDialog(new PersonEditorWindow { DataContext = viewModel });
 
@@ -56,9 +61,10 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
     }
 
-    private static bool ShowDialog(Window window)
+    private bool ShowDialog(Window window)
     {
         window.Owner = ActiveWindow;
+        TitleBarThemer.Track(window, _theme); // темний заголовок у темній темі
         return window.ShowDialog() == true;
     }
 
