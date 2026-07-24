@@ -20,6 +20,7 @@
             <MenuItem Header="{loc:Localize Menu_File}">
                 <MenuItem Header="{loc:Localize Menu_New}" Command="{Binding NewCommand}" InputGestureText="Ctrl+N" />
                 <MenuItem Header="{loc:Localize Menu_Open}" Command="{Binding OpenCommand}" InputGestureText="Ctrl+O" />
+                <MenuItem Header="{loc:Localize Menu_CreateDemo}" Command="{Binding CreateDemoFamilyCommand}" />
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Save}" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
                 <MenuItem Header="{loc:Localize Menu_SaveAs}" Command="{Binding SaveAsCommand}" />

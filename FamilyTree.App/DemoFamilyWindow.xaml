@@ -1,0 +1,100 @@
+<Window x:Class="FamilyTree.App.DemoFamilyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FamilyTree.App.Localization"
+        Title="{loc:Localize Demo_Title}"
+        Height="470" Width="440"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Кількість поколінь -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{loc:Localize Demo_Generations}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Generations}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+            <Slider Minimum="{Binding MinGenerations}" Maximum="{Binding MaxGenerations}"
+                    Value="{Binding Generations}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Максимум осіб -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{loc:Localize Demo_MaxPersons}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding MaxPersons}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+            <Slider Minimum="{Binding MinPersons}" Maximum="{Binding MaxPersonsBound}"
+                    Value="{Binding MaxPersons}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Дітей на пару (максимум) -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{loc:Localize Demo_MaxChildren}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding MaxChildrenPerCouple}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+            <Slider Minimum="{Binding MinChildren}" Maximum="{Binding MaxChildren}"
+                    Value="{Binding MaxChildrenPerCouple}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Складні зв'язки -->
+        <CheckBox Grid.Row="3" Content="{loc:Localize Demo_ComplexRelations}" IsChecked="{Binding ComplexRelations}"
+                  Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
+
+        <!-- Розлучення -->
+        <CheckBox Grid.Row="4" Content="{loc:Localize Demo_IncludeDivorces}" IsChecked="{Binding IncludeDivorces}"
+                  Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12" />
+
+        <!-- Насіння -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" VerticalAlignment="Center">
+            <CheckBox Content="{loc:Localize Demo_RandomSeed}" IsChecked="{Binding RandomSeed}"
+                      Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Localize Demo_Seed}" Style="{StaticResource SecondaryTextStyle}"
+                       VerticalAlignment="Center" Margin="16,0,8,0" />
+            <TextBox Style="{StaticResource InputTextBoxStyle}" Width="80"
+                     Text="{Binding Seed}" IsEnabled="{Binding SeedEnabled}" />
+        </StackPanel>
+
+        <!-- Пояснення -->
+        <TextBlock Grid.Row="6" Text="{loc:Localize Demo_Hint}" Style="{StaticResource SecondaryTextStyle}"
+                   TextWrapping="Wrap" Margin="0,14,0,0" VerticalAlignment="Top" />
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="{loc:Localize Common_Cancel}" MinWidth="90" Margin="0,0,10,0"
+                    IsCancel="True" Click="Cancel_Click" />
+            <Button Content="{loc:Localize Demo_Create}" MinWidth="90"
+                    Style="{StaticResource PrimaryButtonStyle}" Click="Confirm_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

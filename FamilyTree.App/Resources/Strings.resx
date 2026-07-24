@@ -388,4 +388,43 @@
 Деталі збережено в журналі:
 {0}</value>
   </data>
+  <data name="Menu_CreateDemo" xml:space="preserve">
+    <value>Створити демо-родину…</value>
+  </data>
+  <data name="Demo_Title" xml:space="preserve">
+    <value>Створення демо-родини</value>
+  </data>
+  <data name="Demo_Generations" xml:space="preserve">
+    <value>Кількість поколінь</value>
+  </data>
+  <data name="Demo_MaxPersons" xml:space="preserve">
+    <value>Максимум осіб</value>
+  </data>
+  <data name="Demo_MaxChildren" xml:space="preserve">
+    <value>Дітей на пару (максимум)</value>
+  </data>
+  <data name="Demo_ComplexRelations" xml:space="preserve">
+    <value>Складні зв'язки (зведені сиблінги, повторні шлюби, невідома стать)</value>
+  </data>
+  <data name="Demo_IncludeDivorces" xml:space="preserve">
+    <value>Додавати розлучення (колишнє подружжя)</value>
+  </data>
+  <data name="Demo_RandomSeed" xml:space="preserve">
+    <value>Випадкове насіння</value>
+  </data>
+  <data name="Demo_Seed" xml:space="preserve">
+    <value>Насіння</value>
+  </data>
+  <data name="Demo_Hint" xml:space="preserve">
+    <value>Родина будується від подружжя-засновників углиб на задану кількість поколінь. За однакового насіння результат відтворюється.</value>
+  </data>
+  <data name="Demo_Create" xml:space="preserve">
+    <value>Створити</value>
+  </data>
+  <data name="Demo_DocTitle" xml:space="preserve">
+    <value>Демо-родина</value>
+  </data>
+  <data name="Demo_Done" xml:space="preserve">
+    <value>Демо-родину створено. Осіб: {0}.</value>
+  </data>
 </root>

@@ -10,6 +10,7 @@ using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
 using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
+using FamilyTree.Domain.Seeding;
 using FamilyTree.Domain.Validation;
 using FamilyTree.Storage;
 
@@ -262,6 +263,43 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var done = string.Format(
             _localization.GetString("Import_Done"), report.AddedPersons, report.DuplicatePersons);
         _dialogs.ShowMessage(done, _localization.GetString("Import_Title"));
+    }
+
+    [RelayCommand]
+    private async Task CreateDemoFamily()
+    {
+        // 1. Налаштування (поколінь, осіб, складність тощо).
+        var config = new DemoFamilyViewModel();
+        if (!_dialogs.ShowDemoFamilyEditor(config))
+        {
+            return;
+        }
+
+        // 2. Демо-родина заміняє поточний документ — спершу зберегти незбережене.
+        if (!await PromptSaveIfDirtyAsync())
+        {
+            return;
+        }
+
+        // 3. Згенерувати доменні сутності та зібрати з них новий документ.
+        var result = DemoFamilyGenerator.Generate(config.ToOptions());
+
+        var document = FamilyDocument.CreateNew(_localization.GetString("Demo_DocTitle"));
+        document.Persons.AddRange(result.Persons);
+        document.ParentChildLinks.AddRange(result.ParentChildLinks);
+        document.SpouseLinks.AddRange(result.SpouseLinks);
+
+        _session.SetDocument(document, null);
+        _session.MarkContentChanged(); // демо-родина ще не збережена → позначити зміни
+
+        // 4. Обрати кореневу особу з найбагатшим оточенням, щоб дерево одразу було наочним.
+        if (result.SuggestedRootId is { } rootId)
+        {
+            SelectById(rootId);
+        }
+
+        var done = string.Format(_localization.GetString("Demo_Done"), result.Persons.Count);
+        _dialogs.ShowMessage(done, _localization.GetString("Demo_Title"));
     }
 
     [RelayCommand]
