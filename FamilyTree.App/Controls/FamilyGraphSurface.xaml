@@ -186,9 +186,13 @@
                             <TextBlock Text="{Binding RelationBadge}" FontSize="11"
                                        Foreground="{DynamicResource PrimaryBrush}"
                                        Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
-                            <TextBlock Text="{Binding FullName}" FontSize="13" FontWeight="SemiBold"
+                            <TextBlock Text="{Binding NamePrimary}" FontSize="13" FontWeight="SemiBold"
                                        TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Patronymic}" FontSize="13" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding Patronymic, Converter={StaticResource NullToCollapsedConverter}}" />
                             <TextBlock Text="{Binding Years}" FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>

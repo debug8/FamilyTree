@@ -208,6 +208,9 @@ public partial class TreeViewModel : ObservableObject
                 X = node.X,
                 Y = BoxY(node.Y, TreeLayoutEngine.NodeHeight),
                 FullName = person.FullName,
+                NamePrimary = string.Join(' ', new[] { person.LastName, person.FirstName }
+                    .Where(part => !string.IsNullOrWhiteSpace(part))),
+                Patronymic = string.IsNullOrWhiteSpace(person.MiddleName) ? null : person.MiddleName,
                 Years = FormatYears(person),
                 RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph, includeAffinity: true).DisplayName,
                 IsRoot = isRoot,

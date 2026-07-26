@@ -23,6 +23,12 @@ public partial class TreeNodeViewModel : ObservableObject
 
     public string FullName { get; init; } = string.Empty;
 
+    /// <summary>Перший рядок картки — «Прізвище Ім'я».</summary>
+    public string NamePrimary { get; init; } = string.Empty;
+
+    /// <summary>По батькові — окремий рядок картки (null → рядок ховається).</summary>
+    public string? Patronymic { get; init; }
+
     public string Years { get; init; } = string.Empty;
 
     /// <summary>Родинний зв'язок відносно кореня (бейдж) — наповнюється в T-4.3.</summary>

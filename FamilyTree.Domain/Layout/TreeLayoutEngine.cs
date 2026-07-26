@@ -9,7 +9,7 @@ public sealed class TreeLayoutEngine
 {
     // Розміри картки й проміжки в умовних одиницях (рендерер масштабує).
     public const double NodeWidth = 160;
-    public const double NodeHeight = 72;
+    public const double NodeHeight = 80;
     public const double HorizontalGap = 28;
     public const double VerticalGap = 90;
 
