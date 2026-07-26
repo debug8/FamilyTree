@@ -14,12 +14,12 @@ public partial class PersonEditorViewModel : ObservableValidator
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
-    [Required(AllowEmptyStrings = false)]
+    [CustomValidation(typeof(PersonEditorViewModel), nameof(ValidateNamePresence))]
     private string? _lastName;
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
-    [Required(AllowEmptyStrings = false)]
+    [CustomValidation(typeof(PersonEditorViewModel), nameof(ValidateNamePresence))]
     private string? _firstName;
 
     [ObservableProperty]
@@ -106,15 +106,18 @@ public partial class PersonEditorViewModel : ObservableValidator
             return null;
         }
 
+        var lastName = LastName?.Trim() ?? string.Empty;
+        var firstName = FirstName?.Trim() ?? string.Empty;
+
         var person = _existing ?? new Person
         {
-            LastName = LastName!,
-            FirstName = FirstName!,
+            LastName = lastName,
+            FirstName = firstName,
             Gender = SelectedGender!.Value,
         };
 
-        person.LastName = LastName!.Trim();
-        person.FirstName = FirstName!.Trim();
+        person.LastName = lastName;
+        person.FirstName = firstName;
         person.Gender = SelectedGender!.Value;
         person.MiddleName = Normalize(MiddleName);
         person.MaidenName = Normalize(MaidenName);
@@ -134,6 +137,25 @@ public partial class PersonEditorViewModel : ObservableValidator
         {
             DeathDate = null;
         }
+    }
+
+    // Прізвище та ім'я перевіряються спільно: зміна одного має оновити помилку іншого.
+    partial void OnLastNameChanged(string? value) => ValidateProperty(FirstName, nameof(FirstName));
+
+    partial void OnFirstNameChanged(string? value) => ValidateProperty(LastName, nameof(LastName));
+
+    /// <summary>
+    /// Валідно, якщо заповнене хоча б одне з полів — прізвище або ім'я.
+    /// </summary>
+    public static ValidationResult? ValidateNamePresence(string? value, ValidationContext context)
+    {
+        var vm = (PersonEditorViewModel)context.ObjectInstance;
+        if (!string.IsNullOrWhiteSpace(vm.LastName) || !string.IsNullOrWhiteSpace(vm.FirstName))
+        {
+            return ValidationResult.Success;
+        }
+
+        return new ValidationResult("Person_Validation_NameRequired");
     }
 
     private static string? Normalize(string? value) =>

@@ -154,6 +154,9 @@
   <data name="Person_FirstName" xml:space="preserve">
     <value>Ім'я</value>
   </data>
+  <data name="Person_Validation_NameRequired" xml:space="preserve">
+    <value>Заповніть хоча б одне поле: прізвище або ім'я.</value>
+  </data>
   <data name="Person_MiddleName" xml:space="preserve">
     <value>По батькові</value>
   </data>

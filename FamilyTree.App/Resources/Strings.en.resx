@@ -154,6 +154,9 @@
   <data name="Person_FirstName" xml:space="preserve">
     <value>First name</value>
   </data>
+  <data name="Person_Validation_NameRequired" xml:space="preserve">
+    <value>Fill in at least one field: last name or first name.</value>
+  </data>
   <data name="Person_MiddleName" xml:space="preserve">
     <value>Middle name</value>
   </data>
