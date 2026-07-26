@@ -25,7 +25,11 @@ public sealed class FamilyGraph
         ArgumentNullException.ThrowIfNull(parentChildLinks);
         ArgumentNullException.ThrowIfNull(spouseLinks);
 
-        _persons = persons.ToDictionary(p => p.Id);
+        // DistinctBy, а не ToDictionary напряму: дублікат Id тут кидав ArgumentException
+        // із конструктора, тобто валив UI у довільному місці. Гейт проти неоднозначних
+        // Id — у шарі сховища (DocumentIntegrity), який відмовляється відкривати такий
+        // файл; тут лише страховка, щоб граф ніколи не був причиною падіння.
+        _persons = persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
 
         foreach (var link in parentChildLinks)
         {

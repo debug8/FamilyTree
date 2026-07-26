@@ -188,7 +188,7 @@ public partial class TreeViewModel : ObservableObject
         }
 
         var layout = _engine.Build(graph, rootId, Mode, Depth);
-        var persons = doc.Persons.ToDictionary(p => p.Id);
+        var persons = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
         var positions = layout.Nodes.ToDictionary(n => n.PersonId);
         var rootPerson = persons[rootId];
         var youBadge = _localization.GetString("Tree_You");

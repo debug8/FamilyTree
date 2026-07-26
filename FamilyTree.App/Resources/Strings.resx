@@ -295,6 +295,69 @@
   <data name="File_ErrorTitle" xml:space="preserve">
     <value>Помилка файлу</value>
   </data>
+  <data name="FileError_NotFound" xml:space="preserve">
+    <value>Файл не знайдено:
+{0}</value>
+  </data>
+  <data name="FileError_AccessDenied" xml:space="preserve">
+    <value>Немає доступу до файлу:
+{0}
+
+Перевірте права доступу або чи не відкритий файл в іншій програмі.</value>
+  </data>
+  <data name="FileError_Io" xml:space="preserve">
+    <value>Не вдалося прочитати файл:
+{0}
+
+Можливо, він заблокований іншою програмою або носій недоступний.</value>
+  </data>
+  <data name="FileError_MalformedJson" xml:space="preserve">
+    <value>Файл пошкоджено: вміст не є коректним JSON.
+
+Деталі: {0}</value>
+  </data>
+  <data name="FileError_BadEncoding" xml:space="preserve">
+    <value>Файл не в кодуванні UTF-8, тому його не можна прочитати без втрати символів.
+
+Якщо файл редагувався в Блокноті, збережіть його повторно з кодуванням UTF-8.</value>
+  </data>
+  <data name="FileError_BadSchemaVersion" xml:space="preserve">
+    <value>Файл пошкоджено: відсутнє або некоректне поле «schemaVersion».</value>
+  </data>
+  <data name="FileError_MissingSection" xml:space="preserve">
+    <value>Файл пошкоджено: відсутній обов'язковий розділ «{0}».</value>
+  </data>
+  <data name="FileError_EmptyPersonId" xml:space="preserve">
+    <value>Файл пошкоджено: {0} осіб без ідентифікатора.
+
+Без ідентифікаторів неможливо визначити, кому належать родинні зв'язки, тому файл не відкрито.</value>
+  </data>
+  <data name="FileError_DuplicatePersonId" xml:space="preserve">
+    <value>Файл пошкоджено: {0} осіб мають неунікальні ідентифікатори (напр. {1}).
+
+Неможливо визначити, кому належать родинні зв'язки, тому файл не відкрито.</value>
+  </data>
+  <data name="FileRepair_Title" xml:space="preserve">
+    <value>Файл відкрито з виправленнями</value>
+  </data>
+  <data name="FileRepair_Intro" xml:space="preserve">
+    <value>У файлі знайдено пошкоджені записи. Їх пропущено, решту даних завантажено:</value>
+  </data>
+  <data name="FileRepair_Outro" xml:space="preserve">
+    <value>Документ помічено як змінений. Збережіть його, щоб зафіксувати виправлення.</value>
+  </data>
+  <data name="FileRepair_DanglingLinks" xml:space="preserve">
+    <value>• зв'язків на неіснуючих осіб: {0}</value>
+  </data>
+  <data name="FileRepair_SelfLinks" xml:space="preserve">
+    <value>• зв'язків особи із собою: {0}</value>
+  </data>
+  <data name="FileRepair_DuplicateLinks" xml:space="preserve">
+    <value>• дубльованих зв'язків: {0}</value>
+  </data>
+  <data name="FileRepair_BadEnums" xml:space="preserve">
+    <value>• недопустимих значень статі або ролі батька: {0}</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Незбережені зміни</value>
   </data>

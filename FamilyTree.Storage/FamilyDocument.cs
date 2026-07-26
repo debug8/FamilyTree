@@ -20,6 +20,14 @@ public sealed class FamilyDocument
     /// <summary>Чи є незбережені зміни (не серіалізується).</summary>
     public bool IsDirty { get; set; }
 
+    /// <summary>
+    /// Дефекти, які сховище полагодило під час завантаження цього документа
+    /// (не серіалізується). Порожньо для нових документів і для чистих файлів.
+    /// UI показує це користувачу як попередження — інакше «зникнення» частини
+    /// зв'язків виглядало б як втрата даних без причини.
+    /// </summary>
+    public IReadOnlyList<DocumentIssue> RepairedIssues { get; set; } = Array.Empty<DocumentIssue>();
+
     /// <summary>Створює новий порожній документ із заголовком.</summary>
     public static FamilyDocument CreateNew(string title)
     {

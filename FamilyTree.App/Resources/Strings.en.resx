@@ -295,6 +295,69 @@
   <data name="File_ErrorTitle" xml:space="preserve">
     <value>File error</value>
   </data>
+  <data name="FileError_NotFound" xml:space="preserve">
+    <value>File not found:
+{0}</value>
+  </data>
+  <data name="FileError_AccessDenied" xml:space="preserve">
+    <value>Cannot access the file:
+{0}
+
+Check the permissions, or whether the file is open in another program.</value>
+  </data>
+  <data name="FileError_Io" xml:space="preserve">
+    <value>Could not read the file:
+{0}
+
+It may be locked by another program, or the drive may be unavailable.</value>
+  </data>
+  <data name="FileError_MalformedJson" xml:space="preserve">
+    <value>The file is corrupted: its contents are not valid JSON.
+
+Details: {0}</value>
+  </data>
+  <data name="FileError_BadEncoding" xml:space="preserve">
+    <value>The file is not UTF-8 encoded, so it cannot be read without losing characters.
+
+If it was edited in Notepad, save it again using UTF-8 encoding.</value>
+  </data>
+  <data name="FileError_BadSchemaVersion" xml:space="preserve">
+    <value>The file is corrupted: the "schemaVersion" field is missing or invalid.</value>
+  </data>
+  <data name="FileError_MissingSection" xml:space="preserve">
+    <value>The file is corrupted: required section "{0}" is missing.</value>
+  </data>
+  <data name="FileError_EmptyPersonId" xml:space="preserve">
+    <value>The file is corrupted: {0} person record(s) have no identifier.
+
+Without identifiers there is no way to tell which relationships belong to whom, so the file was not opened.</value>
+  </data>
+  <data name="FileError_DuplicatePersonId" xml:space="preserve">
+    <value>The file is corrupted: {0} person record(s) share non-unique identifiers (e.g. {1}).
+
+There is no way to tell which relationships belong to whom, so the file was not opened.</value>
+  </data>
+  <data name="FileRepair_Title" xml:space="preserve">
+    <value>File opened with repairs</value>
+  </data>
+  <data name="FileRepair_Intro" xml:space="preserve">
+    <value>Some records in the file were damaged. They were skipped; the rest of the data was loaded:</value>
+  </data>
+  <data name="FileRepair_Outro" xml:space="preserve">
+    <value>The document is marked as modified. Save it to keep the repairs.</value>
+  </data>
+  <data name="FileRepair_DanglingLinks" xml:space="preserve">
+    <value>• links to non-existent people: {0}</value>
+  </data>
+  <data name="FileRepair_SelfLinks" xml:space="preserve">
+    <value>• links from a person to themselves: {0}</value>
+  </data>
+  <data name="FileRepair_DuplicateLinks" xml:space="preserve">
+    <value>• duplicate links: {0}</value>
+  </data>
+  <data name="FileRepair_BadEnums" xml:space="preserve">
+    <value>• invalid gender or parent-role values: {0}</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Unsaved changes</value>
   </data>

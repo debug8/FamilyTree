@@ -91,7 +91,7 @@ public partial class WhoIsWhoViewModel : ObservableObject
             Steps.Add(step);
         }
 
-        BuildPathGraph(path.PersonChain, graph, doc.Persons.ToDictionary(p => p.Id));
+        BuildPathGraph(path.PersonChain, graph, doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id));
     }
 
     /// <summary>

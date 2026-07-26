@@ -84,13 +84,22 @@ void GenerateFile(int generations, int maxPersons, int seed, string title, strin
         ["parentRole"] = "Biological",
     });
 
-    void Marry(string aId, string bId, int year) => spouseLinks.Add(new()
+    // Порядок Id нормалізуємо (person1Id ≤ person2Id), як того вимагає інваріант
+    // домену SpouseLink: інакше та сама пара має два різні представлення, і перевірка
+    // дубля шлюбу у валідаторі дубля не бачить.
+    // Порівнюємо саме як Guid, а не як рядки: Guid.CompareTo трактує перше поле як
+    // signed int, тому лексикографічний порядок рядків дав би інший результат.
+    void Marry(string aId, string bId, int year)
     {
-        ["id"] = NewId(),
-        ["person1Id"] = aId,
-        ["person2Id"] = bId,
-        ["marriageDate"] = Iso(year, rnd.Next(1, 13), rnd.Next(1, 28)),
-    });
+        var (first, second) = Guid.Parse(aId).CompareTo(Guid.Parse(bId)) <= 0 ? (aId, bId) : (bId, aId);
+        spouseLinks.Add(new()
+        {
+            ["id"] = NewId(),
+            ["person1Id"] = first,
+            ["person2Id"] = second,
+            ["marriageDate"] = Iso(year, rnd.Next(1, 13), rnd.Next(1, 28)),
+        });
+    }
 
     // Черга подружніх пар: (fatherId, fatherFirst, motherId, childrenSurname, generation, parentsBirthYear)
     var queue = new Queue<(string FatherId, string FatherFirst, string MotherId, string Surname, int Generation, int BirthYear)>();

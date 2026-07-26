@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -49,15 +50,9 @@ public sealed class JsonFamilyStorage : IFamilyStorage
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        var text = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
-
-        if (JsonNode.Parse(text) is not JsonObject root)
-        {
-            throw new InvalidDataException("Файл не є коректним JSON-об'єктом.");
-        }
-
-        var version = (int?)root["schemaVersion"]
-            ?? throw new InvalidDataException("У файлі відсутнє поле schemaVersion.");
+        var text = await ReadTextAsync(path, cancellationToken).ConfigureAwait(false);
+        var root = ParseRoot(text);
+        var version = ReadSchemaVersion(root);
 
         if (version > CurrentSchemaVersion)
         {
@@ -66,10 +61,103 @@ public sealed class JsonFamilyStorage : IFamilyStorage
 
         root = ApplyMigrations(root, version);
 
-        var dto = root.Deserialize<FamilyFileDto>(JsonOptions)
-            ?? throw new InvalidDataException("Не вдалося розібрати вміст файлу.");
+        FamilyFileDto? dto;
+        try
+        {
+            dto = root.Deserialize<FamilyFileDto>(JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            // Тип поля не відповідає схемі (напр. "persons": 5 або "birthDate": "вчора").
+            throw FamilyFileException.Create(FileErrorKeys.MalformedJson, ex, ex.Message);
+        }
 
-        return DocumentMapper.ToDomain(dto);
+        if (dto is null)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.MissingSection, inner: null, "root");
+        }
+
+        var document = DocumentMapper.ToDomain(dto);
+
+        // Перевірка цілісності ДО повернення документа: раніше битий файл валив
+        // застосунок аж у ToDictionary(p => p.Id) вже після SetDocument().
+        document.RepairedIssues = DocumentIntegrity.Verify(document);
+
+        return document;
+    }
+
+    /// <summary>
+    /// Читає файл строго як UTF-8. BOM (UTF-8/UTF-16) розпізнається автоматично,
+    /// а от файл, перезбережений у Notepad як «ANSI» (Windows-1251), раніше тихо
+    /// декодувався з U+FFFD — кирилиця ставала крякозябрами й у такому вигляді
+    /// зберігалася назад. Тепер це явна помилка.
+    /// </summary>
+    private static async Task<string> ReadTextAsync(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            using var reader = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true);
+            return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.BadEncoding, ex);
+        }
+        catch (FileNotFoundException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.NotFound, ex, path);
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.NotFound, ex, path);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.AccessDenied, ex, path);
+        }
+        catch (IOException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.Io, ex, path);
+        }
+    }
+
+    private static JsonObject ParseRoot(string text)
+    {
+        JsonNode? node;
+        try
+        {
+            node = JsonNode.Parse(text);
+        }
+        catch (JsonException ex)
+        {
+            // Раніше JsonException летів «як є», і користувач бачив
+            // "'x' is an invalid start of a value. LineNumber: 3 …".
+            throw FamilyFileException.Create(FileErrorKeys.MalformedJson, ex, ex.Message);
+        }
+
+        return node as JsonObject
+            ?? throw FamilyFileException.Create(FileErrorKeys.MalformedJson, inner: null, "root is not an object");
+    }
+
+    /// <summary>
+    /// Читає schemaVersion толерантно до типу. Приведення <c>(int?)root["schemaVersion"]</c>
+    /// кидало <see cref="InvalidOperationException"/>, якщо версія у файлі — рядок "1",
+    /// дріб 1.5 або true; це виглядало як внутрішня помилка, а не як «файл невалідний».
+    /// </summary>
+    private static int ReadSchemaVersion(JsonObject root)
+    {
+        if (root["schemaVersion"] is not JsonValue value || !value.TryGetValue<int>(out var version))
+        {
+            throw FamilyFileException.Create(FileErrorKeys.BadSchemaVersion, inner: null);
+        }
+
+        if (version < 1)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.BadSchemaVersion, inner: null);
+        }
+
+        return version;
     }
 
     public async Task SaveAsync(FamilyDocument document, string path, CancellationToken cancellationToken = default)

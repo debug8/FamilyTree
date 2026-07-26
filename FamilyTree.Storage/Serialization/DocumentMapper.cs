@@ -24,20 +24,42 @@ internal static class DocumentMapper
 
     public static FamilyDocument ToDomain(FamilyFileDto dto)
     {
+        ArgumentNullException.ThrowIfNull(dto);
+
+        // Ініціалізатори властивостей у DTO НЕ рятують від явного null у JSON:
+        // System.Text.Json записує null поверх ініціалізатора, а
+        // DefaultIgnoreCondition.WhenWritingNull впливає лише на серіалізацію.
+        // Тому {"meta":null,"persons":null} без цих ?? давав NullReferenceException.
+        var meta = dto.Meta ?? new MetaDto();
+
         var document = new FamilyDocument
         {
             Meta = new DocumentMeta
             {
-                Title = dto.Meta.Title,
-                CreatedAt = dto.Meta.CreatedAt,
-                UpdatedAt = dto.Meta.UpdatedAt,
-                AppVersion = dto.Meta.AppVersion,
+                Title = meta.Title ?? string.Empty,
+                CreatedAt = meta.CreatedAt,
+                UpdatedAt = meta.UpdatedAt,
+                AppVersion = meta.AppVersion ?? "1.0.0",
             },
         };
 
-        document.Persons.AddRange(dto.Persons.Select(ToDomain));
-        document.ParentChildLinks.AddRange(dto.ParentChildLinks.Select(ToDomain));
-        document.SpouseLinks.AddRange(dto.SpouseLinks.Select(ToDomain));
+        // OfType<T>() відкидає null-елементи масивів (напр. "persons": [null, {...}])
+        // і водночас звужує тип для аналізу nullable.
+        if (dto.Persons is { } persons)
+        {
+            document.Persons.AddRange(persons.OfType<PersonDto>().Select(ToDomain));
+        }
+
+        if (dto.ParentChildLinks is { } parentChildLinks)
+        {
+            document.ParentChildLinks.AddRange(parentChildLinks.OfType<ParentChildLinkDto>().Select(ToDomain));
+        }
+
+        if (dto.SpouseLinks is { } spouseLinks)
+        {
+            document.SpouseLinks.AddRange(spouseLinks.OfType<SpouseLinkDto>().Select(ToDomain));
+        }
+
         return document;
     }
 
@@ -61,8 +83,8 @@ internal static class DocumentMapper
     private static Person ToDomain(PersonDto d) => new()
     {
         Id = d.Id,
-        LastName = d.LastName,
-        FirstName = d.FirstName,
+        LastName = d.LastName ?? string.Empty,
+        FirstName = d.FirstName ?? string.Empty,
         Gender = d.Gender,
         MiddleName = d.MiddleName,
         MaidenName = d.MaidenName,
@@ -83,13 +105,24 @@ internal static class DocumentMapper
         ParentRole = l.ParentRole,
     };
 
-    private static ParentChildLink ToDomain(ParentChildLinkDto d) => new()
-    {
-        Id = d.Id,
-        ParentId = d.ParentId,
-        ChildId = d.ChildId,
-        ParentRole = d.ParentRole,
-    };
+    // Порожній Id зв'язку (поле "id" відсутнє у файлі) замінюємо на новий: Entity.Equals
+    // порівнює за Id, тож два зв'язки з Guid.Empty вважалися б рівними — і List.Remove
+    // видаляв би не той зв'язок. Ідентичність самого зв'язку визначається парою Id осіб,
+    // тому згенерувати новий Id тут безпечно.
+    private static ParentChildLink ToDomain(ParentChildLinkDto d) => d.Id == Guid.Empty
+        ? new ParentChildLink
+        {
+            ParentId = d.ParentId,
+            ChildId = d.ChildId,
+            ParentRole = d.ParentRole,
+        }
+        : new ParentChildLink
+        {
+            Id = d.Id,
+            ParentId = d.ParentId,
+            ChildId = d.ChildId,
+            ParentRole = d.ParentRole,
+        };
 
     private static SpouseLinkDto ToDto(SpouseLink l) => new()
     {
@@ -100,13 +133,23 @@ internal static class DocumentMapper
         DivorceDate = l.DivorceDate,
     };
 
-    // Ідентифікатори у файлі вже нормалізовані (Person1Id ≤ Person2Id) при збереженні.
-    private static SpouseLink ToDomain(SpouseLinkDto d) => new()
-    {
-        Id = d.Id,
-        Person1Id = d.Person1Id,
-        Person2Id = d.Person2Id,
-        MarriageDate = d.MarriageDate,
-        DivorceDate = d.DivorceDate,
-    };
+    // Порядок Id (Person1Id ≤ Person2Id) нормалізує DocumentIntegrity після мапінгу:
+    // покладатися на те, що у файлі він уже правильний, не можна.
+    // Порожній Id зв'язку — див. коментар до ParentChildLink вище.
+    private static SpouseLink ToDomain(SpouseLinkDto d) => d.Id == Guid.Empty
+        ? new SpouseLink
+        {
+            Person1Id = d.Person1Id,
+            Person2Id = d.Person2Id,
+            MarriageDate = d.MarriageDate,
+            DivorceDate = d.DivorceDate,
+        }
+        : new SpouseLink
+        {
+            Id = d.Id,
+            Person1Id = d.Person1Id,
+            Person2Id = d.Person2Id,
+            MarriageDate = d.MarriageDate,
+            DivorceDate = d.DivorceDate,
+        };
 }

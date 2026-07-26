@@ -21,7 +21,7 @@ public sealed class RelationshipValidator
         ArgumentNullException.ThrowIfNull(persons);
         ArgumentNullException.ThrowIfNull(existingLinks);
 
-        var byId = persons.ToDictionary(p => p.Id);
+        var byId = persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
         var errors = new List<ValidationMessage>();
         var warnings = new List<ValidationMessage>();
 

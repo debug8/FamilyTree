@@ -382,7 +382,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
             return false;
         }
     }
@@ -394,11 +394,83 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var document = await _storage.LoadAsync(path);
             _session.SetDocument(document, path);
             AddRecent(path);
+            ReportRepairs(document);
         }
         catch (Exception ex)
         {
-            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
-            RemoveRecent(path);
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
+
+            // Зі списку недавніх викидаємо лише те, чого справді немає:
+            // при тимчасовій помилці (файл заблокований, мережа відпала) запис лишається.
+            if (ex is FamilyFileException { MessageKey: FileErrorKeys.NotFound })
+            {
+                RemoveRecent(path);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Показує локалізований текст помилки роботи з файлом. Для
+    /// <see cref="FamilyFileException"/> резолвить ключ; для решти винятків
+    /// лишається технічне повідомлення .NET як остання лінія.
+    /// </summary>
+    private string DescribeFileError(Exception ex) => ex switch
+    {
+        FamilyFileException file => SafeFormat(file.MessageKey, file.Arguments),
+        _ => ex.Message,
+    };
+
+    /// <summary>
+    /// Попереджає користувача, що частину записів файлу пропущено. Без цього
+    /// «зникнення» зв'язків виглядало б як безпричинна втрата даних.
+    /// Документ помічається зміненим, щоб виправлення можна було зафіксувати збереженням.
+    /// </summary>
+    private void ReportRepairs(FamilyDocument document)
+    {
+        if (document.RepairedIssues.Count == 0)
+        {
+            return;
+        }
+
+        var lines = document.RepairedIssues
+            .Select(issue => SafeFormat(issue.MessageKey, new object?[] { issue.Count }));
+
+        var blocks = new[]
+        {
+            _localization.GetString("FileRepair_Intro"),
+            string.Empty,
+            string.Join(Environment.NewLine, lines),
+            string.Empty,
+            _localization.GetString("FileRepair_Outro"),
+        };
+
+        var text = string.Join(Environment.NewLine, blocks);
+
+        _dialogs.ShowMessage(text, _localization.GetString("FileRepair_Title"));
+        _session.MarkContentChanged();
+    }
+
+    /// <summary>
+    /// Форматує локалізований шаблон, не падаючи на битому користувацькому перекладі:
+    /// рядок може прийти з %AppData%\FamilyTree\languages\*.json, де описка в
+    /// плейсхолдері («{0» замість «{0}») давала FormatException і «Неочікувану помилку».
+    /// </summary>
+    private string SafeFormat(string key, IReadOnlyList<object?> arguments)
+    {
+        var template = _localization.GetString(key);
+        if (arguments.Count == 0)
+        {
+            return template;
+        }
+
+        try
+        {
+            return string.Format(template, arguments.ToArray());
+        }
+        catch (FormatException)
+        {
+            // Резервний вигляд: шаблон як є + аргументи, щоб інформація не зникла.
+            return $"{template} ({string.Join(", ", arguments)})";
         }
     }
 
@@ -603,8 +675,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     private string Describe(IReadOnlyList<ValidationMessage> messages) =>
-        string.Join(Environment.NewLine, messages.Select(m =>
-            string.Format(_localization.GetString(m.Key), m.Arguments.ToArray())));
+        string.Join(Environment.NewLine, messages.Select(m => SafeFormat(m.Key, m.Arguments)));
 
     // ---- Перемикачі (мова/тема/стиль) -----------------------------------
 
@@ -747,7 +818,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var doc = _session.Current;
-        var byId = doc.Persons.ToDictionary(p => p.Id);
+        var byId = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
 
         foreach (var link in doc.ParentChildLinks.Where(l => l.ChildId == person.Id))
         {
