@@ -39,6 +39,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private CancellationTokenSource? _searchCts;
 
+    // Глушник round-trip'у виділення під час перезаповнення списку осіб.
+    // Persons.Clear() змушує ListBox синхронно записати null у SelectedPerson
+    // (Selector.SelectedItem прив'язаний TwoWay за замовчуванням), і без цього прапорця
+    // кожна зміна списку давала SetRoot(null) → Rebuild(), а після відновлення
+    // виділення — ще один Rebuild(): ДВА повні перерахунки дерева на кожну дію.
+    private bool _suppressSelectionSync;
+
+    // Особа, яку треба виділити після найближчого RefreshPersons(). Дозволяє додати
+    // особу й виділити її ОДНИМ оновленням списку замість двох.
+    private Guid? _pendingSelectionId;
+
+    // Остання осмислена вибрана особа. Тримається окремо від SelectedPerson, щоб
+    // фільтрація пошуком не втрачала виділення й не гасила побудоване дерево.
+    private Guid? _lastSelectedId;
+
     [ObservableProperty]
     private LanguageOption _selectedLanguage;
 
@@ -290,13 +305,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         document.SpouseLinks.AddRange(result.SpouseLinks);
 
         _session.SetDocument(document, null);
-        _session.MarkContentChanged(); // демо-родина ще не збережена → позначити зміни
 
-        // 4. Обрати кореневу особу з найбагатшим оточенням, щоб дерево одразу було наочним.
-        if (result.SuggestedRootId is { } rootId)
-        {
-            SelectById(rootId);
-        }
+        // 4. Кореневу особу з найбагатшим оточенням плануємо ДО сповіщення про зміни,
+        // щоб список і дерево оновилися один раз, а не двічі.
+        _pendingSelectionId = result.SuggestedRootId;
+        _session.MarkContentChanged(); // демо-родина ще не збережена → позначити зміни
 
         var done = string.Format(_localization.GetString("Demo_Done"), result.Persons.Count);
         _dialogs.ShowMessage(done, _localization.GetString("Demo_Title"));
@@ -483,8 +496,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_dialogs.ShowPersonEditor(editor) && editor.Result is { } created)
         {
             _session.Current.Persons.Add(created);
+
+            // Плануємо вибір ДО сповіщення: RefreshPersons() з обробника ContentChanged
+            // одразу виділить нову особу. Раніше тут був окремий виклик після
+            // MarkContentChanged() — тобто список і дерево оновлювалися двічі.
+            _pendingSelectionId = created.Id;
             _session.MarkContentChanged();
-            SelectById(created.Id);
         }
     }
 
@@ -499,8 +516,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var editor = new PersonEditorViewModel(person);
         if (_dialogs.ShowPersonEditor(editor))
         {
+            // Особа вже виділена; RefreshPersons() з ContentChanged збереже вибір за Id
+            // навіть якщо зміна імені перемістила її в сортуванні.
             _session.MarkContentChanged();
-            SelectById(person.Id);
         }
     }
 
@@ -681,8 +699,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedPersonChanged(Person? value)
     {
+        // Під час перезаповнення списку виділення «блимає» через null — реагувати на це
+        // не треба: RefreshPersons() застосує підсумковий вибір один раз.
+        if (_suppressSelectionSync)
+        {
+            return;
+        }
+
+        ApplySelection(value);
+    }
+
+    /// <summary>
+    /// Застосовує вибір особи: панель зв'язків + корінь дерева.
+    /// Корінь НЕ скидається при <c>null</c>: особа могла лише не пройти фільтр пошуку,
+    /// і гасити через це побудоване дерево — гірше, ніж лишити його на місці.
+    /// Видалену особу дерево відкине саме (у <c>Rebuild</c> є перевірка graph.Contains).
+    /// </summary>
+    private void ApplySelection(Person? value)
+    {
         RefreshRelations();
-        _tree.SetRoot(value?.Id);
+
+        if (value is not null)
+        {
+            _lastSelectedId = value.Id;
+            _tree.SetRoot(value.Id);
+        }
     }
 
     partial void OnSearchTextChanged(string? value) => DebounceSearch();
@@ -755,7 +796,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void RefreshPersons()
     {
-        var selectedId = SelectedPerson?.Id;
+        // Пріоритет: явно запланований вибір → поточний → останній осмислений
+        // (останній потрібен, щоб очищення пошуку повертало виділення, а не губило його).
+        var targetId = _pendingSelectionId ?? SelectedPerson?.Id ?? _lastSelectedId;
+        _pendingSelectionId = null;
+
         var query = _session.Current.Persons.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(SearchText))
@@ -781,16 +826,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 .ThenBy(p => p.FirstName, StringComparer.CurrentCulture),
         }).ToList();
 
-        Persons.Clear();
-        foreach (var person in ordered)
+        // Перезаповнення списку з заглушеним round-trip'ом виділення: усі проміжні
+        // значення SelectedPerson (у т.ч. null від ListBox на Clear) ігноруються,
+        // а підсумковий вибір застосовується рівно один раз — після циклу.
+        _suppressSelectionSync = true;
+        try
         {
-            Persons.Add(person);
+            Persons.Clear();
+            foreach (var person in ordered)
+            {
+                Persons.Add(person);
+            }
+
+            SelectedPerson = targetId is { } id ? Persons.FirstOrDefault(p => p.Id == id) : null;
+        }
+        finally
+        {
+            _suppressSelectionSync = false;
         }
 
-        if (selectedId is { } id)
-        {
-            SelectedPerson = Persons.FirstOrDefault(p => p.Id == id);
-        }
+        // SetRoot усередині сам відкидає повторний вибір того самого кореня,
+        // тож коли виділення не змінилося (сортування, пошук), дерево не перебудовується.
+        ApplySelection(SelectedPerson);
 
         OnPropertyChanged(nameof(PersonsCountText));
         RaiseDocumentInfo();
@@ -799,12 +856,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private static IOrderedEnumerable<Person> Direction<TKey>(
         IEnumerable<Person> source, Func<Person, TKey> key, IComparer<TKey> comparer, bool descending) =>
         descending ? source.OrderByDescending(key, comparer) : source.OrderBy(key, comparer);
-
-    private void SelectById(Guid id)
-    {
-        RefreshPersons();
-        SelectedPerson = Persons.FirstOrDefault(p => p.Id == id);
-    }
 
     private void RefreshRelations()
     {
@@ -885,14 +936,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnDocumentChanged(object? sender, EventArgs e)
     {
         SearchText = null;
+        _pendingSelectionId = null;
+        _lastSelectedId = null;
+        _tree.SetRoot(null); // інший документ — старий корінь більше не має сенсу
         RefreshPersons();
     }
 
-    private void OnContentChanged(object? sender, EventArgs e)
-    {
-        RefreshPersons();
-        RefreshRelations();
-    }
+    // RefreshPersons() тепер сам застосовує вибір (а отже й RefreshRelations),
+    // тож окремий виклик тут лише дублював роботу.
+    private void OnContentChanged(object? sender, EventArgs e) => RefreshPersons();
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {

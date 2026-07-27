@@ -16,7 +16,7 @@ namespace FamilyTree.App.ViewModels;
 /// <see cref="TreeLayoutEngine"/> і віддає вузли/ребра для рендерингу.
 /// Режим/глибина та бейджі родства розширюються в T-4.3.
 /// </summary>
-public partial class TreeViewModel : ObservableObject
+public partial class TreeViewModel : ObservableObject, IDisposable
 {
     private static readonly IReadOnlyList<TreeModeOption> ModeOptions = new[]
     {
@@ -54,23 +54,58 @@ public partial class TreeViewModel : ObservableObject
 
     private Guid? _rootId;
 
+    // Стан останньої побудови. Дозволяє перемалювати сцену (переворот по вертикалі,
+    // смуги поколінь) без перебудови графа й без повторного розрахунку родства.
+    private FamilyDocument? _doc;
+    private FamilyGraph? _graph;
+    private TreeLayout? _layout;
+    private Dictionary<Guid, Person>? _persons;
+
+    // Кеш бейджів родства — найдорожча частина побудови: KinshipCalculator.Compute
+    // робить ~5 обходів графа на вузол, і викликається для КОЖНОГО вузла розкладки.
+    // Валідний лише для _badgeRootId та поточної мови/стилю назв; скидається через
+    // InvalidateBadges() при зміні вмісту, мови, стилю або кореня.
+    private readonly Dictionary<Guid, string> _badges = new();
+    private Guid? _badgeRootId;
+
     public TreeViewModel(IDocumentSession session, TreeLayoutEngine engine, ILocalizationService localization, KinshipCalculator kinship)
     {
         _session = session;
         _engine = engine;
         _localization = localization;
         _kinship = kinship;
-        _session.DocumentChanged += (_, _) => Rebuild();
-        _session.ContentChanged += (_, _) => Rebuild();
-        _localization.LanguageChanged += (_, _) =>
-        {
-            OnPropertyChanged(nameof(AvailableModes));
-            Rebuild(); // бейджі родства перекладаються
-        };
+
+        // Іменовані обробники (а не лямбди) — щоб від них можна було відписатися в Dispose.
+        _session.DocumentChanged += OnDocumentOrContentChanged;
+        _session.ContentChanged += OnDocumentOrContentChanged;
+        _localization.LanguageChanged += OnLanguageChanged;
     }
 
     /// <summary>Перебудувати дерево (напр. після зміни стилю назв родства).</summary>
-    public void Refresh() => Rebuild();
+    public void Refresh()
+    {
+        InvalidateBadges();
+        Rebuild();
+    }
+
+    private void OnDocumentOrContentChanged(object? sender, EventArgs e)
+    {
+        InvalidateBadges(); // зв'язки могли змінитися → назви родства теж
+        Rebuild();
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(AvailableModes));
+        InvalidateBadges(); // бейджі родства перекладаються
+        Rebuild();
+    }
+
+    private void InvalidateBadges()
+    {
+        _badges.Clear();
+        _badgeRootId = null;
+    }
 
     /// <summary>Доступні режими дерева (локалізовані назви оновлюються при зміні мови).</summary>
     public IReadOnlyList<TreeModeOption> AvailableModes => ModeOptions.ToList();
@@ -88,9 +123,16 @@ public partial class TreeViewModel : ObservableObject
     /// <summary>Напівпрозорі смуги-фони поколінь (позаду всього).</summary>
     public ObservableCollection<GenerationBandViewModel> Bands { get; } = new();
 
-    /// <summary>Задає кореневу особу й перебудовує дерево.</summary>
+    /// <summary>Задає кореневу особу й перебудовує дерево. Повторний вибір тієї самої
+    /// особи нічого не робить — інакше сортування/пошук у списку осіб коштували б
+    /// повну перебудову дерева без жодної зміни на екрані.</summary>
     public void SetRoot(Guid? rootId)
     {
+        if (_rootId == rootId)
+        {
+            return;
+        }
+
         _rootId = rootId;
         Rebuild();
     }
@@ -162,20 +204,22 @@ public partial class TreeViewModel : ObservableObject
 
     partial void OnDepthChanged(int value) => Rebuild();
 
-    partial void OnShowGenerationBandsChanged(bool value) => Rebuild();
+    // Смуги поколінь і переворот по вертикалі не змінюють ні складу вузлів, ні назв
+    // родства — лише координати та фон. Тому достатньо перемалювати сцену з кешованої
+    // розкладки, без перебудови графа й без N розрахунків родства.
+    partial void OnShowGenerationBandsChanged(bool value) => Render();
 
-    partial void OnFlipVerticalChanged(bool value) => Rebuild();
+    partial void OnFlipVerticalChanged(bool value) => Render();
 
+    /// <summary>
+    /// Повна перебудова: граф → розкладка → рендер. Викликається лише коли змінилося
+    /// щось, що впливає на СКЛАД сцени (корінь, режим, глибина, вміст документа).
+    /// </summary>
     private void Rebuild()
     {
-        Nodes.Clear();
-        Edges.Clear();
-        Couples.Clear();
-        Bands.Clear();
-
         if (_rootId is not { } rootId)
         {
-            CanvasWidth = CanvasHeight = 0;
+            ClearScene();
             return;
         }
 
@@ -183,12 +227,58 @@ public partial class TreeViewModel : ObservableObject
         var graph = new FamilyGraph(doc.Persons, doc.ParentChildLinks, doc.SpouseLinks);
         if (!graph.Contains(rootId))
         {
-            CanvasWidth = CanvasHeight = 0;
+            ClearScene();
             return;
         }
 
-        var layout = _engine.Build(graph, rootId, Mode, Depth);
-        var persons = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
+        if (_badgeRootId != rootId)
+        {
+            // Інший корінь — усі назви родства інші, кеш не переносимо.
+            _badges.Clear();
+            _badgeRootId = rootId;
+        }
+
+        _doc = doc;
+        _graph = graph;
+        _persons = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
+        _layout = _engine.Build(graph, rootId, Mode, Depth);
+
+        Render();
+    }
+
+    private void ClearScene()
+    {
+        Nodes.Clear();
+        Edges.Clear();
+        Couples.Clear();
+        Bands.Clear();
+        _doc = null;
+        _graph = null;
+        _layout = null;
+        _persons = null;
+        CanvasWidth = CanvasHeight = 0;
+    }
+
+    /// <summary>
+    /// Перетворює кешовану розкладку у ViewModel-и сцени. Дешево: без обходів графа
+    /// й без <see cref="KinshipCalculator"/> (бейджі беруться з кешу).
+    /// </summary>
+    private void Render()
+    {
+        if (_rootId is not { } rootId
+            || _doc is not { } doc
+            || _graph is not { } graph
+            || _layout is not { } layout
+            || _persons is not { } persons)
+        {
+            return;
+        }
+
+        Nodes.Clear();
+        Edges.Clear();
+        Couples.Clear();
+        Bands.Clear();
+
         var positions = layout.Nodes.ToDictionary(n => n.PersonId);
         var rootPerson = persons[rootId];
         var youBadge = _localization.GetString("Tree_You");
@@ -212,7 +302,7 @@ public partial class TreeViewModel : ObservableObject
                     .Where(part => !string.IsNullOrWhiteSpace(part))),
                 Patronymic = string.IsNullOrWhiteSpace(person.MiddleName) ? null : person.MiddleName,
                 Years = FormatYears(person),
-                RelationBadge = isRoot ? youBadge : _kinship.Compute(rootPerson, person, graph, includeAffinity: true).DisplayName,
+                RelationBadge = isRoot ? youBadge : Badge(rootPerson, person, graph),
                 IsRoot = isRoot,
                 PhotoPath = ResolvePhoto(person.PhotoPath),
                 DetailMaiden = Line("Person_MaidenName", person.MaidenName),
@@ -317,6 +407,22 @@ public partial class TreeViewModel : ObservableObject
 
         CanvasWidth = layout.Width;
         CanvasHeight = layout.Height;
+    }
+
+    /// <summary>
+    /// Назва родства для вузла, з кешем. Без кешу зміна глибини чи режиму дерева
+    /// перераховувала родство для всіх спільних вузлів заново, хоч корінь той самий.
+    /// </summary>
+    private string Badge(Person root, Person relative, FamilyGraph graph)
+    {
+        if (_badges.TryGetValue(relative.Id, out var cached))
+        {
+            return cached;
+        }
+
+        var name = _kinship.Compute(root, relative, graph, includeAffinity: true).DisplayName;
+        _badges[relative.Id] = name;
+        return name;
     }
 
     /// <summary>Дві напівпрозорі смуги поколінь, що чергуються: світліша та темніша
@@ -473,5 +579,12 @@ public partial class TreeViewModel : ObservableObject
             : Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "FamilyTree", relativePath);
+    }
+
+    public void Dispose()
+    {
+        _session.DocumentChanged -= OnDocumentOrContentChanged;
+        _session.ContentChanged -= OnDocumentOrContentChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
     }
 }
