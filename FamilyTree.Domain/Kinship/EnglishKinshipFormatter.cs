@@ -25,10 +25,15 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
         {
             KinshipKind.SamePerson => "the same person",
             KinshipKind.None => "no relation",
+            // Подружжя та свояцтво теж проходять через ByGender: раніше вони кликали Pick
+            // напряму, і особа з Gender.Unknown тихо ставала чоловіком («husband», «son-in-law»).
             KinshipKind.Spouse => c.IsFormerSpouse
-                ? Pick(c.RelativeGender, "ex-husband", "ex-wife")
-                : Pick(c.RelativeGender, "husband", "wife"),
-            KinshipKind.Affinity => BuildAffinity(c),
+                ? ByGender(c.RelativeGender, () => "ex-husband", () => "ex-wife")
+                : ByGender(c.RelativeGender, () => "husband", () => "wife"),
+            KinshipKind.Affinity => ByGender(
+                c.RelativeGender,
+                () => BuildAffinity(c, Gender.Male),
+                () => BuildAffinity(c, Gender.Female)),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 
@@ -113,20 +118,21 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
     /// <summary>
     /// Свояцтво (розд. 4.5). Англійська система «-in-law» не розрізняє бік родини,
     /// тому не потребує статі сполучної особи (окрім описового uncle/aunt by marriage).
+    /// Стать особи-B передається явно, щоб для Gender.Unknown ByGender показав обидва варіанти.
     /// </summary>
-    private static string BuildAffinity(KinshipContext c)
+    private static string BuildAffinity(KinshipContext c, Gender g) => c.Affinity switch
     {
-        var g = c.RelativeGender;
-        return c.Affinity switch
-        {
-            AffinityKind.SpouseParent => Pick(g, "father-in-law", "mother-in-law"),
-            AffinityKind.ChildSpouse => Pick(g, "son-in-law", "daughter-in-law"),
-            AffinityKind.SpouseSibling => Pick(g, "brother-in-law", "sister-in-law"),
-            AffinityKind.SiblingSpouse => Pick(g, "brother-in-law", "sister-in-law"),
-            AffinityKind.UncleAuntSpouse => Pick(g, "uncle (by marriage)", "aunt (by marriage)"),
-            _ => "relative by marriage",
-        };
-    }
+        // «-in-law» тут не вживається: англійська для нерідних батьків/дітей
+        // використовує саме «step-».
+        AffinityKind.StepParent => Pick(g, "stepfather", "stepmother"),
+        AffinityKind.StepChild => Pick(g, "stepson", "stepdaughter"),
+        AffinityKind.SpouseParent => Pick(g, "father-in-law", "mother-in-law"),
+        AffinityKind.ChildSpouse => Pick(g, "son-in-law", "daughter-in-law"),
+        AffinityKind.SpouseSibling => Pick(g, "brother-in-law", "sister-in-law"),
+        AffinityKind.SiblingSpouse => Pick(g, "brother-in-law", "sister-in-law"),
+        AffinityKind.UncleAuntSpouse => Pick(g, "uncle (by marriage)", "aunt (by marriage)"),
+        _ => "relative by marriage",
+    };
 
     private static string Pick(Gender g, string male, string female) =>
         g == Gender.Female ? female : male;

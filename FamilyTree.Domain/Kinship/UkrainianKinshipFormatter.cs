@@ -30,10 +30,15 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
         {
             KinshipKind.SamePerson => "та сама особа",
             KinshipKind.None => "родинний зв'язок не встановлено",
+            // Подружжя та свояцтво теж проходять через ByGender: раніше вони кликали Pick
+            // напряму, і особа з Gender.Unknown тихо ставала чоловіком («чоловік», «зять»).
             KinshipKind.Spouse => c.IsFormerSpouse
-                ? Pick(c.RelativeGender, "колишній чоловік", "колишня дружина")
-                : Pick(c.RelativeGender, "чоловік", "дружина"),
-            KinshipKind.Affinity => BuildAffinity(c, Style == KinshipNamingStyle.Detailed),
+                ? ByGender(c.RelativeGender, () => "колишній чоловік", () => "колишня дружина")
+                : ByGender(c.RelativeGender, () => "чоловік", () => "дружина"),
+            KinshipKind.Affinity => ByGender(
+                c.RelativeGender,
+                () => BuildAffinity(c, Gender.Male, Style == KinshipNamingStyle.Detailed),
+                () => BuildAffinity(c, Gender.Female, Style == KinshipNamingStyle.Detailed)),
             _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
         };
 
@@ -56,13 +61,24 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
         };
     }
 
-    /// <summary>Для невідомої статі показуємо обидва варіанти: «син / дочка».</summary>
-    private static string ByGender(Gender gender, Func<string> male, Func<string> female) => gender switch
+    /// <summary>
+    /// Для невідомої статі показуємо обидва варіанти: «син / дочка».
+    /// Якщо назва для обох статей однакова — не дублюємо її.
+    /// </summary>
+    private static string ByGender(Gender gender, Func<string> male, Func<string> female)
     {
-        Gender.Male => male(),
-        Gender.Female => female(),
-        _ => $"{male()} / {female()}",
-    };
+        switch (gender)
+        {
+            case Gender.Male:
+                return male();
+            case Gender.Female:
+                return female();
+            default:
+                var m = male();
+                var f = female();
+                return m == f ? m : $"{m} / {f}";
+        }
+    }
 
     private static string Build(KinshipContext c, Gender g) => c.Kind switch
     {
@@ -96,7 +112,10 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
                 {
                     SiblingKind.HalfPaternal => Pick(g, "єдинокровний ", "єдинокровна ") + word,
                     SiblingKind.HalfMaternal => Pick(g, "єдиноутробний ", "єдиноутробна ") + word,
-                    SiblingKind.HalfUnknown => Pick(g, "зведений ", "зведена ") + word,
+                    // «зведений» українською — це дитина мачухи/вітчима, тобто БЕЗ спільної
+                    // крові (тепер AffinityKind.StepParent/StepChild). Для спільного одного
+                    // з батьків правильний термін — «неповнорідний».
+                    SiblingKind.HalfUnknown => Pick(g, "неповнорідний ", "неповнорідна ") + word,
                     _ => word,
                 };
             }
@@ -129,24 +148,35 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
     }
 
     /// <summary>
-    /// Свояцтво (розд. 4.5): g — стать особи-B, pivot — стать сполучної особи X.
+    /// Свояцтво (розд. 4.5): g — стать особи-B (передається явно, щоб для невідомої статі
+    /// ByGender міг показати обидва варіанти), pivot — стать сполучної особи X.
     /// </summary>
-    private static string BuildAffinity(KinshipContext c, bool detailed)
+    private static string BuildAffinity(KinshipContext c, Gender g, bool detailed)
     {
-        var g = c.RelativeGender;
         var pivot = c.PivotGender;
         return c.Affinity switch
         {
+            // B — подружжя мого батька/матері: вітчим (чоловік матері) / мачуха (дружина батька).
+            AffinityKind.StepParent => Pick(g, "вітчим", "мачуха"),
+            // B — дитина мого подружжя від іншого шлюбу.
+            AffinityKind.StepChild => Pick(g, "пасинок", "пасербиця"),
             // B — батько/мати мого подружжя. Подружжя-жінка → батьки дружини (тесть/теща);
-            // подружжя-чоловік → батьки чоловіка (свекор/свекруха).
-            AffinityKind.SpouseParent => pivot == Gender.Female
-                ? Pick(g, "тесть", "теща")
-                : Pick(g, "свекор", "свекруха"),
+            // подружжя-чоловік → батьки чоловіка (свекор/свекруха). Якщо стать подружжя
+            // невідома, українська назва невизначена — даємо описову замість вгадування.
+            AffinityKind.SpouseParent => pivot switch
+            {
+                Gender.Female => Pick(g, "тесть", "теща"),
+                Gender.Male => Pick(g, "свекор", "свекруха"),
+                _ => Pick(g, "батько подружжя", "мати подружжя"),
+            },
             // B — брат/сестра мого подружжя. Подружжя-чоловік → дівер/зовиця;
             // подружжя-жінка → шурин/своячка.
-            AffinityKind.SpouseSibling => pivot == Gender.Male
-                ? Pick(g, "дівер", "зовиця")
-                : Pick(g, "шурин", "своячка"),
+            AffinityKind.SpouseSibling => pivot switch
+            {
+                Gender.Male => Pick(g, "дівер", "зовиця"),
+                Gender.Female => Pick(g, "шурин", "своячка"),
+                _ => Pick(g, "брат подружжя", "сестра подружжя"),
+            },
             // B — подружжя моєї дитини: зять (чоловік дочки) / невістка (дружина сина).
             AffinityKind.ChildSpouse => Pick(g, "зять", "невістка"),
             // B — подружжя мого сиблінга. Чоловік сестри — «зять»; у детальному стилі —

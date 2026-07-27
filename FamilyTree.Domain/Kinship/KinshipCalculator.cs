@@ -145,6 +145,10 @@ public sealed class KinshipCalculator
     /// <summary>Кровне плече root→X (X одружений із relative): a кроків від root, b — від X.</summary>
     private static (AffinityKind Kind, int Distance) MapPatternA(int a, int b) => (a, b) switch
     {
+        // X — мій батько/мати (НСП = сам X), B одружений(-а) з X → вітчим/мачуха.
+        // Найближче свояцтво взагалі, тому distance = 0: якщо особа є і мачухою,
+        // і, скажімо, дружиною дядька, показуємо ближчу роль.
+        (1, 0) => (AffinityKind.StepParent, 0),
         (0, 1) => (AffinityKind.ChildSpouse, 1),     // X — дитина root → B подружжя моєї дитини
         (1, 1) => (AffinityKind.SiblingSpouse, 2),   // X — сиблінг root → B подружжя мого сиблінга
         (2, 1) => (AffinityKind.UncleAuntSpouse, 3), // X — дядько/тітка root → B подружжя дядька/тітки
@@ -154,6 +158,8 @@ public sealed class KinshipCalculator
     /// <summary>Кровне плече X→relative (X одружений із root): a кроків від X, b — від relative.</summary>
     private static (AffinityKind Kind, int Distance) MapPatternB(int a, int b) => (a, b) switch
     {
+        // X — моє подружжя, relative — дитина X (НСП = сам X) → пасинок/пасербиця.
+        (0, 1) => (AffinityKind.StepChild, 0),
         (1, 0) => (AffinityKind.SpouseParent, 1),    // relative — батько/мати X → тесть/свекор…
         (1, 1) => (AffinityKind.SpouseSibling, 2),   // relative — сиблінг X → дівер/шурин…
         _ => (AffinityKind.NotAffinity, int.MaxValue),
