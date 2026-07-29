@@ -8,6 +8,14 @@ x86/
 artifacts/
 publish/
 
+## Інсталятор (готові setup.exe — артефакт збірки, ~66 МБ на реліз).
+## Графіка вікна майстра в installer/assets/ навпаки версіонується:
+## без неї .iss не компілюється.
+installer/output/
+*-setup.exe
+## Макет вікна майстра — генерується для перегляду, у репо не потрібен.
+installer/design-preview.png
+
 ## Visual Studio
 .vs/
 *.user

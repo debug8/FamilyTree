@@ -45,6 +45,35 @@ dotnet publish FamilyTree.App/FamilyTree.App.csproj -c Release /p:PublishProfile
 & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\FamilyTree.iss
 ```
 
+## Дизайн вікна інсталятора
+
+Фірмова палітра: **#82C596** (зелений) → **#15556B** (глибокий синій), ті самі кольори, що в іконці застосунку.
+
+### Графіка
+
+Лежить у `installer/assets/`, генерується скриптом `installer/make-wizard-images.py` із `app-icon-source.png` (потрібен Python із `pillow`):
+
+```powershell
+python installer\make-wizard-images.py
+```
+
+| Файл | Розмір | Роль |
+|------|--------|------|
+| `wizard-image*.bmp` | 164×314 і масштаби 125/150/200% | боковий баннер на екранах вітання та завершення (`WizardImageFile`) |
+| `wizard-small*.bmp` | 55×58 і масштаби | логотип у шапці решти екранів (`WizardSmallImageFile`) |
+
+Inno Setup сам обирає потрібний файл зі списку за поточним DPI, тому масштабовані варіанти краще тримати всі. Формат — 24-бітний BMP без стиснення (Inno 6 читає і PNG, але BMP гарантовано працює будь-де).
+
+Оскільки баннер видно лише на екрані вітання, у `[Setup]` стоїть `DisableWelcomePage=no` — інакше Inno 6 цей екран пропускає.
+
+### Кольори
+
+Inno Setup не має директив для кольорів вікна, тому їх задає Pascal-скрипт у секції `[Code]`: `InitializeWizard` перефарбовує форму, сторінки, шапку й підписи, `InitializeUninstallProgressForm` — те саме для вікна видалення. Рекурсивна `StyleTextControls` проходить усі контроли й ставить колір тексту, щоб не перелічувати кожен підпис окремо.
+
+Кольори в Inno записуються як `$00BBGGRR` — байти у зворотному порядку від HTML. Наприклад `#15556B` → `$6B5515`.
+
+Кнопки (`Далі`, `Скасувати`) залишаються системними: це нативні контроли Windows, і перефарбувати їх без власного малювання не вийде.
+
 ## Версія
 
 Версію застосунку задано у `FamilyTree.App/FamilyTree.App.csproj` (`<Version>`), і вона ж показується у вікні «Про програму». Оновлюючи реліз, зміни `<Version>` там і `#define AppVersion` у `installer/FamilyTree.iss`.
@@ -62,7 +91,7 @@ dotnet publish FamilyTree.App/FamilyTree.App.csproj -c Release /p:PublishProfile
 
 `.ico` **гібридний**: на 16/20/24px лежить щільний силует дерева, на 32px і більше — детальний малюнок. Причина в тому, що тонкі контури листя на 16 пікселях перетворюються на пляму; силует там читається значно краще. Це штатна можливість формату — різні кадри можуть містити різні зображення.
 
-Інсталятор іконку `.exe` підхоплює сам: `FamilyTree.iss` посилається на `{app}\{#AppExeName},0`. Окремої іконки для вікна встановлювача (`SetupIconFile`) не задано — за потреби додай туди ж `app-icon.ico`.
+Інсталятор іконку `.exe` підхоплює сам: `FamilyTree.iss` посилається на `{app}\{#AppExeName},0`. Іконку самого `setup.exe` задано через `SetupIconFile=..\FamilyTree.App\Resources\app-icon.ico`.
 
 ### Перегенерувати `.ico`
 
