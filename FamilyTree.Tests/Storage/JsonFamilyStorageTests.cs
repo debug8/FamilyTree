@@ -101,11 +101,18 @@ public sealed class JsonFamilyStorageTests : IDisposable
         doc.Persons.Add(new Person { LastName = "Новий", FirstName = "Запис", Gender = Gender.Unknown });
         storage.FaultBeforePromote = () => throw new IOException("симульований збій");
 
+        var before = doc.Meta.UpdatedAt;
+
         await Should.ThrowAsync<IOException>(async () => await storage.SaveAsync(doc, path));
 
-        // Наявний файл недоторканий, temp прибрано.
+        // Наявний файл недоторканий, після себе не лишилося жодного temp
+        // (ім'я temp тепер унікальне, тому перевіряємо за маскою).
         (await File.ReadAllTextAsync(path)).ShouldBe(originalContent);
-        File.Exists(path + ".tmp").ShouldBeFalse();
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+
+        // Час оновлення не «збігає вперед» після невдалого збереження:
+        // раніше Meta.UpdatedAt мутувався до запису й не відповідав нічому на диску.
+        doc.Meta.UpdatedAt.ShouldBe(before);
 
         storage.FaultBeforePromote = null;
         var reloaded = await storage.LoadAsync(path);

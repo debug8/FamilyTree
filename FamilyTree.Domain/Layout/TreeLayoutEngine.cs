@@ -69,24 +69,107 @@ public sealed class TreeLayoutEngine
     {
         visited.Add(personId);
         var unit = new Unit();
-        unit.Persons.Add(personId);
 
-        var spouse = graph.GetSpouses(personId).FirstOrDefault(s => !visited.Contains(s.Id));
-        if (spouse is not null)
+        // Усі партнери, а не лише перший. Раніше тут був FirstOrDefault, тож особа
+        // з двома шлюбами показувалася поруч із випадковим (першим у файлі) партнером,
+        // а решта не потрапляла ні у visited, ні в positions — тобто зникала з полотна,
+        // і Finalize не малював до неї ребра, хоч діти під нею були саме від неї.
+        var partners = new List<Guid>();
+        foreach (var spouse in graph.GetSpouses(personId))
         {
-            visited.Add(spouse.Id);
-            unit.Persons.Add(spouse.Id);
-        }
-
-        if (depth < depthLimit)
-        {
-            foreach (var child in graph.GetChildren(personId).Where(c => !visited.Contains(c.Id)))
+            if (visited.Add(spouse.Id))
             {
-                unit.Children.Add(BuildDescendantUnit(graph, child.Id, depth + 1, depthLimit, visited));
+                partners.Add(spouse.Id);
             }
         }
 
+        // Рядок юніта: один партнер ліворуч від особи, решта — праворуч.
+        // Так у типовому випадку повторного шлюбу обидві пари лишаються сусідніми
+        // (S1 — Особа — S2), і рамки шлюбів не розтягуються через усе полотно.
+        if (partners.Count > 0)
+        {
+            unit.Persons.Add(partners[0]);
+        }
+
+        unit.Persons.Add(personId);
+
+        for (var i = 1; i < partners.Count; i++)
+        {
+            unit.Persons.Add(partners[i]);
+        }
+
+        if (depth >= depthLimit)
+        {
+            return unit;
+        }
+
+        foreach (var childId in OrderChildrenByParentCouple(graph, personId, partners))
+        {
+            if (visited.Contains(childId))
+            {
+                continue;
+            }
+
+            unit.Children.Add(BuildDescendantUnit(graph, childId, depth + 1, depthLimit, visited));
+        }
+
         return unit;
+    }
+
+    /// <summary>
+    /// Порядок дітей за парою батьків: спершу спільні з лівим партнером, потім ті, чий
+    /// другий батько невідомий (або не є партнером), далі — діти з рештою партнерів.
+    /// Це вирівнює групи дітей під відповідними парами й зменшує перетини ребер.
+    /// Дитина має не більше двох батьків, тож у жодну групу не потрапляє двічі.
+    /// </summary>
+    private static List<Guid> OrderChildrenByParentCouple(FamilyGraph graph, Guid personId, List<Guid> partners)
+    {
+        var children = graph.GetChildren(personId).Select(c => c.Id).ToList();
+        if (partners.Count == 0 || children.Count <= 1)
+        {
+            return children;
+        }
+
+        var byPartner = new Dictionary<Guid, List<Guid>>();
+        var withoutPartner = new List<Guid>();
+
+        foreach (var childId in children)
+        {
+            var otherParent = graph.GetParents(childId)
+                .FirstOrDefault(p => p.Id != personId && partners.Contains(p.Id));
+
+            if (otherParent is null)
+            {
+                withoutPartner.Add(childId);
+                continue;
+            }
+
+            if (!byPartner.TryGetValue(otherParent.Id, out var group))
+            {
+                byPartner[otherParent.Id] = group = new List<Guid>();
+            }
+
+            group.Add(childId);
+        }
+
+        var ordered = new List<Guid>(children.Count);
+
+        if (byPartner.TryGetValue(partners[0], out var leftGroup))
+        {
+            ordered.AddRange(leftGroup);
+        }
+
+        ordered.AddRange(withoutPartner);
+
+        for (var i = 1; i < partners.Count; i++)
+        {
+            if (byPartner.TryGetValue(partners[i], out var group))
+            {
+                ordered.AddRange(group);
+            }
+        }
+
+        return ordered;
     }
 
     private static Unit BuildAncestorUnit(FamilyGraph graph, Guid personId, int depth, int depthLimit, HashSet<Guid> visited)
@@ -178,11 +261,19 @@ public sealed class TreeLayoutEngine
 
         var minGen = generation.Values.Min();
 
+        // Індекс порядку обходу мапою, а не order.IndexOf: IndexOf — це O(n) з лінійним
+        // порівнянням Guid у ключі сортування, тобто O(n²) на все покоління.
+        var orderIndex = new Dictionary<Guid, int>(order.Count);
+        for (var i = 0; i < order.Count; i++)
+        {
+            orderIndex[order[i]] = i;
+        }
+
         // Групуємо по поколіннях, у кожному кладемо подружжя поруч.
         var positions = new Dictionary<Guid, (double Col, int Depth)>();
         foreach (var group in generation.Keys.GroupBy(id => generation[id]))
         {
-            var ordered = OrderKeepingSpousesTogether(graph, group.OrderBy(id => order.IndexOf(id)).ToList());
+            var ordered = OrderKeepingSpousesTogether(graph, group.OrderBy(id => orderIndex[id]).ToList());
             var depth = group.Key - minGen;
             for (var i = 0; i < ordered.Count; i++)
             {
@@ -223,7 +314,9 @@ public sealed class TreeLayoutEngine
     {
         foreach (var level in positions.GroupBy(p => p.Value.Depth).ToList())
         {
-            var ordered = level.OrderBy(p => p.Value.Col).ToList();
+            // ThenBy(Key) — щоб при однакових колонках результат не залежав від порядку
+            // перебору Dictionary (інакше розсування накладань було невідтворюваним).
+            var ordered = level.OrderBy(p => p.Value.Col).ThenBy(p => p.Key).ToList();
             var previous = double.NegativeInfinity;
             foreach (var entry in ordered)
             {
@@ -247,7 +340,14 @@ public sealed class TreeLayoutEngine
         }
 
         var minCol = positions.Values.Min(p => p.Col);
+
+        // Явне сортування: порядок перебору Dictionary/HashSet контрактом не визначений,
+        // тож розкладка була відтворюваною лише для однакового порядку вставки. Це робило
+        // неможливими snapshot-тести й давало нестабільний z-order при рендерингу.
         var nodes = positions
+            .OrderBy(kvp => kvp.Value.Depth)
+            .ThenBy(kvp => kvp.Value.Col)
+            .ThenBy(kvp => kvp.Key)
             .Select(kvp => new NodeLayout(
                 kvp.Key,
                 (kvp.Value.Col - minCol) * ColumnStep,
@@ -258,8 +358,10 @@ public sealed class TreeLayoutEngine
         var placed = new HashSet<Guid>(positions.Keys);
         var edges = new List<EdgeLayout>();
 
-        foreach (var id in placed)
+        foreach (var node in nodes)
         {
+            var id = node.PersonId;
+
             foreach (var child in graph.GetChildren(id))
             {
                 if (placed.Contains(child.Id))
