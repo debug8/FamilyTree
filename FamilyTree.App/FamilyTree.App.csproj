@@ -8,6 +8,10 @@
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Іконка самого .exe: саме її показують Проводник, панель задач, ярлики
+         інсталятора та асоціація .familytree (FamilyTree.iss посилається на
+         "{app}\FamilyTree.exe,0"). Без цього рядка там була стандартна іконка .NET. -->
+    <ApplicationIcon>Resources\app-icon.ico</ApplicationIcon>
     <AssemblyName>FamilyTree</AssemblyName>
     <RootNamespace>FamilyTree.App</RootNamespace>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
@@ -38,6 +42,16 @@
   <ItemGroup>
     <ProjectReference Include="..\FamilyTree.Domain\FamilyTree.Domain.csproj" />
     <ProjectReference Include="..\FamilyTree.Storage\FamilyTree.Storage.csproj" />
+  </ItemGroup>
+
+  <!-- Іконка всередині застосунку: .ico для заголовка вікна (Windows сам обирає
+       потрібний кадр із 16…256), .png для картинки в діалозі «Про програму».
+       None Remove — щоб файли не потрапили одночасно і як None, і як Resource. -->
+  <ItemGroup>
+    <None Remove="Resources\app-icon.ico" />
+    <None Remove="Resources\app-icon.png" />
+    <Resource Include="Resources\app-icon.ico" />
+    <Resource Include="Resources\app-icon.png" />
   </ItemGroup>
 
 </Project>
