@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -9,10 +10,11 @@ namespace FamilyTree.Storage;
 
 /// <summary>
 /// Сховище документа родини у файлі .familytree (JSON) за розд. 3.5:
-/// атомарний запис (temp + File.Replace), версія схеми з ланцюжком міграторів,
-/// ротація 5 резервних копій у підпапці .backups.
+/// атомарний запис (унікальний temp + скидання на диск + File.Replace з фолбеком),
+/// версія схеми з ланцюжком міграторів, 5 нумерованих резервних копій у підпапці
+/// <c>.backups</c> (<c>.1.bak</c> — найновіша), перевірка цілісності при завантаженні.
 /// </summary>
-public sealed class JsonFamilyStorage : IFamilyStorage
+public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 {
     /// <summary>Поточна підтримувана версія схеми файлу.</summary>
     public const int CurrentSchemaVersion = 1;
@@ -26,9 +28,18 @@ public sealed class JsonFamilyStorage : IFamilyStorage
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter() },
+
+        // Без цього кирилиця писалася escape-послідовностями («Тест»):
+        // файл роздувався ~втричі й перестав бути придатним для читання, diff-у та grep-у,
+        // хоч формат позиціонується як людиночитний JSON. Безпечно — вивід не йде в HTML.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     private readonly IReadOnlyList<IFormatMigration> _migrations;
+
+    // Серіалізує збереження в межах процесу (див. коментар у SaveAsync).
+    // Міжпроцесний захист (два запущені екземпляри застосунку) — окреме питання.
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
 
     /// <summary>
     /// Тестовий гачок: викликається після запису тимчасового файлу, але ДО заміни
@@ -165,43 +176,114 @@ public sealed class JsonFamilyStorage : IFamilyStorage
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        document.Meta.UpdatedAt = DateTime.UtcNow;
-
-        var dto = DocumentMapper.ToDto(document, CurrentSchemaVersion);
-        // Серіалізація в пам'ять: якщо тут станеться помилка — цільовий файл не змінено.
-        var json = JsonSerializer.Serialize(dto, JsonOptions);
-
         var fullPath = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(fullPath)!;
-        Directory.CreateDirectory(directory);
+        var directory = Path.GetDirectoryName(fullPath)
+            ?? throw FamilyFileException.Create(FileErrorKeys.Io, inner: null, path);
 
-        var tempPath = fullPath + ".tmp";
+        var savedAt = DateTime.UtcNow;
+        var dto = DocumentMapper.ToDto(document, CurrentSchemaVersion);
+
+        // UpdatedAt ставимо в DTO, а не в документ: інакше після НЕВДАЛОГО збереження
+        // документ у пам'яті мав час, якому на диску ніщо не відповідає.
+        if (dto.Meta is { } meta)
+        {
+            meta.UpdatedAt = savedAt;
+        }
+
+        // Одне збереження за раз. Сховище зареєстроване як singleton і не мало локу,
+        // тож два паралельні SaveAsync (Ctrl+S під час збереження при закритті, автосейв)
+        // відкривали той самий temp з FileMode.Create й обрізали дані одне одного.
+        await _saveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            Directory.CreateDirectory(directory);
+
+            // Унікальне ім'я temp — друга половина захисту від того самого сценарію:
+            // раніше воно було фіксованим (fullPath + ".tmp"), і catch одного збереження
+            // видаляв temp іншого.
+            var tempPath = Path.Combine(directory, $"{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                await WriteJsonAsync(tempPath, dto, cancellationToken).ConfigureAwait(false);
+
+                // Точка для тестування атомарності (симуляція збою до заміни файлу).
+                FaultBeforePromote?.Invoke();
+
+                Promote(tempPath, fullPath);
+            }
+            catch
+            {
+                // Прибрати тимчасовий файл, лишивши цільовий недоторканим.
+                TryDelete(tempPath);
+                throw;
+            }
+        }
+        finally
+        {
+            _saveGate.Release();
+        }
+
+        document.Meta.UpdatedAt = savedAt;
+        document.IsDirty = false;
+    }
+
+    /// <summary>
+    /// Пише JSON у тимчасовий файл із примусовим скиданням на диск.
+    /// Без цього <see cref="File.Replace(string, string, string?)"/> був атомарним лише
+    /// щодо метаданих: <c>WriteAllTextAsync</c> закриває дескриптор, але не робить
+    /// <c>FlushFileBuffers</c>, тож при зникненні живлення NTFS могла зафіксувати
+    /// перейменування, а блоки даних — ні, і цільовий файл ставав нульовим чи обрізаним.
+    /// </summary>
+    private static async Task WriteJsonAsync(string tempPath, FamilyFileDto dto, CancellationToken cancellationToken)
+    {
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.Create,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+            Options = FileOptions.Asynchronous | FileOptions.WriteThrough,
+        };
+
+        var stream = new FileStream(tempPath, options);
+        await using (stream.ConfigureAwait(false))
+        {
+            // SerializeAsync замість Serialize у рядок: без проміжної копії всього
+            // документа в пам'яті й без CPU-роботи на потоці викликача (тобто на UI).
+            await JsonSerializer.SerializeAsync(stream, dto, JsonOptions, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            stream.Flush(flushToDisk: true);
+        }
+    }
+
+    /// <summary>Замінює цільовий файл підготованим тимчасовим.</summary>
+    private static void Promote(string tempPath, string fullPath)
+    {
+        if (!File.Exists(fullPath))
+        {
+            // overwrite: true — між File.Exists і перейменуванням файл міг з'явитися
+            // (інший екземпляр, синхронізація OneDrive/Dropbox). Раніше це давало
+            // IOException, а catch видаляв свіжозаписаний temp — робота користувача зникала.
+            File.Move(tempPath, fullPath, overwrite: true);
+            return;
+        }
+
+        // Резервна копія — «приємно мати». Раніше її провал (напр. задовгий шлях)
+        // валив УСЕ збереження, хоч сам документ був цілком записуваний.
+        TryBackup(fullPath);
 
         try
         {
-            await File.WriteAllTextAsync(tempPath, json, cancellationToken).ConfigureAwait(false);
-
-            // Точка для тестування атомарності (симуляція збою до заміни файлу).
-            FaultBeforePromote?.Invoke();
-
-            if (File.Exists(fullPath))
-            {
-                BackupExisting(fullPath);
-                File.Replace(tempPath, fullPath, destinationBackupFileName: null);
-            }
-            else
-            {
-                File.Move(tempPath, fullPath);
-            }
+            File.Replace(tempPath, fullPath, destinationBackupFileName: null);
         }
-        catch
+        catch (Exception ex) when (ex is IOException or PlatformNotSupportedException)
         {
-            // Прибрати тимчасовий файл, лишивши цільовий недоторканим.
-            TryDelete(tempPath);
-            throw;
+            // ReplaceFile не універсальний: падає на FAT32/exFAT-флешках, частині
+            // SMB-шар і в деяких синхронізованих теках. Фолбеку не було, тож
+            // збереження в такі місця не працювало ніколи — хоч звичайне
+            // перейменування з перезаписом там проходить.
+            File.Move(tempPath, fullPath, overwrite: true);
         }
-
-        document.IsDirty = false;
     }
 
     private JsonObject ApplyMigrations(JsonObject root, int version)
@@ -219,30 +301,52 @@ public sealed class JsonFamilyStorage : IFamilyStorage
         return root;
     }
 
-    private static void BackupExisting(string fullPath)
+    private static void TryBackup(string fullPath)
+    {
+        try
+        {
+            RotateAndBackup(fullPath);
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or PathTooLongException
+            or NotSupportedException)
+        {
+            // Не вдалося зробити копію — це не привід не зберегти документ.
+        }
+    }
+
+    /// <summary>
+    /// Нумеровані слоти: <c>.1.bak</c> — найновіша копія. Перед копіюванням зсуваємо
+    /// <c>.4→.5</c>, <c>.3→.4</c> … <c>.1→.2</c>, найстаршу видаляємо.
+    /// <para>
+    /// Раніше ім'я містило тики (19 символів) і GUID (32) — разом +66 символів до шляху,
+    /// через що збереження в глибокій (напр. синхронізованій) теці падало цілком.
+    /// А сортування за іменем при однаковій часовій мітці порівнювало випадковий GUID —
+    /// гранулярність <c>DateTime.UtcNow</c> у Windows ≈15,6 мс, тож кілька збережень
+    /// підряд отримували однакові тики й видалятися могла новіша копія.
+    /// </para>
+    /// </summary>
+    private static void RotateAndBackup(string fullPath)
     {
         var directory = Path.GetDirectoryName(fullPath)!;
         var fileName = Path.GetFileName(fullPath);
         var backupsDir = Path.Combine(directory, BackupsFolderName);
         Directory.CreateDirectory(backupsDir);
 
-        // Унікальне ім'я з часовою міткою (тики) для сортування + GUID від колізій.
-        var backupName = $"{fileName}.{DateTime.UtcNow.Ticks:D19}.{Guid.NewGuid():N}.bak";
-        File.Copy(fullPath, Path.Combine(backupsDir, backupName), overwrite: false);
+        string Slot(int index) => Path.Combine(backupsDir, $"{fileName}.{index}.bak");
 
-        RotateBackups(backupsDir, fileName);
-    }
-
-    private static void RotateBackups(string backupsDir, string fileName)
-    {
-        var backups = Directory.GetFiles(backupsDir, $"{fileName}.*.bak")
-            .OrderByDescending(Path.GetFileName, StringComparer.Ordinal) // тики у назві → новіші першими
-            .ToList();
-
-        foreach (var stale in backups.Skip(MaxBackups))
+        TryDelete(Slot(MaxBackups));
+        for (var index = MaxBackups - 1; index >= 1; index--)
         {
-            TryDelete(stale);
+            var from = Slot(index);
+            if (File.Exists(from))
+            {
+                File.Move(from, Slot(index + 1), overwrite: true);
+            }
         }
+
+        File.Copy(fullPath, Slot(1), overwrite: true);
     }
 
     private static void TryDelete(string path)
@@ -259,4 +363,6 @@ public sealed class JsonFamilyStorage : IFamilyStorage
             // Ігноруємо: невдале прибирання бекапу/temp не є критичним.
         }
     }
+
+    public void Dispose() => _saveGate.Dispose();
 }
