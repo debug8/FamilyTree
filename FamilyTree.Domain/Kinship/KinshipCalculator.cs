@@ -31,15 +31,35 @@ public sealed class KinshipCalculator
 
         var nca = _ancestorFinder.FindNearestSet(root.Id, relative.Id, graph);
 
-        if (!nca.Found)
+        // Подружжя перевіряємо ДО кровної класифікації. Раніше ця перевірка стояла лише
+        // в гілці «кровного зв'язку немає», тож у шлюбі двоюрідних (звична річ у реальних
+        // деревах) власна дружина показувалася як «двоюрідна сестра», а KinshipKind.Spouse
+        // та IsFormerSpouse губилися назовсім.
+        if (graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id))
         {
-            var isSpouse = graph.GetSpouses(root.Id).Any(s => s.Id == relative.Id);
-            if (isSpouse)
+            var former = !graph.IsSpouseActive(root.Id, relative.Id);
+
+            // Кровний зв'язок не втрачаємо — форматер допише «(також двоюрідна сестра)».
+            string? alsoBlood = null;
+            if (nca.Found)
             {
-                var former = !graph.IsSpouseActive(root.Id, relative.Id);
-                return Build(KinshipKind.Spouse, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>(), former);
+                var bloodContext = BloodContext(root, relative, graph, nca);
+                alsoBlood = _formatter.Format(in bloodContext);
             }
 
+            var spouseContext = new KinshipContext(
+                KinshipKind.Spouse, 0, 0, relative.Gender, SiblingKind.NotSibling, Lineage.Unknown,
+                IsFormerSpouse: former, BloodRelationName: alsoBlood);
+
+            // Спільних предків віддаємо, якщо вони є: KinshipPathExplainer зможе показати
+            // кровний ланцюжок, а підсумок при цьому лишиться «дружина (також …)».
+            return new KinshipResult(
+                KinshipKind.Spouse, 0, 0, SiblingKind.NotSibling, Lineage.Unknown,
+                _formatter.Format(in spouseContext), nca.Found ? nca.AncestorIds : Array.Empty<Guid>());
+        }
+
+        if (!nca.Found)
+        {
             if (includeAffinity && TryAffinity(root, relative, graph) is { } affinity)
             {
                 return affinity;
@@ -48,10 +68,23 @@ public sealed class KinshipCalculator
             return Build(KinshipKind.None, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, relative.Gender, Array.Empty<Guid>());
         }
 
+        var context = BloodContext(root, relative, graph, nca);
+        return new KinshipResult(
+            context.Kind, context.StepsUp, context.StepsDown, context.SiblingKind, context.Lineage,
+            _formatter.Format(in context), nca.AncestorIds);
+    }
+
+    /// <summary>
+    /// Класифікує кровний зв'язок за знайденим НСП: тип, уточнення сиблінгів, лінія.
+    /// Виділено окремо, щоб ту саму класифікацію можна було застосувати і до подружжя,
+    /// яке водночас є кровним родичем.
+    /// </summary>
+    private static KinshipContext BloodContext(Person root, Person relative, FamilyGraph graph, NearestCommonAncestors nca)
+    {
         var a = nca.StepsFromA;
         var b = nca.StepsFromB;
 
-        var relationKind = b == 0 ? KinshipKind.DirectAncestor
+        var kind = b == 0 ? KinshipKind.DirectAncestor
             : a == 0 ? KinshipKind.DirectDescendant
             : KinshipKind.Collateral;
 
@@ -61,7 +94,7 @@ public sealed class KinshipCalculator
 
         var lineage = DetermineLineage(graph, root.Id, a, nca.AncestorIds);
 
-        return Build(relationKind, a, b, siblingKind, lineage, relative.Gender, nca.AncestorIds);
+        return new KinshipContext(kind, a, b, relative.Gender, siblingKind, lineage);
     }
 
     private KinshipResult Build(
@@ -83,6 +116,7 @@ public sealed class KinshipCalculator
         var best = AffinityKind.NotAffinity;
         var pivotGender = Gender.Unknown;
         var bestDistance = int.MaxValue;
+        var bestFormer = true; // щоб будь-який чинний шлюб мав пріоритет над колишнім
 
         // Патерн A: X одружений із B(relative), X — кровний родич A(root).
         foreach (var x in graph.GetSpouses(relative.Id))
@@ -99,10 +133,18 @@ public sealed class KinshipCalculator
             }
 
             var (kind, distance) = MapPatternA(link.StepsFromA, link.StepsFromB);
-            if (kind != AffinityKind.NotAffinity && distance < bestDistance)
+            if (kind == AffinityKind.NotAffinity)
+            {
+                continue;
+            }
+
+            // Свояцтво тримається на шлюбі X—relative: якщо він розірваний, це «колишня теща».
+            var former = !graph.IsSpouseActive(x.Id, relative.Id);
+            if (IsBetterAffinity(former, distance, bestFormer, bestDistance))
             {
                 best = kind;
                 bestDistance = distance;
+                bestFormer = former;
                 pivotGender = x.Gender;
             }
         }
@@ -122,10 +164,18 @@ public sealed class KinshipCalculator
             }
 
             var (kind, distance) = MapPatternB(link.StepsFromA, link.StepsFromB);
-            if (kind != AffinityKind.NotAffinity && distance < bestDistance)
+            if (kind == AffinityKind.NotAffinity)
+            {
+                continue;
+            }
+
+            // Тут свояцтво тримається на власному шлюбі root—X.
+            var former = !graph.IsSpouseActive(root.Id, x.Id);
+            if (IsBetterAffinity(former, distance, bestFormer, bestDistance))
             {
                 best = kind;
                 bestDistance = distance;
+                bestFormer = former;
                 pivotGender = x.Gender;
             }
         }
@@ -137,10 +187,18 @@ public sealed class KinshipCalculator
 
         var context = new KinshipContext(
             KinshipKind.Affinity, 0, 0, relative.Gender, SiblingKind.NotSibling, Lineage.Unknown,
-            IsFormerSpouse: false, Affinity: best, PivotGender: pivotGender);
+            IsFormerSpouse: bestFormer, Affinity: best, PivotGender: pivotGender);
         var name = _formatter.Format(in context);
         return new KinshipResult(KinshipKind.Affinity, 0, 0, SiblingKind.NotSibling, Lineage.Unknown, name, Array.Empty<Guid>());
     }
+
+    /// <summary>
+    /// Чинний шлюб важливіший за колишній; за однакової чинності — менша відстань.
+    /// Інакше особа, що є і колишньою тещею, і, скажімо, дружиною дядька, могла б
+    /// показатися колишньою тещею лише через меншу відстань.
+    /// </summary>
+    private static bool IsBetterAffinity(bool former, int distance, bool bestFormer, int bestDistance) =>
+        former != bestFormer ? !former : distance < bestDistance;
 
     /// <summary>Кровне плече root→X (X одружений із relative): a кроків від root, b — від X.</summary>
     private static (AffinityKind Kind, int Distance) MapPatternA(int a, int b) => (a, b) switch
@@ -167,19 +225,37 @@ public sealed class KinshipCalculator
 
     private static SiblingKind ClassifySiblings(FamilyGraph graph, Guid firstId, Guid secondId)
     {
-        var firstParents = graph.GetParents(firstId).ToDictionary(p => p.Id);
-        var shared = graph.GetParents(secondId).Where(p => firstParents.ContainsKey(p.Id)).ToList();
+        var firstParents = graph.GetParents(firstId);
+        var secondParents = graph.GetParents(secondId);
 
-        return shared.Count switch
+        var firstIds = firstParents.Select(p => p.Id).ToHashSet();
+        var shared = secondParents.Where(p => firstIds.Contains(p.Id)).ToList();
+
+        if (shared.Count >= 2)
         {
-            >= 2 => SiblingKind.Full,
-            1 => shared[0].Gender switch
-            {
-                Gender.Male => SiblingKind.HalfPaternal,
-                Gender.Female => SiblingKind.HalfMaternal,
-                _ => SiblingKind.HalfUnknown,
-            },
-            _ => SiblingKind.NotSibling,
+            return SiblingKind.Full;
+        }
+
+        if (shared.Count == 0)
+        {
+            return SiblingKind.NotSibling;
+        }
+
+        // Спільний рівно один батько. Стверджувати неповнорідність можна лише тоді,
+        // коли в ОБОХ осіб відомі обидва батьки — тобто другі батьки справді різні.
+        // Якщо хоч в однієї другий батько не записаний (типово для неповного дерева),
+        // раніше застосунок видавав «єдинокровний брат», тобто стверджував факт
+        // «різні матері», якого в даних немає.
+        if (firstParents.Count < 2 || secondParents.Count < 2)
+        {
+            return SiblingKind.PossiblyHalf;
+        }
+
+        return shared[0].Gender switch
+        {
+            Gender.Male => SiblingKind.HalfPaternal,
+            Gender.Female => SiblingKind.HalfMaternal,
+            _ => SiblingKind.HalfUnknown,
         };
     }
 

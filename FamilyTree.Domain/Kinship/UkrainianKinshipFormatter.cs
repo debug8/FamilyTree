@@ -26,24 +26,34 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
     public string Format(in KinshipContext context)
     {
         var c = context; // локальна копія: in-параметр не можна захоплювати в лямбду (CS1628)
+        var detailed = Style == KinshipNamingStyle.Detailed;
         var name = c.Kind switch
         {
             KinshipKind.SamePerson => "та сама особа",
             KinshipKind.None => "родинний зв'язок не встановлено",
             // Подружжя та свояцтво теж проходять через ByGender: раніше вони кликали Pick
             // напряму, і особа з Gender.Unknown тихо ставала чоловіком («чоловік», «зять»).
-            KinshipKind.Spouse => c.IsFormerSpouse
-                ? ByGender(c.RelativeGender, () => "колишній чоловік", () => "колишня дружина")
-                : ByGender(c.RelativeGender, () => "чоловік", () => "дружина"),
+            KinshipKind.Spouse => WithAlsoBlood(
+                c.IsFormerSpouse
+                    ? ByGender(c.RelativeGender, () => "колишній чоловік", () => "колишня дружина")
+                    : ByGender(c.RelativeGender, () => "чоловік", () => "дружина"),
+                c.BloodRelationName),
             KinshipKind.Affinity => ByGender(
                 c.RelativeGender,
-                () => BuildAffinity(c, Gender.Male, Style == KinshipNamingStyle.Detailed),
-                () => BuildAffinity(c, Gender.Female, Style == KinshipNamingStyle.Detailed)),
-            _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
+                () => BuildAffinity(c, Gender.Male, detailed),
+                () => BuildAffinity(c, Gender.Female, detailed)),
+            _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male, detailed), () => Build(c, Gender.Female, detailed)),
         };
 
-        return Style == KinshipNamingStyle.Detailed ? WithLineage(name, c) : name;
+        return detailed ? WithLineage(name, c) : name;
     }
+
+    /// <summary>
+    /// Подружжя, яке водночас є кровним родичем (шлюб двоюрідних): «дружина (також
+    /// двоюрідна сестра)». Раніше кровний зв'язок просто перекривав факт шлюбу.
+    /// </summary>
+    private static string WithAlsoBlood(string name, string? bloodName) =>
+        string.IsNullOrWhiteSpace(bloodName) ? name : $"{name} (також {bloodName})";
 
     /// <summary>Додає уточнення лінії до бічних зв'язків старшої гілки та кузенів (a ≥ 2).</summary>
     private static string WithLineage(string name, KinshipContext c)
@@ -80,7 +90,7 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
         }
     }
 
-    private static string Build(KinshipContext c, Gender g) => c.Kind switch
+    private static string Build(KinshipContext c, Gender g, bool detailed) => c.Kind switch
     {
         KinshipKind.DirectAncestor => c.StepsUp switch
         {
@@ -94,11 +104,11 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
             2 => Pick(g, "онук", "онука"),
             _ => Pra(c.StepsDown - 2) + Pick(g, "внук", "внучка"),
         },
-        KinshipKind.Collateral => BuildCollateral(c.StepsUp, c.StepsDown, g, c.SiblingKind),
+        KinshipKind.Collateral => BuildCollateral(c.StepsUp, c.StepsDown, g, c.SiblingKind, detailed),
         _ => string.Empty,
     };
 
-    private static string BuildCollateral(int a, int b, Gender g, SiblingKind siblingKind)
+    private static string BuildCollateral(int a, int b, Gender g, SiblingKind siblingKind, bool detailed)
     {
         var k = Math.Min(a, b);
         var d = Math.Abs(a - b);
@@ -116,6 +126,12 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
                     // крові (тепер AffinityKind.StepParent/StepChild). Для спільного одного
                     // з батьків правильний термін — «неповнорідний».
                     SiblingKind.HalfUnknown => Pick(g, "неповнорідний ", "неповнорідна ") + word,
+                    // Другий батько невідомий хоча б в однієї особи — нічого не стверджуємо.
+                    // У стандартному стилі «брат» і так покриває обидва випадки; уточнення
+                    // показуємо лише в детальному, щоб не засмічувати картки дерева.
+                    SiblingKind.PossiblyHalf => detailed
+                        ? word + Pick(g, " (можливо неповнорідний)", " (можливо неповнорідна)")
+                        : word,
                     _ => word,
                 };
             }
@@ -152,6 +168,16 @@ public sealed class UkrainianKinshipFormatter : IKinshipFormatter
     /// ByGender міг показати обидва варіанти), pivot — стать сполучної особи X.
     /// </summary>
     private static string BuildAffinity(KinshipContext c, Gender g, bool detailed)
+    {
+        var name = AffinityName(c, g, detailed);
+
+        // Свояцтво тримається на шлюбі; якщо той шлюб розірвано — «колишня теща».
+        // Раніше IsFormerSpouse для свояцтва було зашито в false, тож мати колишньої
+        // дружини лишалася просто «тещею».
+        return c.IsFormerSpouse ? Pick(g, "колишній ", "колишня ") + name : name;
+    }
+
+    private static string AffinityName(KinshipContext c, Gender g, bool detailed)
     {
         var pivot = c.PivotGender;
         return c.Affinity switch

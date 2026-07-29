@@ -9,9 +9,17 @@ namespace FamilyTree.Domain.Kinship;
 /// <param name="RelativeGender">Стать особи, яку називаємо.</param>
 /// <param name="SiblingKind">Уточнення рідні/зведені для сиблінгів.</param>
 /// <param name="Lineage">Лінія (по батькові/по матері) — для детального стилю.</param>
-/// <param name="IsFormerSpouse">Чи це колишнє подружжя (шлюб розірвано).</param>
+/// <param name="IsFormerSpouse">
+/// Чи розірвано шлюб, через який визначено зв'язок. Для <see cref="KinshipKind.Spouse"/> —
+/// власний шлюб; для <see cref="KinshipKind.Affinity"/> — шлюб, що з'єднує зі свояком
+/// (мати колишньої дружини — «колишня теща»).
+/// </param>
 /// <param name="Affinity">Різновид свояцтва (для <see cref="KinshipKind.Affinity"/>).</param>
 /// <param name="PivotGender">Стать сполучної особи X (подружжя/сиблінг/дядько) — для свояцтва.</param>
+/// <param name="BloodRelationName">
+/// Назва кровного зв'язку, якщо подружжя ще й кровний родич (шлюб двоюрідних тощо).
+/// Уже відформатована цим самим форматером; форматеру лишається дописати «(також …)».
+/// </param>
 public readonly record struct KinshipContext(
     KinshipKind Kind,
     int StepsUp,
@@ -21,7 +29,8 @@ public readonly record struct KinshipContext(
     Lineage Lineage,
     bool IsFormerSpouse = false,
     AffinityKind Affinity = AffinityKind.NotAffinity,
-    Gender PivotGender = Gender.Unknown);
+    Gender PivotGender = Gender.Unknown,
+    string? BloodRelationName = null);
 
 /// <summary>
 /// Форматер назв родинних зв'язків — по одному на мову (розд. 2.4, 4.3, 4.7).

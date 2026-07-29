@@ -21,24 +21,34 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
     public string Format(in KinshipContext context)
     {
         var c = context;
+        var detailed = Style == KinshipNamingStyle.Detailed;
         var name = c.Kind switch
         {
             KinshipKind.SamePerson => "the same person",
             KinshipKind.None => "no relation",
             // Подружжя та свояцтво теж проходять через ByGender: раніше вони кликали Pick
             // напряму, і особа з Gender.Unknown тихо ставала чоловіком («husband», «son-in-law»).
-            KinshipKind.Spouse => c.IsFormerSpouse
-                ? ByGender(c.RelativeGender, () => "ex-husband", () => "ex-wife")
-                : ByGender(c.RelativeGender, () => "husband", () => "wife"),
+            KinshipKind.Spouse => WithAlsoBlood(
+                c.IsFormerSpouse
+                    ? ByGender(c.RelativeGender, () => "ex-husband", () => "ex-wife")
+                    : ByGender(c.RelativeGender, () => "husband", () => "wife"),
+                c.BloodRelationName),
             KinshipKind.Affinity => ByGender(
                 c.RelativeGender,
                 () => BuildAffinity(c, Gender.Male),
                 () => BuildAffinity(c, Gender.Female)),
-            _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male), () => Build(c, Gender.Female)),
+            _ => ByGender(c.RelativeGender, () => Build(c, Gender.Male, detailed), () => Build(c, Gender.Female, detailed)),
         };
 
-        return Style == KinshipNamingStyle.Detailed ? WithLineage(name, c) : name;
+        return detailed ? WithLineage(name, c) : name;
     }
+
+    /// <summary>
+    /// Подружжя, яке водночас є кровним родичем (шлюб двоюрідних):
+    /// «wife (also first cousin)». Раніше кровний зв'язок перекривав факт шлюбу.
+    /// </summary>
+    private static string WithAlsoBlood(string name, string? bloodName) =>
+        string.IsNullOrWhiteSpace(bloodName) ? name : $"{name} (also {bloodName})";
 
     private static string ByGender(Gender gender, Func<string> male, Func<string> female)
     {
@@ -55,7 +65,7 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
         }
     }
 
-    private static string Build(KinshipContext c, Gender g) => c.Kind switch
+    private static string Build(KinshipContext c, Gender g, bool detailed) => c.Kind switch
     {
         KinshipKind.DirectAncestor => c.StepsUp == 1
             ? Pick(g, "father", "mother")
@@ -63,11 +73,11 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
         KinshipKind.DirectDescendant => c.StepsDown == 1
             ? Pick(g, "son", "daughter")
             : Great(c.StepsDown - 2) + "grand" + Pick(g, "son", "daughter"),
-        KinshipKind.Collateral => BuildCollateral(c.StepsUp, c.StepsDown, g, c.SiblingKind),
+        KinshipKind.Collateral => BuildCollateral(c.StepsUp, c.StepsDown, g, c.SiblingKind, detailed),
         _ => string.Empty,
     };
 
-    private static string BuildCollateral(int a, int b, Gender g, SiblingKind siblingKind)
+    private static string BuildCollateral(int a, int b, Gender g, SiblingKind siblingKind, bool detailed)
     {
         var k = Math.Min(a, b);
         var d = Math.Abs(a - b);
@@ -77,9 +87,13 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
             if (k == 1)
             {
                 var word = Pick(g, "brother", "sister");
-                return siblingKind is SiblingKind.HalfPaternal or SiblingKind.HalfMaternal or SiblingKind.HalfUnknown
-                    ? "half-" + word
-                    : word;
+                return siblingKind switch
+                {
+                    SiblingKind.HalfPaternal or SiblingKind.HalfMaternal or SiblingKind.HalfUnknown => "half-" + word,
+                    // Другий батько невідомий хоча б в однієї особи — не стверджуємо «half-».
+                    SiblingKind.PossiblyHalf => detailed ? word + " (possibly half)" : word,
+                    _ => word,
+                };
             }
 
             return $"{Ordinal(k - 1)} cousin";
@@ -120,7 +134,16 @@ public sealed class EnglishKinshipFormatter : IKinshipFormatter
     /// тому не потребує статі сполучної особи (окрім описового uncle/aunt by marriage).
     /// Стать особи-B передається явно, щоб для Gender.Unknown ByGender показав обидва варіанти.
     /// </summary>
-    private static string BuildAffinity(KinshipContext c, Gender g) => c.Affinity switch
+    private static string BuildAffinity(KinshipContext c, Gender g)
+    {
+        var name = AffinityName(c, g);
+
+        // Свояцтво тримається на шлюбі; якщо той шлюб розірвано — «former mother-in-law».
+        // Раніше IsFormerSpouse для свояцтва було зашито в false.
+        return c.IsFormerSpouse ? "former " + name : name;
+    }
+
+    private static string AffinityName(KinshipContext c, Gender g) => c.Affinity switch
     {
         // «-in-law» тут не вживається: англійська для нерідних батьків/дітей
         // використовує саме «step-».
