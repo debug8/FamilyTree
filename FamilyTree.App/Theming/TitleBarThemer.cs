@@ -1,13 +1,22 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace FamilyTree.App.Theming;
 
 /// <summary>
-/// Робить системний заголовок вікна (caption bar) темним у темній темі через DWM-атрибут
-/// <c>DWMWA_USE_IMMERSIVE_DARK_MODE</c>. Працює на Windows 10 (1809+) та Windows 11;
-/// на старіших системах виклик просто ігнорується (без винятків).
+/// Фарбує системний заголовок вікна (caption bar) під поточну тему через DWM.
+///
+/// Два рівні, бо Windows дає різні можливості:
+/// 1) <c>DWMWA_USE_IMMERSIVE_DARK_MODE</c> — світлий/темний заголовок,
+///    Windows 10 (1809+) і Windows 11;
+/// 2) <c>DWMWA_CAPTION_COLOR</c> / <c>DWMWA_TEXT_COLOR</c> / <c>DWMWA_BORDER_COLOR</c> —
+///    конкретний колір, ЛИШЕ Windows 11 (build 22000+).
+///
+/// Якщо тема задала колір, а система його не підтримує, виклик просто вертає
+/// помилку — залишається світлий/темний заголовок із першого рівня. Градієнт у
+/// системному заголовку неможливий: DWM приймає лише суцільний COLORREF.
 /// </summary>
 public static class TitleBarThemer
 {
@@ -15,11 +24,19 @@ public static class TitleBarThemer
     private const int DwmwaUseImmersiveDarkModeOld = 19; // 1809–1903
     private const int DwmwaUseImmersiveDarkMode = 20;    // 2004+ / Windows 11
 
+    // Кольори заголовка — Windows 11 22000+.
+    private const int DwmwaBorderColor = 34;
+    private const int DwmwaCaptionColor = 35;
+    private const int DwmwaTextColor = 36;
+
+    // Просить DWM повернути стандартний колір замість заданого.
+    private const int DwmwaColorDefault = unchecked((int)0xFFFFFFFF);
+
     [DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
-    /// <summary>Застосовує темний/світлий заголовок до конкретного вікна (якщо HWND уже створено).</summary>
-    public static void Apply(Window window, bool isDark)
+    /// <summary>Застосовує оформлення заголовка конкретного вікна (якщо HWND уже створено).</summary>
+    public static void Apply(Window window, ThemeOption theme)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == IntPtr.Zero)
@@ -27,11 +44,19 @@ public static class TitleBarThemer
             return;
         }
 
-        var flag = isDark ? 1 : 0;
+        // 1. Базовий світлий/темний режим — працює всюди від Windows 10 1809.
+        var flag = theme.IsDark ? 1 : 0;
         if (DwmSetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, ref flag, sizeof(int)) != 0)
         {
             DwmSetWindowAttribute(hwnd, DwmwaUseImmersiveDarkModeOld, ref flag, sizeof(int));
         }
+
+        // 2. Точні кольори — лише Windows 11. Явно скидаємо на стандартні,
+        // якщо тема кольору не задає: інакше при перемиканні тем колір
+        // попередньої лишався б на вікні.
+        SetColor(hwnd, DwmwaCaptionColor, theme.CaptionColor);
+        SetColor(hwnd, DwmwaTextColor, theme.CaptionTextColor);
+        SetColor(hwnd, DwmwaBorderColor, theme.CaptionColor);
     }
 
     /// <summary>
@@ -41,7 +66,7 @@ public static class TitleBarThemer
     /// </summary>
     public static void Track(Window window, IThemeService theme)
     {
-        void ApplyCurrent() => Apply(window, IsDark(theme));
+        void ApplyCurrent() => Apply(window, theme.CurrentTheme);
 
         if (new WindowInteropHelper(window).Handle != IntPtr.Zero)
         {
@@ -70,6 +95,12 @@ public static class TitleBarThemer
         }
     }
 
-    private static bool IsDark(IThemeService theme) =>
-        string.Equals(theme.CurrentTheme.Code, "dark", StringComparison.OrdinalIgnoreCase);
+    private static void SetColor(IntPtr hwnd, int attribute, Color? color)
+    {
+        var value = color is { } c ? ToColorRef(c) : DwmwaColorDefault;
+        DwmSetWindowAttribute(hwnd, attribute, ref value, sizeof(int));
+    }
+
+    /// <summary>COLORREF для DWM — байти в порядку 0x00BBGGRR, а не 0x00RRGGBB.</summary>
+    private static int ToColorRef(Color color) => color.R | (color.G << 8) | (color.B << 16);
 }

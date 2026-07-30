@@ -71,7 +71,7 @@ public sealed class DialogService : IDialogService
     private bool ShowDialog(Window window)
     {
         window.Owner = ActiveWindow;
-        TitleBarThemer.Track(window, _theme); // темний заголовок у темній темі
+        TitleBarThemer.Track(window, _theme); // заголовок вікна у кольорах теми
         return window.ShowDialog() == true;
     }
 

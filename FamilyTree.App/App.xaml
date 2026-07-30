@@ -6,7 +6,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Тематичний словник (Theme.Light/Theme.Dark) додається у рантаймі через ThemeService. -->
+                <!-- Тематичний словник (Theme.Brand/Theme.Light/Theme.Dark) додається у рантаймі через ThemeService. -->
                 <ResourceDictionary Source="Styles/Controls.xaml" />
             </ResourceDictionary.MergedDictionaries>
 

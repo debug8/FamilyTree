@@ -70,6 +70,9 @@
   <data name="Settings_Theme" xml:space="preserve">
     <value>Тема</value>
   </data>
+  <data name="Theme_Brand" xml:space="preserve">
+    <value>Фірмова</value>
+  </data>
   <data name="Theme_Light" xml:space="preserve">
     <value>Світла</value>
   </data>

@@ -2,8 +2,10 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Базові стилі елементів керування. Кольори-пензлі беруться через
-         DynamicResource з активної теми (Theme.Light.xaml / Theme.Dark.xaml),
-         тож стилі оновлюються вживу при зміні теми. -->
+         DynamicResource з активної теми (Theme.Brand / Theme.Light / Theme.Dark),
+         тож стилі оновлюються вживу при зміні теми.
+         Пензель може бути будь-яким Brush, у т.ч. LinearGradientBrush (фірмова
+         тема), тому не покладайся тут на SolidColorBrush. -->
 
     <!-- Типографіка -->
     <Style x:Key="HeadingTextStyle" TargetType="TextBlock">

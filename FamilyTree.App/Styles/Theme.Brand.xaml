@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ФІРМОВА тема (основна). Набір ключів мусить збігатися з Theme.Light.xaml / Theme.Dark.xaml.
+
+         Палітра — та сама, що в іконці застосунку та в інсталяторі:
+         #82C596 (світло-зелений) → #15556B (глибокий синій), градієнт зверху вниз
+         (див. installer\make-wizard-images.py і docs\build-and-installer.md).
+
+         Тут ключі можуть бути не тільки SolidColorBrush, а й LinearGradientBrush:
+         усі стилі беруть кольори через DynamicResource і тип пензля їм байдужий.
+         Градієнт задається у відносних координатах, тож кожен елемент отримує
+         власний перехід — саме тому для дрібних елементів (рамки, підкреслення
+         вкладок) беремо вузький діапазон, а не всю палітру. -->
+
+    <!-- Основний колір: нижня, темніша частина фірмового переходу.
+         Світло-зелений #82C596 тут не годиться — білий текст на ньому не читається,
+         тому чистий зелений живе в AccentBrush і у фоні. -->
+    <LinearGradientBrush x:Key="PrimaryBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#1E7A73" />
+        <GradientStop Offset="1" Color="#15556B" />
+    </LinearGradientBrush>
+
+    <!-- Верхній стоп не світлішаємо надміру: білий підпис кнопки має лишатися
+         контрастним (≥4.5:1) і на верхньому краї градієнта. -->
+    <LinearGradientBrush x:Key="PrimaryHoverBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#217A72" />
+        <GradientStop Offset="1" Color="#1B6580" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryPressedBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#17635E" />
+        <GradientStop Offset="1" Color="#103F50" />
+    </LinearGradientBrush>
+
+    <!-- Фірмовий зелений «як є»: акценти, вузли дерева. -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#82C596" />
+
+    <!-- Фон вікна: той самий напрямок переходу, що в іконці, але у світлих тонах —
+         щоб текст лишався контрастним, а картки (SurfaceBrush) читалися поверх.
+         Фон мусить бути темнішим за SurfaceBrush, інакше картки й поля введення
+         зливаються з вікном і тримаються лише на рамці. -->
+    <LinearGradientBrush x:Key="BackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0" Color="#D3E7DC" />
+        <GradientStop Offset="1" Color="#BDD8E4" />
+    </LinearGradientBrush>
+
+    <!-- Картки, поля введення та випадні списки — рівний тон без градієнта:
+         градієнт на дрібних елементах дає бруд і смуги на стиках. -->
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#EAF4EF" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#79A5A8" />
+    <SolidColorBrush x:Key="TreeEdgeBrush" Color="#2A6072" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#14424F" />
+
+    <!-- Вторинний текст часто лежить прямо на градієнтному фоні вікна, тому
+         міряємо контраст по ТЕМНОМУ краю градієнта (#BDD8E4), а не по білому. -->
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#3F5D67" />
+    <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="#FFFFFF" />
+
+    <SolidColorBrush x:Key="WarningBrush" Color="#C9922B" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#C0392B" />
+
+</ResourceDictionary>

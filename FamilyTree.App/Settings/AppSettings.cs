@@ -9,8 +9,8 @@ public sealed class AppSettings
     /// <summary>Код мови інтерфейсу (uk, en, ...). За замовчуванням — українська.</summary>
     public string Language { get; set; } = "uk";
 
-    /// <summary>Код теми оформлення (light, dark). За замовчуванням — світла.</summary>
-    public string Theme { get; set; } = "light";
+    /// <summary>Код теми оформлення (brand, light, dark). За замовчуванням — фірмова.</summary>
+    public string Theme { get; set; } = "brand";
 
     /// <summary>Стиль назв родства (standard, detailed). За замовчуванням — стандартний.</summary>
     public string KinshipNamingStyle { get; set; } = "standard";

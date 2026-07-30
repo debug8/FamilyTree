@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Media;
 
 namespace FamilyTree.App.Theming;
 
@@ -10,21 +11,37 @@ namespace FamilyTree.App.Theming;
 /// </summary>
 public sealed class ThemeService : IThemeService
 {
-    private const string DefaultCode = "light";
+    /// <summary>Основна тема: фірмові кольори з іконки застосунку.</summary>
+    private const string DefaultCode = "brand";
 
+    // Код теми = ім'я файлу Styles\Theme.{Code}.xaml (див. ApplyDictionary),
+    // тому «brand» вимагає саме Theme.Brand.xaml.
+    //
+    // captionColor/captionTextColor фарбують системний заголовок вікна й діють
+    // лише на Windows 11; там, де вони не задані (світла/темна), заголовок
+    // залишається стандартним для свого режиму.
     private readonly Dictionary<string, ThemeOption> _options = new(StringComparer.OrdinalIgnoreCase)
     {
+        ["brand"] = new ThemeOption(
+            "brand",
+            "Theme_Brand",
+            captionColor: Color.FromRgb(0x15, 0x55, 0x6B),
+            captionTextColor: Colors.White),
         ["light"] = new ThemeOption("light", "Theme_Light"),
-        ["dark"] = new ThemeOption("dark", "Theme_Dark"),
+        ["dark"] = new ThemeOption("dark", "Theme_Dark", isDark: true),
     };
 
     private readonly List<ThemeOption> _available;
     private ThemeOption _current;
     private ResourceDictionary? _currentDictionary;
 
+    // Порядок у списку задаємо явно, а не покладаємось на перебір Dictionary:
+    // це те, що бачить користувач у комбобоксі тем.
+    private static readonly string[] DisplayOrder = ["brand", "light", "dark"];
+
     public ThemeService()
     {
-        _available = _options.Values.ToList();
+        _available = DisplayOrder.Select(code => _options[code]).ToList();
         _current = _options[DefaultCode];
         ApplyDictionary(_current);
     }

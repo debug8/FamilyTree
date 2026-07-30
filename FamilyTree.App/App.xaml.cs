@@ -104,7 +104,7 @@ public partial class App : Application
         //    (markup extension {loc:Localize} і LocalizedOption звертаються до LocalizationSource.Instance).
         LocalizationSource.Initialize(localization);
 
-        // 3. Застосувати збережену тему (невідомий код — тихий відкат на світлу).
+        // 3. Застосувати збережену тему (невідомий код — тихий відкат на основну, фірмову).
         var theme = _host.Services.GetRequiredService<IThemeService>();
         theme.SetTheme(settings.Current.Theme);
 

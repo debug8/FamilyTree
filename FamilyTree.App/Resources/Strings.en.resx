@@ -70,6 +70,9 @@
   <data name="Settings_Theme" xml:space="preserve">
     <value>Theme</value>
   </data>
+  <data name="Theme_Brand" xml:space="preserve">
+    <value>Brand</value>
+  </data>
   <data name="Theme_Light" xml:space="preserve">
     <value>Light</value>
   </data>
