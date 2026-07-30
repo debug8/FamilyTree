@@ -45,6 +45,14 @@ dotnet publish FamilyTree.App/FamilyTree.App.csproj -c Release /p:PublishProfile
 & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\FamilyTree.iss
 ```
 
+> **Не запускай ISCC без публікації.** Inno не перевіряє, що лежить у `publish\win-x64\` — він
+> просто пакує наявний `FamilyTree.exe`. Якщо публікація застаріла, інсталятор збереться з
+> правильною назвою (`FamilyTree-0.9.2-setup.exe`), встановиться без помилок, а версія
+> застосунку залишиться старою — і виглядатиме це як «інсталятор не оновив програму».
+> Тому `build-installer.ps1` порівнює `FileVersion` опублікованого `.exe` з `#define AppVersion`
+> у `.iss` і зупиняється, якщо вони розійшлися. Збірка у Visual Studio (навіть у Release)
+> публікацію **не** оновлює — потрібен саме `dotnet publish` із профілем `win-x64`.
+
 ## Дизайн вікна інсталятора
 
 Фірмова палітра: **#82C596** (зелений) → **#15556B** (глибокий синій), ті самі кольори, що в іконці застосунку.

@@ -1,4 +1,4 @@
-; Inno Setup скрипт для Family Tree (T-5.6).
+﻿; Inno Setup скрипт для Family Tree (T-5.6).
 ; Збирає інсталятор із опублікованого одного файлу FamilyTree.exe.
 ;
 ; Перед компіляцією опублікуй застосунок:
@@ -23,8 +23,8 @@ AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppCopyright={#AppCopyright}
-; Текст ліцензії показується окремим екраном майстра перед встановленням.
-LicenseFile=..\LICENSE
+; Окремий екран із текстом ліцензії не показуємо (немає LicenseFile).
+; Сам файл ліцензії все одно кладемо в теку застосунку — див. секцію [Files].
 
 ; ── Вигляд вікна майстра ─────────────────────────────────────────────
 WizardStyle=modern
