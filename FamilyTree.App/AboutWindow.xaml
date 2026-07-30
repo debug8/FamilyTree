@@ -25,6 +25,24 @@
         <TextBlock Text="{loc:Localize About_Privacy}" TextWrapping="Wrap"
                    Style="{StaticResource SecondaryTextStyle}" />
 
+        <!-- Автор і ліцензія. Значення — з атрибутів збірки (див. AboutViewModel),
+             тож правити треба csproj, а не цей файл. -->
+        <Separator Margin="0,16,0,12" Background="{DynamicResource BorderBrush}" />
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4"
+                    Visibility="{Binding Author, Converter={StaticResource NullToCollapsedConverter}}">
+            <TextBlock Text="{loc:Localize About_Author}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,6,0" />
+            <TextBlock Text="{Binding Author}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+            <TextBlock Text="{loc:Localize About_License}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,6,0" />
+            <TextBlock Text="{Binding License}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding Copyright}" Style="{StaticResource SecondaryTextStyle}"
+                   Visibility="{Binding Copyright, Converter={StaticResource NullToCollapsedConverter}}" />
+
         <Button Content="{loc:Localize Common_Close}" MinWidth="90" HorizontalAlignment="Right"
                 Margin="0,20,0,0" Style="{StaticResource PrimaryButtonStyle}"
                 IsCancel="True" Click="Close_Click" />

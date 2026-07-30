@@ -8,8 +8,9 @@
 ; Потрібен Inno Setup 6: https://jrsoftware.org/isinfo.php
 
 #define AppName "Family Tree"
-#define AppVersion "0.9.1"
-#define AppPublisher "Family Tree"
+#define AppVersion "0.9.2"
+#define AppPublisher "Oleh Kulman"
+#define AppCopyright "© 2026 Oleh Kulman"
 #define AppExeName "FamilyTree.exe"
 ; Шлях до результату публікації (відносно цього .iss-файла).
 #define PublishDir "..\FamilyTree.App\bin\Release\net10.0-windows\publish\win-x64"
@@ -21,6 +22,9 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
+AppCopyright={#AppCopyright}
+; Текст ліцензії показується окремим екраном майстра перед встановленням.
+LicenseFile=..\LICENSE
 
 ; ── Вигляд вікна майстра ─────────────────────────────────────────────
 WizardStyle=modern
@@ -68,6 +72,10 @@ Name: "associate"; Description: "{cm:AssocDesc}"; GroupDescription: "{cm:AssocGr
 Source: "{#PublishDir}\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; Решта файлів публікації (напр. нативні бібліотеки, які не вбудувалися в один файл), якщо є.
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Ліцензія проєкту та повідомлення про компоненти сторонніх авторів. Другий файл
+; потрібен саме тому, що самодостатній .exe несе в собі їхні бінарники.
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
+Source: "..\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Family Tree"; Filename: "{app}\{#AppExeName}"

@@ -343,6 +343,12 @@ If yes, {0} will be added as a parent of {1}.</value>
   <data name="About_Privacy" xml:space="preserve">
     <value>All data is stored locally in your files and is never sent anywhere.</value>
   </data>
+  <data name="About_Author" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="About_License" xml:space="preserve">
+    <value>License</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Exit</value>
   </data>

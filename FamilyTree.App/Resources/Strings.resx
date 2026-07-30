@@ -343,6 +343,12 @@
   <data name="About_Privacy" xml:space="preserve">
     <value>Усі дані зберігаються локально у ваших файлах і нікуди не передаються.</value>
   </data>
+  <data name="About_Author" xml:space="preserve">
+    <value>Автор</value>
+  </data>
+  <data name="About_License" xml:space="preserve">
+    <value>Ліцензія</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Вихід</value>
   </data>

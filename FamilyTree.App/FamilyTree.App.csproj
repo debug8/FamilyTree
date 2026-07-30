@@ -15,12 +15,18 @@
     <AssemblyName>FamilyTree</AssemblyName>
     <RootNamespace>FamilyTree.App</RootNamespace>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <Version>0.9.1</Version>
-    <AssemblyVersion>0.9.1.0</AssemblyVersion>
-    <FileVersion>0.9.1.0</FileVersion>
-    <InformationalVersion>0.9.1</InformationalVersion>
+    <Version>0.9.2</Version>
+    <AssemblyVersion>0.9.2.0</AssemblyVersion>
+    <FileVersion>0.9.2.0</FileVersion>
+    <InformationalVersion>0.9.2</InformationalVersion>
     <Product>Family Tree</Product>
-    <Description>Family Tree — застосунок для побудови й перегляду родинного дерева (передрелізна версія 0.9.1).</Description>
+    <Description>Family Tree — застосунок для побудови й перегляду родинного дерева (передрелізна версія 0.9.2).</Description>
+    <!-- Єдине джерело даних про автора: звідси їх читають властивості .exe,
+         вікно «Про програму» (AboutViewModel) та інсталятор. -->
+    <Authors>Oleh Kulman</Authors>
+    <Company>Oleh Kulman</Company>
+    <Copyright>© 2026 Oleh Kulman</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <!-- Налаштування публікації в один самодостатній .exe (див. Properties\PublishProfiles).
