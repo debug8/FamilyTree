@@ -107,7 +107,7 @@
     <value>Нова родина</value>
   </data>
   <data name="PersonList_SearchHint" xml:space="preserve">
-    <value>Пошук за прізвищем або ім'ям…</value>
+    <value>Пошук за прізвищем, ім'ям, по батькові або дівочим прізвищем…</value>
   </data>
   <data name="Sort_Label" xml:space="preserve">
     <value>Сортувати</value>
@@ -188,7 +188,7 @@
     <value>Жіноча</value>
   </data>
   <data name="Gender_Unknown" xml:space="preserve">
-    <value>Не вказано</value>
+    <value>Невідома</value>
   </data>
   <data name="Rel_Parents" xml:space="preserve">
     <value>Батьки</value>
@@ -210,6 +210,66 @@
   </data>
   <data name="Rel_EditSpouse" xml:space="preserve">
     <value>Редагувати подружжя</value>
+  </data>
+  <data name="Rel_CreateNew" xml:space="preserve">
+    <value>+ Створити</value>
+  </data>
+  <data name="Rel_CreateHint" xml:space="preserve">
+    <value>Створити нову особу — зв'язок буде додано автоматично</value>
+  </data>
+  <data name="Rel_SearchHint" xml:space="preserve">
+    <value>Пошук за прізвищем, ім'ям, по батькові або дівочим прізвищем…</value>
+  </data>
+  <data name="Rel_CandidatesFound" xml:space="preserve">
+    <value>Показано: {0} з {1}</value>
+  </data>
+  <data name="Rel_SecondParent_Title" xml:space="preserve">
+    <value>Другий з батьків</value>
+  </data>
+  <data name="Rel_SecondParent_Mother" xml:space="preserve">
+    <value>Мати — {0}?
+
+Якщо так, {0} буде додано як матір для {1}.</value>
+  </data>
+  <data name="Rel_SecondParent_Father" xml:space="preserve">
+    <value>Батько — {0}?
+
+Якщо так, {0} буде додано як батька для {1}.</value>
+  </data>
+  <data name="Rel_SecondParent_Unknown" xml:space="preserve">
+    <value>Другий з батьків — {0}?
+
+Якщо так, {0} буде додано як батька/матір для {1}.</value>
+  </data>
+  <data name="Common_Yes" xml:space="preserve">
+    <value>Так</value>
+  </data>
+  <data name="Common_No" xml:space="preserve">
+    <value>Ні</value>
+  </data>
+  <data name="Common_Later" xml:space="preserve">
+    <value>Додати пізніше</value>
+  </data>
+  <data name="Filter_Any" xml:space="preserve">
+    <value>Будь-яка</value>
+  </data>
+  <data name="Filter_AnyStatus" xml:space="preserve">
+    <value>Будь-який</value>
+  </data>
+  <data name="Filter_Status" xml:space="preserve">
+    <value>Стан</value>
+  </data>
+  <data name="Filter_Alive" xml:space="preserve">
+    <value>Живі</value>
+  </data>
+  <data name="Filter_Deceased" xml:space="preserve">
+    <value>Померлі</value>
+  </data>
+  <data name="Filter_HideRelated" xml:space="preserve">
+    <value>Приховати вже пов'язаних</value>
+  </data>
+  <data name="Filter_Reset" xml:space="preserve">
+    <value>Скинути</value>
   </data>
   <data name="Rel_MarriageDate" xml:space="preserve">
     <value>Дата шлюбу</value>

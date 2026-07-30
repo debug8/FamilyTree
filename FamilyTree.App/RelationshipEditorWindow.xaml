@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
         Title="{Binding TitleKey, Converter={StaticResource LocalizeConverter}}"
-        Height="480" Width="400"
+        Height="640" Width="520" MinHeight="500" MinWidth="500"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         Background="{DynamicResource BackgroundBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -13,13 +13,87 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBox Grid.Row="0" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,10"
-                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+        <!-- Пошук, фільтри, сортування та створення нової особи.
+             У режимі редагування дат подружжя контрагент зафіксований — панель зайва. -->
+        <Grid Grid.Row="0" Margin="0,0,0,10"
+              Visibility="{Binding ShowFilters, Converter={StaticResource BoolToVisibility}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Пошук + створення нової особи -->
+            <TextBox Grid.Row="0" Grid.Column="0" Style="{StaticResource InputTextBoxStyle}"
+                     Margin="0,0,8,8"
+                     ToolTip="{loc:Localize Rel_SearchHint}"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Padding="12,6"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="{loc:Localize Rel_CreateNew}"
+                    ToolTip="{loc:Localize Rel_CreateHint}"
+                    Command="{Binding CreatePersonCommand}"
+                    Visibility="{Binding CanCreatePerson, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Стать / стан життя -->
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="{loc:Localize Person_Gender}"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox Grid.Column="1" Style="{StaticResource InputComboBoxStyle}" Margin="0,0,12,0"
+                          ItemsSource="{Binding GenderFilters}" SelectedItem="{Binding SelectedGender}"
+                          ItemTemplate="{StaticResource OptionDisplayTemplate}" />
+
+                <TextBlock Grid.Column="2" Text="{loc:Localize Filter_Status}"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox Grid.Column="3" Style="{StaticResource InputComboBoxStyle}"
+                          ItemsSource="{Binding LifeStatusFilters}" SelectedItem="{Binding SelectedLifeStatus}"
+                          ItemTemplate="{StaticResource OptionDisplayTemplate}" />
+            </Grid>
+
+            <!-- Сортування -->
+            <DockPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,8">
+                <TextBlock DockPanel.Dock="Left" Text="{loc:Localize Sort_Label}"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Button DockPanel.Dock="Right" Width="30" Height="30" Margin="6,0,0,0" Padding="0"
+                        Command="{Binding ToggleSortDirectionCommand}"
+                        Content="{Binding SortDirectionGlyph}" FontSize="14"
+                        ToolTip="{loc:Localize Sort_Direction}" />
+                <ComboBox Style="{StaticResource InputComboBoxStyle}"
+                          ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}"
+                          ItemTemplate="{StaticResource OptionDisplayTemplate}" />
+            </DockPanel>
+
+            <!-- Приховати вже пов'язаних + скидання фільтрів -->
+            <DockPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
+                <Button DockPanel.Dock="Right" Content="{loc:Localize Filter_Reset}" Padding="10,4"
+                        Command="{Binding ResetFiltersCommand}" />
+                <CheckBox Content="{loc:Localize Filter_HideRelated}" IsChecked="{Binding HideRelated}"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          VerticalAlignment="Center" />
+            </DockPanel>
+        </Grid>
 
         <ListBox Grid.Row="1" IsEnabled="{Binding CanPickCandidate}"
                  ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate}"
+                 MouseDoubleClick="Candidates_MouseDoubleClick"
                  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource SurfaceBrush}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -32,8 +106,12 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
+        <TextBlock Grid.Row="2" Margin="0,6,0,0" Text="{Binding CandidatesSummary}"
+                   Style="{StaticResource SecondaryTextStyle}"
+                   Visibility="{Binding ShowFilters, Converter={StaticResource BoolToVisibility}}" />
+
         <!-- Дати шлюбу/розлучення — лише для подружжя -->
-        <StackPanel Grid.Row="2" Margin="0,10,0,0"
+        <StackPanel Grid.Row="3" Margin="0,10,0,0"
                     Visibility="{Binding IsSpouse, Converter={StaticResource BoolToVisibility}}">
             <TextBlock Text="{loc:Localize Rel_MarriageDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,3" />
             <DatePicker SelectedDate="{Binding MarriageDate}" HorizontalAlignment="Left" MinWidth="200" />
@@ -47,11 +125,12 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="{loc:Localize Common_Cancel}" MinWidth="90" Margin="0,0,10,0"
                     IsCancel="True" Click="Cancel_Click" />
             <Button Content="{Binding ConfirmKey, Converter={StaticResource LocalizeConverter}}" MinWidth="90"
                     Style="{StaticResource PrimaryButtonStyle}"
+                    IsDefault="True"
                     IsEnabled="{Binding CanConfirm}" Click="Confirm_Click" />
         </StackPanel>
     </Grid>

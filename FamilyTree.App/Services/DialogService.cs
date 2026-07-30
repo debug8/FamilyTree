@@ -28,6 +28,13 @@ public sealed class DialogService : IDialogService
     public void ShowAbout(AboutViewModel viewModel) =>
         ShowDialog(new AboutWindow { DataContext = viewModel });
 
+    public ThreeWayChoice AskYesNoLater(string message, string title)
+    {
+        var viewModel = new ChoiceViewModel(title, message);
+        ShowDialog(new ChoiceWindow { DataContext = viewModel });
+        return viewModel.Choice;
+    }
+
     public bool Confirm(string message, string title) =>
         MessageBox.Show(ActiveWindow!, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
             == MessageBoxResult.Yes;

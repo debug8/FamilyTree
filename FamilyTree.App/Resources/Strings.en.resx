@@ -107,7 +107,7 @@
     <value>New family</value>
   </data>
   <data name="PersonList_SearchHint" xml:space="preserve">
-    <value>Search by last or first name…</value>
+    <value>Search by last, first, middle or maiden name…</value>
   </data>
   <data name="Sort_Label" xml:space="preserve">
     <value>Sort</value>
@@ -210,6 +210,66 @@
   </data>
   <data name="Rel_EditSpouse" xml:space="preserve">
     <value>Edit spouse</value>
+  </data>
+  <data name="Rel_CreateNew" xml:space="preserve">
+    <value>+ Create</value>
+  </data>
+  <data name="Rel_CreateHint" xml:space="preserve">
+    <value>Create a new person — the relationship is added automatically</value>
+  </data>
+  <data name="Rel_SearchHint" xml:space="preserve">
+    <value>Search by last, first, middle or maiden name…</value>
+  </data>
+  <data name="Rel_CandidatesFound" xml:space="preserve">
+    <value>Showing {0} of {1}</value>
+  </data>
+  <data name="Rel_SecondParent_Title" xml:space="preserve">
+    <value>Second parent</value>
+  </data>
+  <data name="Rel_SecondParent_Mother" xml:space="preserve">
+    <value>Mother — {0}?
+
+If yes, {0} will be added as the mother of {1}.</value>
+  </data>
+  <data name="Rel_SecondParent_Father" xml:space="preserve">
+    <value>Father — {0}?
+
+If yes, {0} will be added as the father of {1}.</value>
+  </data>
+  <data name="Rel_SecondParent_Unknown" xml:space="preserve">
+    <value>Second parent — {0}?
+
+If yes, {0} will be added as a parent of {1}.</value>
+  </data>
+  <data name="Common_Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Common_No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Common_Later" xml:space="preserve">
+    <value>Add later</value>
+  </data>
+  <data name="Filter_Any" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="Filter_AnyStatus" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="Filter_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Filter_Alive" xml:space="preserve">
+    <value>Living</value>
+  </data>
+  <data name="Filter_Deceased" xml:space="preserve">
+    <value>Deceased</value>
+  </data>
+  <data name="Filter_HideRelated" xml:space="preserve">
+    <value>Hide already related</value>
+  </data>
+  <data name="Filter_Reset" xml:space="preserve">
+    <value>Reset</value>
   </data>
   <data name="Rel_MarriageDate" xml:space="preserve">
     <value>Marriage date</value>

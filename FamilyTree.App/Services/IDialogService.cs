@@ -25,6 +25,13 @@ public interface IDialogService
     /// <summary>Показує запит підтвердження (Так/Ні).</summary>
     bool Confirm(string message, string title);
 
+    /// <summary>
+    /// Показує запит із трьома відповідями: «Так», «Ні», «Пізніше».
+    /// «Ні» та «Пізніше» різні: перше — відмова саме для цього варіанта,
+    /// друге — «не питай більше».
+    /// </summary>
+    ThreeWayChoice AskYesNoLater(string message, string title);
+
     /// <summary>Показує інформаційне повідомлення (напр. помилку валідації).</summary>
     void ShowMessage(string message, string title);
 

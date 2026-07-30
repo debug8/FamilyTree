@@ -67,7 +67,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? _searchText;
 
     [ObservableProperty]
-    private PersonSortOption _selectedSort = SortOptions[0];
+    private PersonSortOption _selectedSort = PersonFilterOptions.Sorts[0];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SortDirectionGlyph))]
@@ -148,7 +148,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<KinshipNamingStyleOption> AvailableNamingStyles => NamingStyles.ToList();
 
     /// <summary>Варіанти сортування списку осіб (локалізовані назви оновлюються при зміні мови).</summary>
-    public IReadOnlyList<PersonSortOption> AvailableSortOptions => SortOptions.ToList();
+    public IReadOnlyList<PersonSortOption> AvailableSortOptions => PersonFilterOptions.Sorts;
 
     /// <summary>Стрілка напрямку сортування: ▲ за зростанням, ▼ за спаданням.</summary>
     public string SortDirectionGlyph => SortDescending ? "▼" : "▲";
@@ -187,13 +187,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         new KinshipNamingStyleOption(KinshipNamingStyle.Standard, "Naming_Standard"),
         new KinshipNamingStyleOption(KinshipNamingStyle.Detailed, "Naming_Detailed"),
-    };
-
-    private static IReadOnlyList<PersonSortOption> SortOptions { get; } = new[]
-    {
-        new PersonSortOption(PersonSortField.LastName, "Sort_LastName"),
-        new PersonSortOption(PersonSortField.FirstName, "Sort_FirstName"),
-        new PersonSortOption(PersonSortField.BirthDate, "Sort_BirthDate"),
     };
 
     private bool HasSelection => SelectedPerson is not null;
@@ -552,16 +545,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void AddParent()
     {
-        if (SelectedPerson is not { } child || PickPerson(RelationshipRole.Parent, child) is not { } parent)
+        if (SelectedPerson is not { } child)
         {
             return;
         }
 
-        var link = new ParentChildLink { ParentId = parent.Id, ChildId = child.Id };
-        var result = _validator.ValidateParentChild(link, _session.Current.Persons, _session.Current.ParentChildLinks);
-        if (Accept(result))
+        var pick = PickRelative(RelationshipRole.Parent, child);
+
+        // Нову особу, створену просто з діалогу, треба зберегти навіть якщо
+        // зв'язок у підсумку не додали (скасування або невдала валідація).
+        var changed = pick.HasCreatedPersons;
+
+        if (pick.Confirmed && pick.Candidate is { } parent && TryLinkParentChild(parent, child))
         {
-            _session.Current.ParentChildLinks.Add(link);
+            changed = true;
+        }
+
+        if (changed)
+        {
             _session.MarkContentChanged();
         }
     }
@@ -569,16 +570,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void AddChild()
     {
-        if (SelectedPerson is not { } parent || PickPerson(RelationshipRole.Child, parent) is not { } child)
+        if (SelectedPerson is not { } parent)
         {
             return;
         }
 
-        var link = new ParentChildLink { ParentId = parent.Id, ChildId = child.Id };
-        var result = _validator.ValidateParentChild(link, _session.Current.Persons, _session.Current.ParentChildLinks);
-        if (Accept(result))
+        var pick = PickRelative(RelationshipRole.Child, parent);
+        var changed = pick.HasCreatedPersons;
+
+        if (pick.Confirmed && pick.Candidate is { } child && TryLinkParentChild(parent, child))
         {
-            _session.Current.ParentChildLinks.Add(link);
+            changed = true;
+
+            // Дитина майже завжди спільна з подружжям — пропонуємо додати
+            // другого з батьків одразу, щоб не робити це окремим кроком.
+            OfferSpouseAsSecondParent(parent, child);
+        }
+
+        if (changed)
+        {
             _session.MarkContentChanged();
         }
     }
@@ -591,17 +601,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var editor = new RelationshipEditorViewModel(RelationshipRole.Spouse, person, _session.Current.Persons);
-        if (!_dialogs.ShowRelationshipEditor(editor) || editor.SelectedCandidate is not { } other)
+        var pick = PickRelative(RelationshipRole.Spouse, person);
+        var changed = pick.HasCreatedPersons;
+
+        if (pick.Confirmed && pick.Candidate is { } other)
         {
-            return;
+            var link = SpouseLink.Create(person.Id, other.Id, pick.MarriageDate, pick.DivorceDate);
+            var result = _validator.ValidateSpouse(link, _session.Current.SpouseLinks);
+            if (Accept(result))
+            {
+                _session.Current.SpouseLinks.Add(link);
+                changed = true;
+            }
         }
 
-        var link = SpouseLink.Create(person.Id, other.Id, editor.MarriageDateOnly, editor.DivorceDateOnly);
-        var result = _validator.ValidateSpouse(link, _session.Current.SpouseLinks);
-        if (Accept(result))
+        if (changed)
         {
-            _session.Current.SpouseLinks.Add(link);
             _session.MarkContentChanged();
         }
     }
@@ -668,11 +683,176 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return _dialogs.Confirm(message, _localization.GetString("Relation_Remove_Title"));
     }
 
-    private Person? PickPerson(RelationshipRole role, Person basePerson)
+    /// <summary>Результат діалогу вибору родича (щоб ViewModel діалогу не «протікала» далі).</summary>
+    private readonly record struct RelativePick(
+        bool Confirmed,
+        Person? Candidate,
+        bool HasCreatedPersons,
+        DateOnly? MarriageDate,
+        DateOnly? DivorceDate);
+
+    /// <summary>
+    /// Відкриває діалог вибору родича. Усі вже прямі родичі базової особи (батьки,
+    /// діти, подружжя) типово приховані: жоден із них не може взяти нову роль —
+    /// подружжя не буває власною дитиною, а батько не буває власним сином.
+    /// Знайти їх усе одно можна, знявши галочку «Приховати вже пов'язаних».
+    /// </summary>
+    private RelativePick PickRelative(RelationshipRole role, Person basePerson)
     {
-        var editor = new RelationshipEditorViewModel(role, basePerson, _session.Current.Persons);
-        return _dialogs.ShowRelationshipEditor(editor) ? editor.SelectedCandidate : null;
+        var editor = new RelationshipEditorViewModel(
+            role,
+            basePerson,
+            _session.Current.Persons,
+            DirectRelativeIds(basePerson),
+            CreatePersonForRelationship);
+
+        var confirmed = _dialogs.ShowRelationshipEditor(editor);
+
+        return new RelativePick(
+            confirmed,
+            editor.SelectedCandidate,
+            editor.HasCreatedPersons,
+            editor.MarriageDateOnly,
+            editor.DivorceDateOnly);
     }
+
+    /// <summary>
+    /// Створює особу з діалогу зв'язку: відкриває редактор особи й додає результат
+    /// у документ. Позначення документа зміненим робить викликач — після того, як
+    /// вирішиться доля самого зв'язку (щоб не оновлювати список двічі).
+    /// </summary>
+    private Person? CreatePersonForRelationship()
+    {
+        var editor = new PersonEditorViewModel();
+        if (!_dialogs.ShowPersonEditor(editor) || editor.Result is not { } created)
+        {
+            return null;
+        }
+
+        _session.Current.Persons.Add(created);
+        return created;
+    }
+
+    /// <summary>Id усіх прямих родичів особи: батьки, діти та подружжя.</summary>
+    private List<Guid> DirectRelativeIds(Person person)
+    {
+        var doc = _session.Current;
+        var ids = new List<Guid>();
+
+        foreach (var link in doc.ParentChildLinks)
+        {
+            if (link.ChildId == person.Id)
+            {
+                ids.Add(link.ParentId);
+            }
+            else if (link.ParentId == person.Id)
+            {
+                ids.Add(link.ChildId);
+            }
+        }
+
+        foreach (var link in doc.SpouseLinks)
+        {
+            if (link.SpouseOf(person.Id) is { } spouseId)
+            {
+                ids.Add(spouseId);
+            }
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// Додає зв'язок «батько/мати — дитина» з валідацією.
+    /// Повертає true, якщо зв'язок реально додано.
+    /// </summary>
+    private bool TryLinkParentChild(Person parent, Person child)
+    {
+        var link = new ParentChildLink { ParentId = parent.Id, ChildId = child.Id };
+        var result = _validator.ValidateParentChild(link, _session.Current.Persons, _session.Current.ParentChildLinks);
+        if (!Accept(result))
+        {
+            return false;
+        }
+
+        _session.Current.ParentChildLinks.Add(link);
+        return true;
+    }
+
+    /// <summary>
+    /// Питає, чи є подружжя другим із батьків щойно доданої дитини, і за згодою
+    /// додає другий зв'язок. Подружжя перебирається по черзі: «Ні» — питаємо про
+    /// наступне, «Пізніше» — припиняємо опитування, «Так» — зв'язок додано й
+    /// далі питати нема про що (більше двох батьків не буває).
+    /// </summary>
+    private void OfferSpouseAsSecondParent(Person parent, Person child)
+    {
+        var doc = _session.Current;
+
+        // Двох батьків дитині досить — не пропонуємо третього.
+        if (doc.ParentChildLinks.Count(l => l.ChildId == child.Id) >= 2)
+        {
+            return;
+        }
+
+        var byId = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
+
+        // Чинний шлюб — першим: спільна дитина найімовірніше саме з ним.
+        var spouses = doc.SpouseLinks
+            .Where(l => l.Involves(parent.Id))
+            .OrderByDescending(l => l.IsActive)
+            .Select(l => l.SpouseOf(parent.Id))
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .Distinct()
+            .Where(id => byId.ContainsKey(id))
+            .Select(id => byId[id])
+            .Where(spouse => CanBeParentOf(spouse, child))
+            .ToList();
+
+        foreach (var spouse in spouses)
+        {
+            var question = SafeFormat(SecondParentKey(spouse), new object?[] { spouse.FullName, child.FullName });
+            var choice = _dialogs.AskYesNoLater(question, _localization.GetString("Rel_SecondParent_Title"));
+
+            if (choice == ThreeWayChoice.Later)
+            {
+                return;
+            }
+
+            if (choice == ThreeWayChoice.Yes)
+            {
+                TryLinkParentChild(spouse, child);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Чи може особа стати батьком/матір'ю дитини без помилки валідації.
+    /// Перевіряємо заздалегідь, щоб не пропонувати варіант, який гарантовано
+    /// впаде: дубль зв'язку, зайнятий слот батька/матері або цикл у дереві.
+    /// </summary>
+    private bool CanBeParentOf(Person candidate, Person child)
+    {
+        if (candidate.Id == child.Id)
+        {
+            return false;
+        }
+
+        var probe = new ParentChildLink { ParentId = candidate.Id, ChildId = child.Id };
+        return _validator
+            .ValidateParentChild(probe, _session.Current.Persons, _session.Current.ParentChildLinks)
+            .IsValid;
+    }
+
+    /// <summary>Ключ питання про другого з батьків — за статтю подружжя.</summary>
+    private static string SecondParentKey(Person spouse) => spouse.Gender switch
+    {
+        Gender.Female => "Rel_SecondParent_Mother",
+        Gender.Male => "Rel_SecondParent_Father",
+        _ => "Rel_SecondParent_Unknown",
+    };
 
     private bool Accept(ValidationResult result)
     {
@@ -806,25 +986,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var term = SearchText.Trim();
-            query = query.Where(p =>
-                p.LastName.Contains(term, StringComparison.CurrentCultureIgnoreCase) ||
-                p.FirstName.Contains(term, StringComparison.CurrentCultureIgnoreCase));
+            query = query.Where(p => PersonQuery.Matches(p, term));
         }
 
-        var descending = SortDescending;
-        var ordered = (SelectedSort?.Field switch
-        {
-            PersonSortField.FirstName => Direction(query, p => p.FirstName, StringComparer.CurrentCulture, descending)
-                .ThenBy(p => p.LastName, StringComparer.CurrentCulture),
-            PersonSortField.BirthDate => Direction(
-                    query,
-                    p => p.BirthDate ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
-                    Comparer<DateOnly>.Default,
-                    descending)
-                .ThenBy(p => p.LastName, StringComparer.CurrentCulture),
-            _ => Direction(query, p => p.LastName, StringComparer.CurrentCulture, descending)
-                .ThenBy(p => p.FirstName, StringComparer.CurrentCulture),
-        }).ToList();
+        var ordered = PersonQuery.Sort(query, SelectedSort?.Field ?? PersonSortField.LastName, SortDescending);
 
         // Перезаповнення списку з заглушеним round-trip'ом виділення: усі проміжні
         // значення SelectedPerson (у т.ч. null від ListBox на Clear) ігноруються,
@@ -852,10 +1017,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(PersonsCountText));
         RaiseDocumentInfo();
     }
-
-    private static IOrderedEnumerable<Person> Direction<TKey>(
-        IEnumerable<Person> source, Func<Person, TKey> key, IComparer<TKey> comparer, bool descending) =>
-        descending ? source.OrderByDescending(key, comparer) : source.OrderBy(key, comparer);
 
     private void RefreshRelations()
     {
