@@ -37,6 +37,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly WhoIsWhoViewModel _whoIsWho;
     private readonly ISettingsService _settings;
 
+    // Складання картки-тултіпа спільне з деревом (див. PersonCardBuilder).
+    private readonly PersonCardBuilder _cards;
+
     private CancellationTokenSource? _searchCts;
 
     // Глушник round-trip'у виділення під час перезаповнення списку осіб.
@@ -107,6 +110,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tree = tree;
         _whoIsWho = whoIsWho;
         _settings = settings;
+        _cards = new PersonCardBuilder(localization);
 
         _selectedLanguage = _localization.CurrentLanguage;
         _selectedTheme = _theme.CurrentTheme;
@@ -123,11 +127,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<Person> Persons { get; } = new();
 
-    public ObservableCollection<Person> Parents { get; } = new();
+    // Родичі вибраної особи як картки: рядок показує FullName, а тултіп —
+    // ту саму велику картку, що й вузол дерева (див. PersonCard).
+    public ObservableCollection<PersonCard> Parents { get; } = new();
 
-    public ObservableCollection<Person> Children { get; } = new();
+    public ObservableCollection<PersonCard> Children { get; } = new();
 
-    public ObservableCollection<Person> Spouses { get; } = new();
+    public ObservableCollection<PersonCard> Spouses { get; } = new();
 
     public ObservableCollection<string> RecentFiles { get; } = new();
 
@@ -1032,11 +1038,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var doc = _session.Current;
         var byId = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
 
+        // Скільки в кого дітей — один прохід по зв'язках замість перебору на кожну картку.
+        var childCounts = doc.ParentChildLinks
+            .GroupBy(l => l.ParentId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        PersonCard Card(Person relative) =>
+            _cards.Build(relative, doc, byId, childCounts.GetValueOrDefault(relative.Id));
+
         foreach (var link in doc.ParentChildLinks.Where(l => l.ChildId == person.Id))
         {
             if (byId.TryGetValue(link.ParentId, out var parent))
             {
-                Parents.Add(parent);
+                Parents.Add(Card(parent));
             }
         }
 
@@ -1044,7 +1058,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             if (byId.TryGetValue(link.ChildId, out var child))
             {
-                Children.Add(child);
+                Children.Add(Card(child));
             }
         }
 
@@ -1052,7 +1066,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             if (link.SpouseOf(person.Id) is { } spouseId && byId.TryGetValue(spouseId, out var spouse))
             {
-                Spouses.Add(spouse);
+                Spouses.Add(Card(spouse));
             }
         }
     }

@@ -27,6 +27,61 @@
             <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
+            <!-- Велика картка особи для тултіпів. Оголошена ПІСЛЯ конвертерів, бо
+                 посилається на них через StaticResource. Прив'язується за іменами
+                 властивостей, тож підходить і TreeNodeViewModel (вузол дерева),
+                 і PersonCard (рядок родича на вкладці «Особа»). -->
+            <DataTemplate x:Key="PersonCardTemplate">
+                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14"
+                        BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" MaxWidth="380">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- Місце під фото -->
+                        <Border Width="92" Height="112" CornerRadius="6" Margin="0,0,14,0"
+                                Background="{DynamicResource BackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                VerticalAlignment="Top">
+                            <Grid>
+                                <TextBlock Text="{loc:Localize Tree_Card_Photo}" FontSize="11"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Image Source="{Binding PhotoPath}" Stretch="UniformToFill" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Дані особи -->
+                        <StackPanel MaxWidth="250">
+                            <TextBlock Text="{Binding FullName}" FontSize="15" FontWeight="Bold"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding RelationBadge}" FontSize="12" Margin="0,1,0,6"
+                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
+
+                            <TextBlock Text="{Binding DetailMaiden}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailMaiden, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailGender}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailGender, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailBirth}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailBirth, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailDeath}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailDeath, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailMarriage}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailMarriage, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailChildren}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailChildren, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailNotes}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       FontStyle="Italic" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Visibility="{Binding DetailNotes, Converter={StaticResource NullToCollapsedConverter}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
             <!-- Іконки (viewBox 24) для кнопок дій -->
             <StreamGeometry x:Key="TrashGeometry">M6 7 H18 L16.8 21 H7.2 Z M4 5 H20 V6.8 H4 Z M9.5 3 H14.5 V4.8 H9.5 Z M9.5 9 H10.7 V19 H9.5 Z M13.3 9 H14.5 V19 H13.3 Z</StreamGeometry>
             <StreamGeometry x:Key="PencilGeometry">M4 20 L4 16 L14 6 L18 10 L8 20 Z M15 5 L17 3 L21 7 L19 9 Z</StreamGeometry>

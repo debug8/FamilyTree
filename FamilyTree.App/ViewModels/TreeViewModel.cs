@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
@@ -29,6 +28,9 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     private readonly TreeLayoutEngine _engine;
     private readonly ILocalizationService _localization;
     private readonly KinshipCalculator _kinship;
+
+    // Складання картки-тултіпа спільне з вкладкою «Особа» (див. PersonCardBuilder).
+    private readonly PersonCardBuilder _cards;
 
     [ObservableProperty]
     private TreeMode _mode = TreeMode.Descendants;
@@ -74,6 +76,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         _engine = engine;
         _localization = localization;
         _kinship = kinship;
+        _cards = new PersonCardBuilder(localization);
 
         // Іменовані обробники (а не лямбди) — щоб від них можна було відписатися в Dispose.
         _session.DocumentChanged += OnDocumentOrContentChanged;
@@ -293,25 +296,22 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         {
             var person = persons[node.PersonId];
             var isRoot = node.PersonId == rootId;
+            var badge = isRoot ? youBadge : Badge(rootPerson, person, graph);
+
+            // Кількість дітей беремо з графа (O(1)), а не перебором зв'язків.
+            var card = _cards.Build(person, doc, persons, graph.GetChildren(person.Id).Count, badge);
+
             Nodes.Add(new TreeNodeViewModel(node.PersonId)
             {
                 X = node.X,
                 Y = BoxY(node.Y, TreeLayoutEngine.NodeHeight),
                 FullName = person.FullName,
-                NamePrimary = string.Join(' ', new[] { person.LastName, person.FirstName }
-                    .Where(part => !string.IsNullOrWhiteSpace(part))),
-                Patronymic = string.IsNullOrWhiteSpace(person.MiddleName) ? null : person.MiddleName,
-                Years = FormatYears(person),
-                RelationBadge = isRoot ? youBadge : Badge(rootPerson, person, graph),
+                NamePrimary = PersonCardBuilder.FormatNamePrimary(person),
+                Patronymic = PersonCardBuilder.FormatPatronymic(person),
+                Years = card.Years,
+                RelationBadge = badge,
                 IsRoot = isRoot,
-                PhotoPath = ResolvePhoto(person.PhotoPath),
-                DetailMaiden = Line("Person_MaidenName", person.MaidenName),
-                DetailGender = Line("Person_Gender", GenderText(person.Gender)),
-                DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
-                DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDate(person.DeathDate)),
-                DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
-                DetailChildren = Line("Tree_Card_Children", graph.GetChildren(person.Id).Count.ToString(CultureInfo.CurrentCulture)),
-                DetailNotes = Line("Person_Notes", person.Notes),
+                Card = card,
             });
         }
 
@@ -451,66 +451,6 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static string FormatYears(Person person)
-    {
-        var birth = person.BirthDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.Year.ToString(CultureInfo.InvariantCulture);
-        return (birth, death) switch
-        {
-            (null, null) => string.Empty,
-            (not null, null) => birth!,
-            (null, not null) => $"–{death}",
-            _ => $"{birth}–{death}",
-        };
-    }
-
-    /// <summary>Рядок картки «Підпис: значення» або null, якщо значення порожнє (рядок ховається).</summary>
-    private string? Line(string labelKey, string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : $"{_localization.GetString(labelKey)}: {value}";
-
-    private string GenderText(Gender gender) => gender switch
-    {
-        Gender.Male => _localization.GetString("Gender_Male"),
-        Gender.Female => _localization.GetString("Gender_Female"),
-        _ => _localization.GetString("Gender_Unknown"),
-    };
-
-    private static string FormatDate(DateOnly? date) =>
-        date?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
-
-    /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
-    private static string FormatBirth(Person person)
-    {
-        var date = FormatDate(person.BirthDate);
-        var place = person.BirthPlace;
-        return (date, hasPlace: !string.IsNullOrWhiteSpace(place)) switch
-        {
-            ("", false) => string.Empty,
-            ("", true) => place!,
-            (_, false) => date,
-            _ => $"{date} · {place}",
-        };
-    }
-
-    /// <summary>Подружжя: «Ім'я (рік шлюбу — рік розлучення)», кілька — через «; ».</summary>
-    private static string FormatMarriages(Person person, FamilyDocument doc, IReadOnlyDictionary<Guid, Person> persons)
-    {
-        var parts = new List<string>();
-        foreach (var link in doc.SpouseLinks.Where(l => l.Involves(person.Id)))
-        {
-            var otherId = link.Person1Id == person.Id ? link.Person2Id : link.Person1Id;
-            if (!persons.TryGetValue(otherId, out var other))
-            {
-                continue;
-            }
-
-            var period = FormatMarriagePeriod(link);
-            parts.Add(period.Length > 0 ? $"{other.FullName} ({period})" : other.FullName);
-        }
-
-        return string.Join("; ", parts);
-    }
-
     /// <summary>Підказка ребра «батько–дитина»: «Батьки: X, Y \n Дитина: Z».</summary>
     private string? EdgeTooltip(IEnumerable<Guid> parentIds, Guid childId, IReadOnlyDictionary<Guid, Person> persons)
     {
@@ -551,34 +491,6 @@ public partial class TreeViewModel : ObservableObject, IDisposable
             _localization.GetString("Tree_Card_MarriedSince"),
             date.ToString("d", CultureInfo.CurrentCulture));
         return $"{couple}\n{since}";
-    }
-
-    private static string FormatMarriagePeriod(SpouseLink link)
-    {
-        var from = link.MarriageDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var to = link.DivorceDate?.Year.ToString(CultureInfo.InvariantCulture);
-        return (from, to) switch
-        {
-            (null, null) => string.Empty,
-            (not null, null) => from!,
-            (null, not null) => $"… – {to}",
-            _ => $"{from} – {to}",
-        };
-    }
-
-    /// <summary>Абсолютний шлях до фото у папці даних (поки лише резолвинг; місце під фото).</summary>
-    private static string? ResolvePhoto(string? relativePath)
-    {
-        if (string.IsNullOrWhiteSpace(relativePath))
-        {
-            return null;
-        }
-
-        return Path.IsPathRooted(relativePath)
-            ? relativePath
-            : Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "FamilyTree", relativePath);
     }
 
     public void Dispose()

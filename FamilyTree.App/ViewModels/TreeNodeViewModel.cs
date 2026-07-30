@@ -36,24 +36,11 @@ public partial class TreeNodeViewModel : ObservableObject
 
     public bool IsRoot { get; init; }
 
-    // --- Дані для великої картки-тултіпа (кожен рядок null → рядок ховається) ---
-
-    /// <summary>Абсолютний шлях до фото (поки не реалізовано — місце під фото).</summary>
-    public string? PhotoPath { get; init; }
-
-    public string? DetailMaiden { get; init; }
-
-    public string? DetailGender { get; init; }
-
-    public string? DetailBirth { get; init; }
-
-    public string? DetailDeath { get; init; }
-
-    public string? DetailMarriage { get; init; }
-
-    public string? DetailChildren { get; init; }
-
-    public string? DetailNotes { get; init; }
+    /// <summary>
+    /// Дані великої картки-тултіпа. Той самий тип, що й у рядках родичів на
+    /// вкладці «Особа», тож обидва місця рендерять один шаблон PersonCardTemplate.
+    /// </summary>
+    public PersonCard? Card { get; init; }
 
     [ObservableProperty]
     private bool _isSelected;

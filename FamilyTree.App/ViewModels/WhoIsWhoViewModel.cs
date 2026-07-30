@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
@@ -168,7 +167,12 @@ public partial class WhoIsWhoViewModel : ObservableObject
                 X = xs[i],
                 Y = ys[i],
                 FullName = person.FullName,
-                Years = FormatYears(person),
+
+                // Вузол малює саме NamePrimary + Patronymic, а не FullName —
+                // без них підпис лишається порожнім.
+                NamePrimary = PersonCardBuilder.FormatNamePrimary(person),
+                Patronymic = PersonCardBuilder.FormatPatronymic(person),
+                Years = PersonCardBuilder.FormatYears(person),
                 RelationBadge = i == 0 ? youBadge : null,
                 IsRoot = i == 0,
             });
@@ -186,19 +190,6 @@ public partial class WhoIsWhoViewModel : ObservableObject
         PathCanvasWidth = 0;
         PathCanvasHeight = 0;
         OnPropertyChanged(nameof(HasPathGraph));
-    }
-
-    private static string FormatYears(Person person)
-    {
-        var birth = person.BirthDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.Year.ToString(CultureInfo.InvariantCulture);
-        return (birth, death) switch
-        {
-            (null, null) => string.Empty,
-            (not null, null) => birth!,
-            (null, not null) => $"–{death}",
-            _ => $"{birth}–{death}",
-        };
     }
 
     private void RefreshPersons()
