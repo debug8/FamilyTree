@@ -101,6 +101,12 @@ public partial class App : Application
         var localization = _host.Services.GetRequiredService<ILocalizationService>();
         localization.SetLanguage(settings.Current.Language);
 
+        // 1b. Синхронізувати WPF-мову (xml:lang) з мовою UI ДО створення будь-якого вікна:
+        //     інакше DatePicker парсив би дати за en-US незалежно від мови (B-01). Живе
+        //     перемикання проставляє мову на вже відкриті вікна (метадані — лише раз).
+        UiLanguage.Initialize(localization.CurrentCulture);
+        localization.LanguageChanged += (_, _) => UiLanguage.Apply(localization.CurrentCulture);
+
         // 2. Ініціалізувати XAML-проксі локалізації ДО створення будь-яких сервісів/вікон
         //    (markup extension {loc:Localize} і LocalizedOption звертаються до LocalizationSource.Instance).
         LocalizationSource.Initialize(localization);

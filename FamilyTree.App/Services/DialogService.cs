@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Windows;
+using FamilyTree.App.Localization;
 using FamilyTree.App.Theming;
 using FamilyTree.App.ViewModels;
 using Microsoft.Win32;
@@ -71,6 +72,7 @@ public sealed class DialogService : IDialogService
     private bool ShowDialog(Window window)
     {
         window.Owner = ActiveWindow;
+        UiLanguage.ApplyTo(window);            // xml:lang за поточною мовою — для DatePicker (B-01)
         TitleBarThemer.Track(window, _theme); // заголовок вікна у кольорах теми
         return window.ShowDialog() == true;
     }
