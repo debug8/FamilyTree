@@ -11,6 +11,11 @@ public sealed class DocumentMeta
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Версія застосунку, що останньою зберегла файл.</summary>
-    public string AppVersion { get; set; } = "1.0.0";
+    /// <summary>
+    /// Версія застосунку, що останньою зберегла файл. Порожньо, доки файл не збережено:
+    /// значення проставляє лише той, хто пише (див. <see cref="JsonFamilyStorage.SaveAsync"/>).
+    /// Раніше тут стояв літерал «1.0.0», який лише круговертівся з файлу назад у файл
+    /// і брехав про автора (B-65).
+    /// </summary>
+    public string AppVersion { get; set; } = string.Empty;
 }

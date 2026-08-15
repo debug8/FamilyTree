@@ -161,7 +161,10 @@ void GenerateFile(int generations, int maxPersons, int seed, string title, strin
             ["title"] = title,
             ["createdAt"] = createdAt,
             ["updatedAt"] = createdAt,
-            ["appVersion"] = "1.0.0",
+            // Синтетичні зразки не писав жоден випущений білд застосунку — тож чесне
+            // "unknown" (те саме, що JsonFamilyStorage.UnknownVersion), а не вигадана «1.0.0» (B-65).
+            // Перегенерація самих файлів у samples/ — разом із B-29.
+            ["appVersion"] = "unknown",
         },
         ["persons"] = persons,
         ["parentChildLinks"] = parentChildLinks,

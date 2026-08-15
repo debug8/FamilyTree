@@ -39,7 +39,9 @@ internal static class DocumentMapper
                 Title = meta.Title ?? string.Empty,
                 CreatedAt = meta.CreatedAt,
                 UpdatedAt = meta.UpdatedAt,
-                AppVersion = meta.AppVersion ?? "1.0.0",
+                // Невідому версію лишаємо порожньою, а не вигадуємо «1.0.0»: інакше застосунок
+                // приписував би собі авторство чужого файлу без секції meta (B-65).
+                AppVersion = meta.AppVersion ?? string.Empty,
             },
         };
 

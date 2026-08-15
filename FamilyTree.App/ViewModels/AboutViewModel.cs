@@ -1,42 +1,24 @@
-using System.Reflection;
-
 namespace FamilyTree.App.ViewModels;
 
 /// <summary>
-/// Дані для вікна «Про програму». Усе читається з атрибутів збірки, тож завжди
-/// відповідає реально зібраній версії, а правити треба лише csproj
+/// Дані для вікна «Про програму». Значення читаються зі збірки один раз у
+/// <see cref="AppInfo"/> (спільно зі штампом версії у файлі — B-65), тож завжди
+/// відповідають реально зібраній версії; правити треба лише csproj
 /// (Product / InformationalVersion / Company / Copyright).
 /// </summary>
 public sealed class AboutViewModel
 {
-    public AboutViewModel()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-
-        ProductName = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "Family Tree";
-
-        var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        var version = informational ?? assembly.GetName().Version?.ToString() ?? string.Empty;
-
-        // Відкидаємо метадані збірки (напр. "0.9.0+abcdef") — показуємо лише семантичну версію.
-        var plus = version.IndexOf('+');
-        Version = plus >= 0 ? version[..plus] : version;
-
-        Author = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? string.Empty;
-        Copyright = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
-    }
-
     /// <summary>Назва продукту (бренд, мовно-нейтральна).</summary>
-    public string ProductName { get; }
+    public string ProductName => AppInfo.ProductName;
 
     /// <summary>Версія застосунку.</summary>
-    public string Version { get; }
+    public string Version => AppInfo.Version;
 
     /// <summary>Автор (csproj: Company). Порожньо — рядок у вікні ховається.</summary>
-    public string Author { get; }
+    public string Author => AppInfo.Author;
 
     /// <summary>Рядок копірайту (csproj: Copyright). Порожньо — рядок ховається.</summary>
-    public string Copyright { get; }
+    public string Copyright => AppInfo.Copyright;
 
     /// <summary>Назва ліцензії. Не читається зі збірки — фіксована для застосунку.</summary>
     public string License => "MIT";

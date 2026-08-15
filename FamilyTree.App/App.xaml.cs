@@ -58,8 +58,9 @@ public partial class App : Application
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IThemeService, ThemeService>();
 
-        // Сховище документа
-        services.AddSingleton<IFamilyStorage, JsonFamilyStorage>();
+        // Сховище документа. Передаємо реальну версію збірки, щоб вона проставлялася
+        // в metadata кожного збереженого файлу (B-65) — Storage навмисно не знає про WPF.
+        services.AddSingleton<IFamilyStorage>(_ => new JsonFamilyStorage(AppInfo.Version));
         services.AddSingleton<FamilyMerger>();
 
         // Ядро родства

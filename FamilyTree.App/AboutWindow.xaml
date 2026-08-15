@@ -9,10 +9,10 @@
         Background="{DynamicResource BackgroundBrush}">
     <StackPanel Margin="24">
         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-            <Image Source="{StaticResource AppIcon}" Width="48" Height="48"
+            <Image Source="{StaticResource AppIcon}" Width="108" Height="108"
                    VerticalAlignment="Center" Margin="0,0,14,0" />
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{Binding ProductName}" Style="{StaticResource HeadingTextStyle}" />
+                <TextBlock Text="{Binding ProductName}" Style="{StaticResource HeadingTextStyle}" FontSize="32"/>
                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                     <TextBlock Text="{loc:Localize About_Version}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,6,0" />
                     <TextBlock Text="{Binding Version}" Style="{StaticResource SecondaryTextStyle}" />

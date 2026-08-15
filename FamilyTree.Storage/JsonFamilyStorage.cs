@@ -19,6 +19,13 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     /// <summary>Поточна підтримувана версія схеми файлу.</summary>
     public const int CurrentSchemaVersion = 1;
 
+    /// <summary>
+    /// Значення <see cref="DocumentMeta.AppVersion"/> за замовчуванням, коли реальну версію
+    /// збірки не передано (напр. у тестах або в офлайн-інструментах). Свідомо не «1.0.0» —
+    /// краще чесне «невідомо», ніж вигадана версія, якої не існує (B-65).
+    /// </summary>
+    public const string UnknownVersion = "unknown";
+
     private const int MaxBackups = 5;
     private const string BackupsFolderName = ".backups";
 
@@ -37,6 +44,10 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 
     private readonly IReadOnlyList<IFormatMigration> _migrations;
 
+    // Версія застосунку, яку проставляємо в meta.AppVersion при кожному записі.
+    // Storage не має посилатися на WPF-збірку, тож версію передає застосунок (див. AppInfo).
+    private readonly string _appVersion;
+
     // Серіалізує збереження в межах процесу (див. коментар у SaveAsync).
     // Міжпроцесний захист (два запущені екземпляри застосунку) — окреме питання.
     private readonly SemaphoreSlim _saveGate = new(1, 1);
@@ -47,13 +58,19 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     /// </summary>
     internal Action? FaultBeforePromote { get; set; }
 
-    public JsonFamilyStorage()
-        : this(Array.Empty<IFormatMigration>())
+    /// <param name="appVersion">
+    /// Версія застосунку, яку записувати в metadata файлу. Порожнє/пробіли зводяться до
+    /// <see cref="UnknownVersion"/>. За замовчуванням — <see cref="UnknownVersion"/>, щоб
+    /// тести й інструменти не мусили її передавати.
+    /// </param>
+    public JsonFamilyStorage(string appVersion = UnknownVersion)
+        : this(appVersion, Array.Empty<IFormatMigration>())
     {
     }
 
-    public JsonFamilyStorage(IEnumerable<IFormatMigration> migrations)
+    public JsonFamilyStorage(string appVersion, IEnumerable<IFormatMigration> migrations)
     {
+        _appVersion = string.IsNullOrWhiteSpace(appVersion) ? UnknownVersion : appVersion;
         _migrations = migrations.ToList();
     }
 
@@ -183,11 +200,14 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
         var savedAt = DateTime.UtcNow;
         var dto = DocumentMapper.ToDto(document, CurrentSchemaVersion);
 
-        // UpdatedAt ставимо в DTO, а не в документ: інакше після НЕВДАЛОГО збереження
-        // документ у пам'яті мав час, якому на диску ніщо не відповідає.
+        // UpdatedAt і AppVersion ставимо в DTO, а не в документ: інакше після НЕВДАЛОГО
+        // збереження документ у пам'яті мав би час/версію, яким на диску ніщо не відповідає.
+        // AppVersion проставляє саме той, хто пише, — тому семантика «версія, що ОСТАННЬОЮ
+        // зберегла файл» нарешті виконується, а не круговертиться старе значення з файлу (B-65).
         if (dto.Meta is { } meta)
         {
             meta.UpdatedAt = savedAt;
+            meta.AppVersion = _appVersion;
         }
 
         // Одне збереження за раз. Сховище зареєстроване як singleton і не мало локу,
@@ -224,7 +244,9 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
             _saveGate.Release();
         }
 
+        // Синхронізуємо документ у пам'яті з тим, що реально записано (лише після успіху).
         document.Meta.UpdatedAt = savedAt;
+        document.Meta.AppVersion = _appVersion;
         document.IsDirty = false;
     }
 

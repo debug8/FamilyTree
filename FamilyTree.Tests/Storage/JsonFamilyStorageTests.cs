@@ -150,4 +150,36 @@ public sealed class JsonFamilyStorageTests : IDisposable
         var backupsDir = Path.Combine(_dir, ".backups");
         Directory.GetFiles(backupsDir, "rotating.familytree.*.bak").Length.ShouldBe(5);
     }
+
+    [Fact]
+    public async Task Save_stamps_current_app_version()
+    {
+        // Сховище знає свою версію; документ несе стару, що прийшла з файлу.
+        var storage = new JsonFamilyStorage(appVersion: "9.9.9-test");
+        var path = PathFor("stamp.familytree");
+        var doc = BuildSampleDocument();
+        doc.Meta.AppVersion = "0.0.1";
+
+        await storage.SaveAsync(doc, path);
+        var loaded = await storage.LoadAsync(path);
+
+        // У файл потрапляє версія того, хто зберіг, а не стале значення з документа (B-65).
+        loaded.Meta.AppVersion.ShouldBe("9.9.9-test");
+        // Документ у пам'яті теж синхронізується після успішного запису.
+        doc.Meta.AppVersion.ShouldBe("9.9.9-test");
+    }
+
+    [Fact]
+    public async Task Load_of_file_without_meta_version_does_not_fabricate_authorship()
+    {
+        // Файл без appVersion (напр. зроблений вручну чи стороннім експортером):
+        // застосунок не має приписувати собі «1.0.0» (B-65).
+        var path = PathFor("no-version.familytree");
+        await File.WriteAllTextAsync(path,
+            "{\"schemaVersion\":1,\"meta\":{\"title\":\"без версії\"},\"persons\":[],\"parentChildLinks\":[],\"spouseLinks\":[]}");
+
+        var loaded = await new JsonFamilyStorage().LoadAsync(path);
+
+        loaded.Meta.AppVersion.ShouldBe(string.Empty);
+    }
 }

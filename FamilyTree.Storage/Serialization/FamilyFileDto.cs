@@ -30,7 +30,8 @@ internal sealed class MetaDto
     public string? Title { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public string? AppVersion { get; set; } = "1.0.0";
+    // Без ініціалізатора: версію проставляє лише той, хто пише (B-65). null = у файлі секції нема.
+    public string? AppVersion { get; set; }
 }
 
 internal sealed class PersonDto
