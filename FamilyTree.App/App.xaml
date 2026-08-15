@@ -25,6 +25,7 @@
             <BitmapImage x:Key="AppIcon" UriSource="Resources/app-icon.png" />
             <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
             <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
+            <conv:LongDateConverter x:Key="LongDateConverter" />
             <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
             <!-- Велика картка особи для тултіпів. Оголошена ПІСЛЯ конвертерів, бо

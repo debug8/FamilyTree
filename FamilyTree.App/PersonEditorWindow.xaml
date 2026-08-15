@@ -50,7 +50,8 @@
                 </ComboBox>
 
                 <TextBlock Text="{loc:Localize Person_BirthDate}" Style="{StaticResource FieldLabel}" />
-                <DatePicker SelectedDate="{Binding BirthDate}" HorizontalAlignment="Left" MinWidth="200" />
+                <DatePicker SelectedDate="{Binding BirthDate}" HorizontalAlignment="Left" MinWidth="200"
+                            ToolTip="{Binding SelectedDate, RelativeSource={RelativeSource Self}, Converter={StaticResource LongDateConverter}}" />
 
                 <TextBlock Text="{loc:Localize Person_BirthPlace}" Style="{StaticResource FieldLabel}" />
                 <TextBox Style="{StaticResource InputTextBoxStyle}"
@@ -61,7 +62,8 @@
 
                 <StackPanel Visibility="{Binding ShowDeathDate, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="{loc:Localize Person_DeathDate}" Style="{StaticResource FieldLabel}" />
-                    <DatePicker SelectedDate="{Binding DeathDate}" HorizontalAlignment="Left" MinWidth="200" />
+                    <DatePicker SelectedDate="{Binding DeathDate}" HorizontalAlignment="Left" MinWidth="200"
+                                ToolTip="{Binding SelectedDate, RelativeSource={RelativeSource Self}, Converter={StaticResource LongDateConverter}}" />
                 </StackPanel>
 
                 <TextBlock Text="{loc:Localize Person_Notes}" Style="{StaticResource FieldLabel}" />
