@@ -8,7 +8,7 @@
 ; Потрібен Inno Setup 6: https://jrsoftware.org/isinfo.php
 
 #define AppName "Family Tree"
-#define AppVersion "0.9.2"
+#define AppVersion "0.9.3"
 #define AppPublisher "Oleh Kulman"
 #define AppCopyright "© 2026 Oleh Kulman"
 #define AppExeName "FamilyTree.exe"
