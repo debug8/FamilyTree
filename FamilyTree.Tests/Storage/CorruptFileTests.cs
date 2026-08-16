@@ -243,6 +243,39 @@ public sealed class CorruptFileTests : IDisposable
     }
 
     [Fact]
+    public async Task Remarriage_of_same_pair_with_distinct_dates_is_preserved()
+    {
+        // Повторний шлюб тієї самої пари (B-16): два SpouseLink із різними датами шлюбу.
+        // Дедуплікація не повинна викидати другий — це реальна історія, а не дубль.
+        var path = await WriteAsync("remarriage.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{PersonB}}}]," +
+            $"\"spouseLinks\":[" +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"1990-01-01\",\"divorceDate\":\"1995-01-01\"}}," +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"2000-01-01\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.SpouseLinks.Count.ShouldBe(2);
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Exact_duplicate_spouse_link_same_date_is_still_dropped()
+    {
+        // Той самий шлюб двічі (та сама пара + та сама дата) — справжній дубль, один викидається.
+        var path = await WriteAsync("dupspouse.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{PersonB}}}]," +
+            $"\"spouseLinks\":[" +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"1990-01-01\"}}," +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"1990-01-01\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.SpouseLinks.Count.ShouldBe(1);
+        doc.RepairedIssues.Single(i => i.MessageKey == FileErrorKeys.RepairedDuplicateLinks).Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Reversed_spouse_link_becomes_detectable_duplicate()
     {
         // Після нормалізації та сама пара у двох порядках стає одним зв'язком.

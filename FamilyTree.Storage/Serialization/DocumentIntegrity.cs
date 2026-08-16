@@ -180,9 +180,13 @@ internal static class DocumentIntegrity
     }
 
     /// <summary>
-    /// Прибирає повторні зв'язки тієї самої пари. Для подружжя дублі ламають
-    /// карту активності шлюбу у <c>FamilyGraph</c> («останній перемагає»).
-    /// Порядок збережених зв'язків не змінюється — лишається перший.
+    /// Прибирає повторні зв'язки тієї самої пари. Порядок збережених зв'язків не
+    /// змінюється — лишається перший.
+    /// <para>
+    /// Для подружжя ключ включає <see cref="SpouseLink.MarriageDate"/>: повторний шлюб тієї
+    /// самої пари з іншою датою — легітимна історія (B-16), і викидати його не можна.
+    /// Дублем лишається запис із тією самою парою і тією самою датою шлюбу.
+    /// </para>
     /// </summary>
     private static int RemoveDuplicateLinks(FamilyDocument document)
     {
@@ -191,8 +195,8 @@ internal static class DocumentIntegrity
         var seenParentChild = new HashSet<(Guid Parent, Guid Child)>();
         removed += document.ParentChildLinks.RemoveAll(l => !seenParentChild.Add((l.ParentId, l.ChildId)));
 
-        var seenSpouse = new HashSet<(Guid First, Guid Second)>();
-        removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add((l.Person1Id, l.Person2Id)));
+        var seenSpouse = new HashSet<(Guid First, Guid Second, DateOnly? Marriage)>();
+        removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add((l.Person1Id, l.Person2Id, l.MarriageDate)));
 
         return removed;
     }

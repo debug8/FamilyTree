@@ -106,9 +106,13 @@ public sealed class RelationshipValidator
             return new ValidationResult(errors, Array.Empty<ValidationMessage>());
         }
 
-        // Дубль пари (ідентифікатори нормалізовані у SpouseLink) (п.3).
+        // Дубль пари (ідентифікатори нормалізовані у SpouseLink) (п.3). Дублем вважаємо
+        // лише ПЕРЕТИН періодів шлюбу: повторний шлюб тієї самої пари з роздільними періодами
+        // (розлучились → одружились знову) — легітимний і має записатися (B-16).
         var isDuplicate = existingLinks.Any(l =>
-            l.Person1Id == candidate.Person1Id && l.Person2Id == candidate.Person2Id);
+            l.Person1Id == candidate.Person1Id
+            && l.Person2Id == candidate.Person2Id
+            && l.PeriodOverlaps(candidate));
         if (isDuplicate)
         {
             errors.Add(ValidationMessage.Of(ValidationKeys.DuplicateSpouse));

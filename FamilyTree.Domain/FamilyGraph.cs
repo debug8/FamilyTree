@@ -52,7 +52,13 @@ public sealed class FamilyGraph
 
             AddEdge(_spouses, link.Person1Id, link.Person2Id);
             AddEdge(_spouses, link.Person2Id, link.Person1Id);
-            _spouseActive[OrderPair(link.Person1Id, link.Person2Id)] = link.IsActive;
+
+            // Агрегуємо через АБО, а не присвоюємо: у пари може бути кілька SpouseLink
+            // (повторний шлюб — B-16). Пара вважається в чинному шлюбі, якщо чинний хоча б
+            // один із них. Присвоєння ж робило результат залежним від порядку зв'язків у
+            // файлі — чинна дружина могла показатися «колишньою».
+            var key = OrderPair(link.Person1Id, link.Person2Id);
+            _spouseActive[key] = (_spouseActive.TryGetValue(key, out var wasActive) && wasActive) || link.IsActive;
         }
     }
 

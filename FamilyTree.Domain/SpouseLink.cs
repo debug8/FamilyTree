@@ -38,6 +38,28 @@ public sealed class SpouseLink : Entity
         };
     }
 
+    /// <summary>
+    /// Чи перетинаються періоди шлюбу цього та іншого зв'язку. Період — [MarriageDate, DivorceDate];
+    /// відсутня межа вважається відкритою (−∞ для дати шлюбу, +∞ для дати розлучення).
+    /// <para>
+    /// Призначення (B-16): відрізнити справжній дубль (та сама пара, шлюби перетинаються в часі —
+    /// одночасним шлюб бути не може) від повторного шлюбу тієї самої пари з роздільними періодами
+    /// (одружились → розлучились → одружились знову), який легітимний. Перевірку «та сама пара»
+    /// робить викликач — тут порівнюються лише періоди.
+    /// </para>
+    /// </summary>
+    public bool PeriodOverlaps(SpouseLink other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        var start1 = MarriageDate ?? DateOnly.MinValue;
+        var end1 = DivorceDate ?? DateOnly.MaxValue;
+        var start2 = other.MarriageDate ?? DateOnly.MinValue;
+        var end2 = other.DivorceDate ?? DateOnly.MaxValue;
+
+        return start1 <= end2 && start2 <= end1;
+    }
+
     /// <summary>Чи стосується цей зв'язок вказаної особи.</summary>
     public bool Involves(Guid personId) => Person1Id == personId || Person2Id == personId;
 
