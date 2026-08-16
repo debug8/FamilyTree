@@ -90,7 +90,9 @@ public sealed class CommonAncestorFinder
             var current = queue.Dequeue();
             var nextDistance = distances[current] + 1;
 
-            foreach (var parent in graph.GetParents(current))
+            // Лише біологічні батьки: спорідненість — кровна, тож прийомні/зведені зв'язки
+            // не мають робити прийомного батька «предком», а його рідню — кровними родичами (B-17).
+            foreach (var parent in graph.GetBloodParents(current))
             {
                 if (distances.TryAdd(parent.Id, nextDistance))
                 {

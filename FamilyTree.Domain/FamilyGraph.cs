@@ -11,7 +11,8 @@ public sealed class FamilyGraph
     private static readonly IReadOnlyList<Person> Empty = Array.Empty<Person>();
 
     private readonly Dictionary<Guid, Person> _persons;
-    private readonly Dictionary<Guid, List<Guid>> _parents = new();   // дитина -> батьки
+    private readonly Dictionary<Guid, List<Guid>> _parents = new();       // дитина -> батьки (усі ролі)
+    private readonly Dictionary<Guid, List<Guid>> _bloodParents = new();  // дитина -> лише біологічні батьки
     private readonly Dictionary<Guid, List<Guid>> _children = new();  // батько/мати -> діти
     private readonly Dictionary<Guid, List<Guid>> _spouses = new();   // особа -> подружжя (симетрично)
     private readonly Dictionary<(Guid, Guid), bool> _spouseActive = new(); // пара -> чинний шлюб
@@ -41,6 +42,15 @@ public sealed class FamilyGraph
 
             AddEdge(_children, link.ParentId, link.ChildId);
             AddEdge(_parents, link.ChildId, link.ParentId);
+
+            // Окрема мапа лише біологічних батьків — для розрахунку СПОРІДНЕНОСТІ (B-17):
+            // прийомні/зведені зв'язки не є кровними, тож пускати їх у кровні обходи не можна
+            // (інакше двоє прийомних дітей = «єдинокровні», прийомний батько = «прадід» тощо).
+            // Показ (вкладка «Особа», дерево) далі користується повною мапою _parents/_children.
+            if (link.ParentRole == ParentRole.Biological)
+            {
+                AddEdge(_bloodParents, link.ChildId, link.ParentId);
+            }
         }
 
         foreach (var link in spouseLinks)
@@ -80,8 +90,14 @@ public sealed class FamilyGraph
             ? person
             : throw new KeyNotFoundException($"Особу з Id {personId} не знайдено у графі.");
 
-    /// <summary>Батьки особи (0–2 і більше, якщо є нерідні).</summary>
+    /// <summary>Батьки особи (0–2 і більше, якщо є нерідні). Усі ролі — для показу й дерева.</summary>
     public IReadOnlyList<Person> GetParents(Guid personId) => Neighbors(_parents, personId);
+
+    /// <summary>
+    /// Лише біологічні батьки — для розрахунку спорідненості (B-17). Прийомні/зведені
+    /// зв'язки сюди не входять, тож кровні обходи не приписують кров там, де її немає.
+    /// </summary>
+    public IReadOnlyList<Person> GetBloodParents(Guid personId) => Neighbors(_bloodParents, personId);
 
     /// <summary>Діти особи.</summary>
     public IReadOnlyList<Person> GetChildren(Guid personId) => Neighbors(_children, personId);

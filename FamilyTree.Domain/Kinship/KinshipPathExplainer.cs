@@ -101,7 +101,9 @@ public sealed class KinshipPathExplainer
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
-            foreach (var parent in graph.GetParents(current))
+            // Лише біологічні батьки: НСП знайдено кровним обходом, тож і ланцюжок
+            // відновлюємо тими самими кровними ребрами (B-17).
+            foreach (var parent in graph.GetBloodParents(current))
             {
                 if (!visited.Add(parent.Id))
                 {

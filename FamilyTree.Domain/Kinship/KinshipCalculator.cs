@@ -225,8 +225,9 @@ public sealed class KinshipCalculator
 
     private static SiblingKind ClassifySiblings(FamilyGraph graph, Guid firstId, Guid secondId)
     {
-        var firstParents = graph.GetParents(firstId);
-        var secondParents = graph.GetParents(secondId);
+        // Лише біологічні батьки: спільний ПРИЙОМНИЙ батько не робить дітей неповнорідними (B-17).
+        var firstParents = graph.GetBloodParents(firstId);
+        var secondParents = graph.GetBloodParents(secondId);
 
         var firstIds = firstParents.Select(p => p.Id).ToHashSet();
         var shared = secondParents.Where(p => firstIds.Contains(p.Id)).ToList();
@@ -274,7 +275,9 @@ public sealed class KinshipCalculator
         var ncaSet = ncaIds.ToHashSet();
         var genders = new HashSet<Gender>();
 
-        foreach (var parent in graph.GetParents(rootId))
+        // Лінія (по батькові/по матері) визначається кровним шляхом до спільного предка —
+        // тож лише біологічні батьки (B-17).
+        foreach (var parent in graph.GetBloodParents(rootId))
         {
             var distances = CommonAncestorFinder.AncestorDistances(parent.Id, graph);
             var leadsToNca = ncaSet.Any(id => distances.TryGetValue(id, out var d) && d == stepsUp - 1);
