@@ -133,6 +133,7 @@ internal static class DocumentMapper
         Person2Id = l.Person2Id,
         MarriageDate = l.MarriageDate,
         DivorceDate = l.DivorceDate,
+        Divorced = l.Divorced,
     };
 
     // Порядок Id (Person1Id ≤ Person2Id) нормалізує DocumentIntegrity після мапінгу:
@@ -145,6 +146,7 @@ internal static class DocumentMapper
             Person2Id = d.Person2Id,
             MarriageDate = d.MarriageDate,
             DivorceDate = d.DivorceDate,
+            Divorced = d.Divorced,
         }
         : new SpouseLink
         {
@@ -153,5 +155,6 @@ internal static class DocumentMapper
             Person2Id = d.Person2Id,
             MarriageDate = d.MarriageDate,
             DivorceDate = d.DivorceDate,
+            Divorced = d.Divorced,
         };
 }

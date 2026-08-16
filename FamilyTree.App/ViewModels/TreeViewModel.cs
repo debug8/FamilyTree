@@ -323,7 +323,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         var coupleAnchors = new List<(Guid A, Guid B, double X, double Y)>();
         var childToParents = new Dictionary<Guid, List<Guid>>();
 
-        foreach (var edge in layout.Edges)
+        foreach (var edge in layout.Edges.Reverse())
         {
             if (edge.Kind == EdgeKind.Spouse)
             {

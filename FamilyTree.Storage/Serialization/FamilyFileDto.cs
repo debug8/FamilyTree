@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FamilyTree.Domain;
 
 namespace FamilyTree.Storage.Serialization;
@@ -66,4 +67,9 @@ internal sealed class SpouseLinkDto
     public Guid Person2Id { get; set; }
     public DateOnly? MarriageDate { get; set; }
     public DateOnly? DivorceDate { get; set; }
+
+    // Шлюб завершено без дати. WhenWritingDefault: false не пишемо у файл (щоб не роздувати
+    // й не засмічувати diff), а відсутнє поле в старих файлах читається як false — сумісно.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Divorced { get; set; }
 }

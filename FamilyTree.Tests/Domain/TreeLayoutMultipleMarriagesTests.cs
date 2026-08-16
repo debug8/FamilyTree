@@ -239,6 +239,29 @@ public class TreeLayoutMultipleMarriagesTests
     }
 
     [Fact]
+    public void Full_mode_centers_person_with_former_left_and_active_right()
+    {
+        // Перша — колишня, Друга — чинна. У повному режимі особа стоїть МІЖ подружжям:
+        // колишня ліворуч, чинна праворуч. Так рамка чинного шлюбу не охоплює колишню,
+        // а пунктир до колишньої йде по інший бік і не перетинає картку чинної (див. Render).
+        BuildTwoMarriages();
+
+        var layout = _engine.Build(Graph(), Id("Батько"), TreeMode.FullRelatives);
+        var father = Node(layout, _p["Батько"]);
+        var active = Node(layout, _p["Друга"]);
+        var former = Node(layout, _p["Перша"]);
+
+        father.Y.ShouldBe(active.Y, Tolerance);
+        father.Y.ShouldBe(former.Y, Tolerance);
+
+        // Колишня — ліворуч, чинна — праворуч, і кожна сусідня з особою (одна колонка).
+        former.X.ShouldBeLessThan(father.X);
+        active.X.ShouldBeGreaterThan(father.X);
+        Math.Abs(father.X - former.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
+        Math.Abs(father.X - active.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
+    }
+
+    [Fact]
     public void Full_mode_is_deterministic_too()
     {
         BuildTwoMarriages();

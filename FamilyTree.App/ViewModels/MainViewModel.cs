@@ -612,7 +612,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         if (pick.Confirmed && pick.Candidate is { } other)
         {
-            var link = SpouseLink.Create(person.Id, other.Id, pick.MarriageDate, pick.DivorceDate);
+            var link = SpouseLink.Create(person.Id, other.Id, pick.MarriageDate, pick.DivorceDate, pick.Divorced);
             var result = _validator.ValidateSpouse(link, _session.Current.SpouseLinks);
             if (Accept(result))
             {
@@ -663,11 +663,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var editor = RelationshipEditorViewModel.ForSpouseEdit(person, spouse, link.MarriageDate, link.DivorceDate);
+        var editor = RelationshipEditorViewModel.ForSpouseEdit(
+            person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive);
         if (_dialogs.ShowRelationshipEditor(editor))
         {
             link.MarriageDate = editor.MarriageDateOnly;
             link.DivorceDate = editor.DivorceDateOnly;
+            link.Divorced = editor.Divorced;
             _session.MarkContentChanged();
         }
     }
@@ -695,7 +697,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Person? Candidate,
         bool HasCreatedPersons,
         DateOnly? MarriageDate,
-        DateOnly? DivorceDate);
+        DateOnly? DivorceDate,
+        bool Divorced);
 
     /// <summary>
     /// Відкриває діалог вибору родича. Усі вже прямі родичі базової особи (батьки,
@@ -719,7 +722,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             editor.SelectedCandidate,
             editor.HasCreatedPersons,
             editor.MarriageDateOnly,
-            editor.DivorceDateOnly);
+            editor.DivorceDateOnly,
+            editor.Divorced);
     }
 
     /// <summary>

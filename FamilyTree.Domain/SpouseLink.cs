@@ -16,17 +16,34 @@ public sealed class SpouseLink : Entity
     /// <summary>Дата шлюбу.</summary>
     public DateOnly? MarriageDate { get; set; }
 
-    /// <summary>Дата розлучення (null — шлюб чинний).</summary>
+    /// <summary>Дата розлучення (null — дата невідома або шлюб чинний; див. <see cref="Divorced"/>).</summary>
     public DateOnly? DivorceDate { get; set; }
 
-    /// <summary>Чи чинний шлюб (немає дати розлучення).</summary>
-    public bool IsActive => DivorceDate is null;
+    /// <summary>
+    /// Явна позначка, що шлюб завершено, навіть коли дата розлучення невідома
+    /// (у діалозі знято галочку «В шлюбі», але дату не вказано). Без цього прапорця
+    /// «чинність» трималася лише на <see cref="DivorceDate"/>, тож стан «не в шлюбі,
+    /// дата невідома» неможливо було зберегти — шлюб мовчки лишався чинним.
+    /// </summary>
+    public bool Divorced { get; set; }
+
+    /// <summary>
+    /// Чи чинний шлюб. Неактивний, якщо є дата розлучення АБО його явно позначено завершеним.
+    /// Перевірка <c>DivorceDate is null</c> лишена для зворотної сумісності зі старими файлами,
+    /// де завершення виражалося лише датою (поля <see cref="Divorced"/> там немає → false).
+    /// </summary>
+    public bool IsActive => DivorceDate is null && !Divorced;
 
     /// <summary>
     /// Створює зв'язок подружжя, нормалізуючи порядок ідентифікаторів
     /// (Person1Id ≤ Person2Id), щоб та сама пара завжди мала однакове представлення.
     /// </summary>
-    public static SpouseLink Create(Guid personA, Guid personB, DateOnly? marriageDate = null, DateOnly? divorceDate = null)
+    /// <param name="divorced">
+    /// Позначити шлюб завершеним навіть без дати розлучення. Якщо задано
+    /// <paramref name="divorceDate"/>, шлюб і так неактивний незалежно від цього прапорця.
+    /// </param>
+    public static SpouseLink Create(
+        Guid personA, Guid personB, DateOnly? marriageDate = null, DateOnly? divorceDate = null, bool divorced = false)
     {
         var (first, second) = personA.CompareTo(personB) <= 0 ? (personA, personB) : (personB, personA);
         return new SpouseLink
@@ -35,6 +52,7 @@ public sealed class SpouseLink : Entity
             Person2Id = second,
             MarriageDate = marriageDate,
             DivorceDate = divorceDate,
+            Divorced = divorced,
         };
     }
 

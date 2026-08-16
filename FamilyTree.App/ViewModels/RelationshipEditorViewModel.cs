@@ -132,15 +132,19 @@ public partial class RelationshipEditorViewModel : ObservableObject
         }
     }
 
-    /// <summary>Створює VM для редагування дат наявного подружжя.</summary>
+    /// <summary>Створює VM для редагування наявного подружжя.</summary>
+    /// <param name="isActive">
+    /// Чи чинний шлюб зараз (керує галочкою «В шлюбі»). Передаємо саме це, а не «дата
+    /// розлучення = null»: шлюб може бути завершеним і без дати (див. <see cref="Divorced"/>).
+    /// </param>
     public static RelationshipEditorViewModel ForSpouseEdit(
-        Person basePerson, Person spouse, DateOnly? marriageDate, DateOnly? divorceDate)
+        Person basePerson, Person spouse, DateOnly? marriageDate, DateOnly? divorceDate, bool isActive)
     {
         var vm = new RelationshipEditorViewModel(
             RelationshipRole.Spouse, basePerson, new[] { spouse }, isEditMode: true);
 
         vm.SelectedCandidate = spouse;
-        vm.IsMarried = divorceDate is null;
+        vm.IsMarried = isActive;
         vm.MarriageDate = marriageDate is { } m ? m.ToDateTime(TimeOnly.MinValue) : null;
         vm.DivorceDate = divorceDate is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
         return vm;
@@ -166,6 +170,12 @@ public partial class RelationshipEditorViewModel : ObservableObject
 
     public DateOnly? DivorceDateOnly =>
         !IsMarried && DivorceDate is { } d ? DateOnly.FromDateTime(d) : null;
+
+    /// <summary>
+    /// Чи позначено шлюб завершеним (галочку «В шлюбі» знято). Зберігається окремо від дати,
+    /// щоб стан «не в шлюбі, дата невідома» не губився (шлюб не лишався мовчки чинним).
+    /// </summary>
+    public bool Divorced => !IsMarried;
 
     /// <summary>
     /// Скидає пошук і фільтри до типових значень (одним перефільтруванням).

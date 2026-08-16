@@ -63,6 +63,26 @@ public class LinksTests
     }
 
     [Fact]
+    public void SpouseLink_is_inactive_when_marked_divorced_without_date()
+    {
+        // Знято галочку «В шлюбі», але дату розлучення не вказано — шлюб має бути неактивним.
+        var link = SpouseLink.Create(Guid.NewGuid(), Guid.NewGuid(), divorced: true);
+
+        link.IsActive.ShouldBeFalse();
+        link.DivorceDate.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SpouseLink_becomes_active_again_when_divorced_flag_cleared()
+    {
+        var link = SpouseLink.Create(Guid.NewGuid(), Guid.NewGuid(), divorced: true);
+        link.IsActive.ShouldBeFalse();
+
+        link.Divorced = false;
+        link.IsActive.ShouldBeTrue();
+    }
+
+    [Fact]
     public void SpouseLink_SpouseOf_returns_the_other_partner()
     {
         var a = Guid.NewGuid();

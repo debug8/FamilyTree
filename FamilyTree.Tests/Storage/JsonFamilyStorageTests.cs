@@ -182,4 +182,27 @@ public sealed class JsonFamilyStorageTests : IDisposable
 
         loaded.Meta.AppVersion.ShouldBe(string.Empty);
     }
+
+    [Fact]
+    public async Task Divorced_without_date_survives_roundtrip()
+    {
+        // Шлюб позначено завершеним без дати розлучення — стан має зберегтися у файлі.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("divorced.familytree");
+
+        var doc = FamilyDocument.CreateNew("Тест");
+        var a = new Person { LastName = "А", FirstName = "А", Gender = Gender.Male };
+        var b = new Person { LastName = "Б", FirstName = "Б", Gender = Gender.Female };
+        doc.Persons.Add(a);
+        doc.Persons.Add(b);
+        doc.SpouseLinks.Add(SpouseLink.Create(a.Id, b.Id, new DateOnly(1990, 1, 1), divorced: true));
+
+        await storage.SaveAsync(doc, path);
+        var loaded = await storage.LoadAsync(path);
+
+        var link = loaded.SpouseLinks.ShouldHaveSingleItem();
+        link.Divorced.ShouldBeTrue();
+        link.DivorceDate.ShouldBeNull();
+        link.IsActive.ShouldBeFalse();
+    }
 }

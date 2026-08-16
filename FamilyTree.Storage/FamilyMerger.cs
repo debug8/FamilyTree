@@ -124,7 +124,7 @@ public sealed class FamilyMerger
                 continue;
             }
 
-            plan.SpouseLinksToAdd.Add(SpouseLink.Create(a, b, link.MarriageDate, link.DivorceDate));
+            plan.SpouseLinksToAdd.Add(SpouseLink.Create(a, b, link.MarriageDate, link.DivorceDate, link.Divorced));
         }
 
         return plan;

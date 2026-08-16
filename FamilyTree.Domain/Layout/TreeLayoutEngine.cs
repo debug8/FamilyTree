@@ -297,8 +297,23 @@ public sealed class TreeLayoutEngine
                 continue;
             }
 
+            // Особа стоїть МІЖ подружжям: усі колишні ліворуч, усі чинні праворуч.
+            // Так рамка чинного шлюбу охоплює лише особу з чинним партнером (сусіднім
+            // праворуч), а пунктир до колишнього йде по інший бік і не перетинає картку
+            // чинного. Порядок у межах кожної групи зберігаємо (стабільний поділ за списком).
+            var spouses = graph.GetSpouses(id)
+                .Where(s => set.Contains(s.Id) && !placed.Contains(s.Id))
+                .ToList();
+
+            foreach (var spouse in spouses.Where(s => !graph.IsSpouseActive(id, s.Id)))
+            {
+                placed.Add(spouse.Id);
+                result.Add(spouse.Id);
+            }
+
             result.Add(id);
-            foreach (var spouse in graph.GetSpouses(id).Where(s => set.Contains(s.Id) && !placed.Contains(s.Id)))
+
+            foreach (var spouse in spouses.Where(s => graph.IsSpouseActive(id, s.Id)))
             {
                 placed.Add(spouse.Id);
                 result.Add(spouse.Id);

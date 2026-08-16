@@ -154,6 +154,7 @@ internal static class DocumentIntegrity
                 Person2Id = link.Person1Id,
                 MarriageDate = link.MarriageDate,
                 DivorceDate = link.DivorceDate,
+                Divorced = link.Divorced,
             };
             fixedCount++;
         }
