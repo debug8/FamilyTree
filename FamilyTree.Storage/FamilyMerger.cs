@@ -9,8 +9,24 @@ namespace FamilyTree.Storage;
 /// <param name="AddedParentLinks">Скільки нових зв'язків «батько–дитина».</param>
 /// <param name="AddedSpouseLinks">Скільки нових подружніх зв'язків.</param>
 /// <param name="RejectedLinks">Скільки зв'язків відхилено валідатором (цикл, третій біо-батько тощо).</param>
+/// <param name="UpdatedPersons">Скільки наявних осіб доповнено полями з джерела.</param>
+/// <param name="Conflicts">Скільки непорожніх полів розійшлися (лишили значення цілі, не перезаписали).</param>
 public sealed record MergeReport(
-    int AddedPersons, int DuplicatePersons, int AddedParentLinks, int AddedSpouseLinks, int RejectedLinks = 0);
+    int AddedPersons, int DuplicatePersons, int AddedParentLinks, int AddedSpouseLinks,
+    int RejectedLinks = 0, int UpdatedPersons = 0, int Conflicts = 0);
+
+/// <summary>
+/// Заповнення порожніх полів наявної особи значеннями з джерела при злитті (B-04).
+/// Кожне поле не-null лише тоді, коли його треба проставити (ціль порожня, джерело має значення).
+/// Застосовується у <see cref="FamilyMerger.Apply"/>, щоб <c>Plan</c> не мутував документ.
+/// </summary>
+public sealed record PersonFieldFill(
+    Person Target,
+    DateOnly? DeathDate = null,
+    string? BirthPlace = null,
+    string? MaidenName = null,
+    string? Notes = null,
+    string? PhotoPath = null);
 
 /// <summary>
 /// План злиття: що саме буде додано (обчислюється без зміни документа, щоб показати
@@ -29,8 +45,15 @@ public sealed class MergePlan
     /// <summary>Скільки кандидатних зв'язків відхилив валідатор (не додаються).</summary>
     public int RejectedLinks { get; internal set; }
 
+    /// <summary>Доповнення полів наявних осіб (заповнення порожніх значеннями з джерела).</summary>
+    public List<PersonFieldFill> PersonUpdates { get; } = new();
+
+    /// <summary>Скільки непорожніх полів розійшлися (значення цілі збережено).</summary>
+    public int Conflicts { get; internal set; }
+
     public MergeReport ToReport() =>
-        new(PersonsToAdd.Count, DuplicatePersons, ParentLinksToAdd.Count, SpouseLinksToAdd.Count, RejectedLinks);
+        new(PersonsToAdd.Count, DuplicatePersons, ParentLinksToAdd.Count, SpouseLinksToAdd.Count,
+            RejectedLinks, PersonUpdates.Count, Conflicts);
 }
 
 /// <summary>
@@ -58,48 +81,67 @@ public sealed class FamilyMerger
 
         var plan = new MergePlan();
 
-        var existingIds = target.Persons.Select(p => p.Id).ToHashSet();
+        // Мапи наявних/доданих осіб: за Id і за ключем ідентичності (ПІБ+дата народження).
+        var personById = new Dictionary<Guid, Person>();
         var existingByKey = new Dictionary<string, Guid>();
         foreach (var person in target.Persons)
         {
-            if (IdentityKey(person) is { } key)
-            {
-                existingByKey.TryAdd(key, person.Id);
-            }
+            personById.TryAdd(person.Id, person);
+            RegisterKey(existingByKey, person, person.Id);
         }
 
         // importId → підсумковий Id (наявної особи, якщо дублікат, або нової доданої).
         var remap = new Dictionary<Guid, Guid>();
         var duplicates = 0;
+        var conflicts = 0;
 
         foreach (var person in source.Persons)
         {
-            if (existingIds.Contains(person.Id))
+            // 1. Той самий Id уже є в цілі.
+            if (personById.TryGetValue(person.Id, out var sameId))
             {
-                remap[person.Id] = person.Id; // той самий запис уже є (напр. повторний імпорт)
-                duplicates++;
+                // Але чи це справді та сама людина? Якщо ПІБ+дата обох відомі й різні — це РІЗНІ
+                // люди, що зіткнулися на Id (напр. детерміновані Id у зразках). Тоді додаємо як
+                // нову з НОВИМ Guid; інакше зв'язки прив'язалися б до сторонньої людини (B-04).
+                if (SameIdentity(sameId, person))
+                {
+                    MergeFields(sameId, person, plan, ref conflicts); // доповнюємо порожні поля цілі
+                    remap[person.Id] = sameId.Id;
+                    duplicates++;
+                }
+                else
+                {
+                    var reId = Clone(person, newId: true);
+                    plan.PersonsToAdd.Add(reId);
+                    remap[person.Id] = reId.Id;
+                    personById[reId.Id] = reId;
+                    RegisterKey(existingByKey, person, reId.Id);
+                }
+
                 continue;
             }
 
+            // 2. Збіг ПІБ + дати народження з наявною особою → та сама людина.
             var key = IdentityKey(person);
-            if (key is not null && existingByKey.TryGetValue(key, out var matchId))
+            if (key is not null && existingByKey.TryGetValue(key, out var matchId) &&
+                personById.TryGetValue(matchId, out var matched))
             {
-                remap[person.Id] = matchId; // збіг ПІБ + дати народження → зливаємо
+                MergeFields(matched, person, plan, ref conflicts);
+                remap[person.Id] = matchId;
                 duplicates++;
                 continue;
             }
 
+            // 3. Нова особа.
             var clone = Clone(person);
             plan.PersonsToAdd.Add(clone);
             remap[person.Id] = clone.Id;
-            existingIds.Add(clone.Id);
-            if (key is not null)
-            {
-                existingByKey.TryAdd(key, clone.Id);
-            }
+            personById[clone.Id] = clone;
+            RegisterKey(existingByKey, person, clone.Id);
         }
 
         plan.DuplicatePersons = duplicates;
+        plan.Conflicts = conflicts;
 
         // Валідація зв'язків: імпорт додавав їх прямо, обходячи RelationshipValidator, тож
         // чужий файл міг внести цикл (А→Б→А), самобатьківство (колапс двох осіб в одну при
@@ -185,6 +227,18 @@ public sealed class FamilyMerger
         target.Persons.AddRange(plan.PersonsToAdd);
         target.ParentChildLinks.AddRange(plan.ParentLinksToAdd);
         target.SpouseLinks.AddRange(plan.SpouseLinksToAdd);
+
+        // Доповнюємо порожні поля наявних осіб значеннями з джерела (B-04). Тільки порожні —
+        // непорожні розбіжності лишаються як є й пораховані в plan.Conflicts.
+        foreach (var fill in plan.PersonUpdates)
+        {
+            if (fill.DeathDate is { } death) fill.Target.DeathDate = death;
+            if (fill.BirthPlace is { } birthPlace) fill.Target.BirthPlace = birthPlace;
+            if (fill.MaidenName is { } maiden) fill.Target.MaidenName = maiden;
+            if (fill.Notes is { } notes) fill.Target.Notes = notes;
+            if (fill.PhotoPath is { } photo) fill.Target.PhotoPath = photo;
+        }
+
         return plan.ToReport();
     }
 
@@ -209,9 +263,89 @@ public sealed class FamilyMerger
 
     private static string Norm(string? value) => (value ?? string.Empty).Trim().ToLowerInvariant();
 
-    private static Person Clone(Person p) => new()
+    private static void RegisterKey(Dictionary<string, Guid> map, Person person, Guid id)
     {
-        Id = p.Id,
+        if (IdentityKey(person) is { } key)
+        {
+            map.TryAdd(key, id);
+        }
+    }
+
+    /// <summary>
+    /// Чи це та сама людина. Якщо ключ ідентичності обох відомий — мусить збігатися; якщо хоч в
+    /// одного немає дати народження (ключ null) — довести відмінність не можна, вважаємо тією самою
+    /// (типовий випадок: користувач редагує власний файл). Розходяться лише за обома відомими ключами.
+    /// </summary>
+    private static bool SameIdentity(Person a, Person b)
+    {
+        var keyA = IdentityKey(a);
+        var keyB = IdentityKey(b);
+        return keyA is null || keyB is null || keyA == keyB;
+    }
+
+    /// <summary>
+    /// Готує доповнення порожніх полів цілі значеннями з джерела й рахує конфлікти
+    /// (обидва непорожні й різні — значення цілі лишається). Додає fill у план, якщо є що заповнити.
+    /// </summary>
+    private static void MergeFields(Person target, Person source, MergePlan plan, ref int conflicts)
+    {
+        var any = false;
+        var localConflicts = 0;
+
+        DateOnly? death = null;
+        if (target.DeathDate is null)
+        {
+            if (source.DeathDate is { } d)
+            {
+                death = d;
+                any = true;
+            }
+        }
+        else if (source.DeathDate is { } sd && sd != target.DeathDate.Value)
+        {
+            localConflicts++;
+        }
+
+        var birthPlace = ResolveText(target.BirthPlace, source.BirthPlace, ref any, ref localConflicts);
+        var maiden = ResolveText(target.MaidenName, source.MaidenName, ref any, ref localConflicts);
+        var notes = ResolveText(target.Notes, source.Notes, ref any, ref localConflicts);
+        var photo = ResolveText(target.PhotoPath, source.PhotoPath, ref any, ref localConflicts);
+
+        conflicts += localConflicts;
+
+        if (any)
+        {
+            plan.PersonUpdates.Add(new PersonFieldFill(target, death, birthPlace, maiden, notes, photo));
+        }
+    }
+
+    /// <summary>
+    /// Значення для заповнення текстового поля: не-null лише якщо ціль порожня, а джерело — ні.
+    /// Якщо обидва непорожні й різні — це конфлікт (лишаємо ціль, повертаємо null).
+    /// </summary>
+    private static string? ResolveText(string? targetValue, string? sourceValue, ref bool any, ref int conflicts)
+    {
+        var targetEmpty = string.IsNullOrWhiteSpace(targetValue);
+        var sourceHas = !string.IsNullOrWhiteSpace(sourceValue);
+
+        if (targetEmpty && sourceHas)
+        {
+            any = true;
+            return sourceValue;
+        }
+
+        if (!targetEmpty && sourceHas &&
+            !string.Equals(targetValue!.Trim(), sourceValue!.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            conflicts++;
+        }
+
+        return null;
+    }
+
+    private static Person Clone(Person p, bool newId = false) => new()
+    {
+        Id = newId ? Guid.CreateVersion7() : p.Id,
         LastName = p.LastName,
         FirstName = p.FirstName,
         Gender = p.Gender,

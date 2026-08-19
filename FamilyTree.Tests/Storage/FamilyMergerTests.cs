@@ -164,4 +164,77 @@ public class FamilyMergerTests
         report.AddedParentLinks.ShouldBe(1);
         report.RejectedLinks.ShouldBe(0);
     }
+
+    // ---- B-04: перенос правок наявних осіб --------------------------------
+
+    [Fact]
+    public void Duplicate_person_fills_empty_target_fields_from_source()
+    {
+        // Та сама людина (ПІБ+дата), джерело має заповнені поля, ціль — порожні.
+        var existing = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        var target = DocOf(existing);
+
+        var enriched = Make("Шевченко", "Ольга", 1990, Gender.Female); // інший Id
+        enriched.BirthPlace = "Київ";
+        enriched.Notes = "уточнення від родича";
+        enriched.DeathDate = new DateOnly(2020, 5, 1);
+        var source = DocOf(enriched);
+
+        var report = _merger.Merge(target, source);
+
+        report.UpdatedPersons.ShouldBe(1);
+        report.Conflicts.ShouldBe(0);
+        report.AddedPersons.ShouldBe(0);
+        existing.BirthPlace.ShouldBe("Київ");
+        existing.Notes.ShouldBe("уточнення від родича");
+        existing.DeathDate.ShouldBe(new DateOnly(2020, 5, 1));
+    }
+
+    [Fact]
+    public void Conflicting_nonempty_field_keeps_target_value_and_is_counted()
+    {
+        var existing = Make("Мороз", "Іван", 1970);
+        existing.BirthPlace = "Львів";
+        var target = DocOf(existing);
+
+        var other = Make("Мороз", "Іван", 1970); // той самий, інший Id
+        other.BirthPlace = "Одеса";               // непорожній конфлікт
+        var source = DocOf(other);
+
+        var report = _merger.Merge(target, source);
+
+        report.Conflicts.ShouldBe(1);
+        report.UpdatedPersons.ShouldBe(0);        // заповнювати нічого — єдине поле конфліктне
+        existing.BirthPlace.ShouldBe("Львів");    // значення цілі збережено, не перезаписано
+    }
+
+    [Fact]
+    public void Same_id_but_different_identity_is_added_as_a_new_person()
+    {
+        // Детермінований Id зі зразків: у двох файлах він може належати РІЗНИМ людям.
+        var fixedId = Guid.Parse("10000000-0000-4000-8000-000000000001");
+        var existing = new Person
+        {
+            Id = fixedId, LastName = "Коваль", FirstName = "Іван",
+            Gender = Gender.Male, BirthDate = new DateOnly(1950, 1, 1),
+        };
+        var target = DocOf(existing);
+
+        var other = new Person
+        {
+            Id = fixedId, LastName = "Петренко", FirstName = "Олег",
+            Gender = Gender.Male, BirthDate = new DateOnly(1975, 2, 2),
+        };
+        var child = Make("Петренко", "Мала", 2000, Gender.Female);
+        var source = DocOf(other, child);
+        source.ParentChildLinks.Add(new ParentChildLink { ParentId = other.Id, ChildId = child.Id });
+
+        var report = _merger.Merge(target, source);
+
+        report.AddedPersons.ShouldBe(2);          // «інший» Олег (з новим Id) + дитина
+        target.Persons.Count.ShouldBe(3);
+        // Зв'язок веде від НОВОГО Id, а не від наявного Коваля з тим самим старим Id.
+        target.ParentChildLinks.ShouldHaveSingleItem();
+        target.ParentChildLinks[0].ParentId.ShouldNotBe(existing.Id);
+    }
 }

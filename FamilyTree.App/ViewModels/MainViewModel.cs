@@ -266,7 +266,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             report.AddedPersons,
             report.DuplicatePersons,
             report.AddedParentLinks + report.AddedSpouseLinks);
-        confirm += RejectedSuffix(report.RejectedLinks);
+        confirm += MergeExtras(report);
         if (!_dialogs.Confirm(confirm, _localization.GetString("Import_Title")))
         {
             return;
@@ -277,16 +277,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         var done = string.Format(
             _localization.GetString("Import_Done"), report.AddedPersons, report.DuplicatePersons);
-        done += RejectedSuffix(report.RejectedLinks);
+        done += MergeExtras(report);
         _dialogs.ShowMessage(done, _localization.GetString("Import_Title"));
     }
 
-    /// <summary>Локалізований рядок про відхилені при злитті зв'язки (порожній, якщо їх немає).</summary>
-    private string RejectedSuffix(int rejected) =>
-        rejected > 0
-            ? Environment.NewLine + Environment.NewLine
-                + string.Format(_localization.GetString("Import_Rejected"), rejected)
-            : string.Empty;
+    /// <summary>
+    /// Додаткові рядки звіту злиття (доповнені особи, конфлікти полів, відхилені зв'язки).
+    /// Порожньо, якщо нічого з цього немає — щоб типовий імпорт не обростав зайвим текстом.
+    /// </summary>
+    private string MergeExtras(MergeReport report)
+    {
+        var lines = new List<string>();
+        if (report.UpdatedPersons > 0)
+        {
+            lines.Add(string.Format(_localization.GetString("Import_Updated"), report.UpdatedPersons));
+        }
+
+        if (report.Conflicts > 0)
+        {
+            lines.Add(string.Format(_localization.GetString("Import_Conflicts"), report.Conflicts));
+        }
+
+        if (report.RejectedLinks > 0)
+        {
+            lines.Add(string.Format(_localization.GetString("Import_Rejected"), report.RejectedLinks));
+        }
+
+        return lines.Count == 0
+            ? string.Empty
+            : Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines);
+    }
 
     [RelayCommand]
     private async Task CreateDemoFamily()

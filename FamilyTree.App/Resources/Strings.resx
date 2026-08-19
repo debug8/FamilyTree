@@ -364,6 +364,12 @@
   <data name="Import_Rejected" xml:space="preserve">
     <value>Пропущено недопустимих зв'язків: {0} (утворили б цикл або суперечили правилам родини).</value>
   </data>
+  <data name="Import_Updated" xml:space="preserve">
+    <value>Доповнено наявних осіб: {0} (заповнено порожні поля значеннями з файлу).</value>
+  </data>
+  <data name="Import_Conflicts" xml:space="preserve">
+    <value>Розбіжностей у полях: {0} (значення лишено ваші, не перезаписано).</value>
+  </data>
   <data name="File_Filter" xml:space="preserve">
     <value>Дерево родини (*.familytree)|*.familytree|Усі файли (*.*)|*.*</value>
   </data>
