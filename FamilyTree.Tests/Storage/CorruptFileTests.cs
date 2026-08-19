@@ -145,6 +145,40 @@ public sealed class CorruptFileTests : IDisposable
         ex.MessageKey.ShouldBe(FileErrorKeys.BadEncoding);
     }
 
+    [Fact]
+    public async Task Utf8_bom_with_invalid_body_reports_bad_encoding()
+    {
+        // Той самий брудний файл, але з UTF-8 BOM попереду. Раніше BOM вимикав строгий
+        // декодер (StreamReader підміняв кодування на replacement-варіант), і биті байти
+        // тихо ставали U+FFFD (B-03). Тепер це так само явна помилка.
+        var path = Path.Combine(_dir, "bom-ansi.familytree");
+        var bytes = new List<byte>();
+        bytes.AddRange(Encoding.UTF8.GetPreamble()); // EF BB BF
+        bytes.AddRange(Encoding.UTF8.GetBytes("{\"schemaVersion\":1,\"meta\":{\"title\":\""));
+        bytes.AddRange(new byte[] { 0xCF, 0xF0 }); // Windows-1251
+        bytes.AddRange(Encoding.UTF8.GetBytes("\"},\"persons\":[]}"));
+        await File.WriteAllBytesAsync(path, bytes.ToArray());
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(() => LoadAsync(path));
+        ex.MessageKey.ShouldBe(FileErrorKeys.BadEncoding);
+    }
+
+    [Fact]
+    public async Task Utf8_bom_with_valid_body_loads_normally()
+    {
+        // Валідний UTF-8 із BOM (частий випадок) має завантажуватись — преамбулу пропускаємо.
+        var path = Path.Combine(_dir, "bom-ok.familytree");
+        var bytes = new List<byte>();
+        bytes.AddRange(Encoding.UTF8.GetPreamble());
+        bytes.AddRange(Encoding.UTF8.GetBytes("{\"schemaVersion\":1,\"meta\":{\"title\":\"Тест\"},\"persons\":[]}"));
+        await File.WriteAllBytesAsync(path, bytes.ToArray());
+
+        var doc = await LoadAsync(path);
+
+        doc.Meta.Title.ShouldBe("Тест");
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
+
     // ---- Дефекти, які лагодяться зі звітом --------------------------------
 
     [Fact]

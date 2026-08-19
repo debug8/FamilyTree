@@ -115,18 +115,31 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     }
 
     /// <summary>
-    /// Читає файл строго як UTF-8. BOM (UTF-8/UTF-16) розпізнається автоматично,
-    /// а от файл, перезбережений у Notepad як «ANSI» (Windows-1251), раніше тихо
-    /// декодувався з U+FFFD — кирилиця ставала крякозябрами й у такому вигляді
-    /// зберігалася назад. Тепер це явна помилка.
+    /// Читає файл СТРОГО як UTF-8: невалідні байти (напр. перезбереження в Notepad як «ANSI»
+    /// Windows-1251) кидають помилку, а не стають тихо U+FFFD і не зберігаються назад крякозябрами.
+    /// <para>
+    /// Байти читаються вручну, з пропуском лише UTF-8 BOM. Раніше тут був <c>StreamReader</c> з
+    /// <c>detectEncodingFromByteOrderMarks: true</c>, але при виявленні BOM він ПІДМІНЯВ передане
+    /// суворе кодування на <c>Encoding.UTF8</c> із replacement-фолбеком — і для файлів із BOM
+    /// захист зникав: биті байти знову ставали U+FFFD (B-03). Файл із BOM іншого кодування
+    /// (UTF-16 тощо) тепер — явна помилка BadEncoding, що безпечно: застосунок пише лише UTF-8.
+    /// </para>
     /// </summary>
     private static async Task<string> ReadTextAsync(string path, CancellationToken cancellationToken)
     {
         try
         {
-            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-            using var reader = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true);
-            return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+            var span = bytes.AsSpan();
+
+            var preamble = Encoding.UTF8.Preamble; // EF BB BF
+            if (span.StartsWith(preamble))
+            {
+                span = span[preamble.Length..];
+            }
+
+            var strict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            return strict.GetString(span); // кине DecoderFallbackException на невалідних байтах
         }
         catch (DecoderFallbackException ex)
         {
