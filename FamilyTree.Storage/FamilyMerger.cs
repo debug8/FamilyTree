@@ -1,4 +1,5 @@
 using FamilyTree.Domain;
+using FamilyTree.Domain.Validation;
 
 namespace FamilyTree.Storage;
 
@@ -7,7 +8,9 @@ namespace FamilyTree.Storage;
 /// <param name="DuplicatePersons">Скільки осіб визначено як дублікати (не додаються).</param>
 /// <param name="AddedParentLinks">Скільки нових зв'язків «батько–дитина».</param>
 /// <param name="AddedSpouseLinks">Скільки нових подружніх зв'язків.</param>
-public sealed record MergeReport(int AddedPersons, int DuplicatePersons, int AddedParentLinks, int AddedSpouseLinks);
+/// <param name="RejectedLinks">Скільки зв'язків відхилено валідатором (цикл, третій біо-батько тощо).</param>
+public sealed record MergeReport(
+    int AddedPersons, int DuplicatePersons, int AddedParentLinks, int AddedSpouseLinks, int RejectedLinks = 0);
 
 /// <summary>
 /// План злиття: що саме буде додано (обчислюється без зміни документа, щоб показати
@@ -23,8 +26,11 @@ public sealed class MergePlan
 
     public int DuplicatePersons { get; internal set; }
 
+    /// <summary>Скільки кандидатних зв'язків відхилив валідатор (не додаються).</summary>
+    public int RejectedLinks { get; internal set; }
+
     public MergeReport ToReport() =>
-        new(PersonsToAdd.Count, DuplicatePersons, ParentLinksToAdd.Count, SpouseLinksToAdd.Count);
+        new(PersonsToAdd.Count, DuplicatePersons, ParentLinksToAdd.Count, SpouseLinksToAdd.Count, RejectedLinks);
 }
 
 /// <summary>
@@ -35,6 +41,15 @@ public sealed class MergePlan
 /// </summary>
 public sealed class FamilyMerger
 {
+    private readonly RelationshipValidator _validator;
+
+    /// <param name="validator">
+    /// Валідатор доменних правил зв'язків. Необов'язковий (стан не тримає) — щоб тести
+    /// й прямі виклики працювали через <c>new FamilyMerger()</c>, а DI підставляв спільний.
+    /// </param>
+    public FamilyMerger(RelationshipValidator? validator = null) =>
+        _validator = validator ?? new RelationshipValidator();
+
     /// <summary>Обчислює план злиття <paramref name="source"/> у <paramref name="target"/> (без змін).</summary>
     public MergePlan Plan(FamilyDocument target, FamilyDocument source)
     {
@@ -86,8 +101,17 @@ public sealed class FamilyMerger
 
         plan.DuplicatePersons = duplicates;
 
+        // Валідація зв'язків: імпорт додавав їх прямо, обходячи RelationshipValidator, тож
+        // чужий файл міг внести цикл (А→Б→А), самобатьківство (колапс двох осіб в одну при
+        // зіставленні) чи третього біологічного батька. Тепер кожен кандидат перевіряється
+        // проти цілі + вже ПРИЙНЯТИХ кандидатів, а відхилені йдуть у звіт (B-14).
+        var personsForValidation = new List<Person>(target.Persons);
+        personsForValidation.AddRange(plan.PersonsToAdd);
+        var rejected = 0;
+
         // Зв'язки «батько–дитина» з дедуплікацією за парою (parent, child).
         var parentPairs = target.ParentChildLinks.Select(l => (l.ParentId, l.ChildId)).ToHashSet();
+        var acceptedParentLinks = new List<ParentChildLink>(target.ParentChildLinks);
         foreach (var link in source.ParentChildLinks)
         {
             if (!remap.TryGetValue(link.ParentId, out var parentId) ||
@@ -101,16 +125,27 @@ public sealed class FamilyMerger
                 continue;
             }
 
-            plan.ParentLinksToAdd.Add(new ParentChildLink
+            var candidate = new ParentChildLink
             {
                 ParentId = parentId,
                 ChildId = childId,
                 ParentRole = link.ParentRole,
-            });
+            };
+
+            // Проти цілі + вже прийнятих кандидатів — щоб ловити й цикли серед самих імпортованих.
+            if (!_validator.ValidateParentChild(candidate, personsForValidation, acceptedParentLinks).IsValid)
+            {
+                rejected++;
+                continue;
+            }
+
+            plan.ParentLinksToAdd.Add(candidate);
+            acceptedParentLinks.Add(candidate);
         }
 
         // Подружні зв'язки з дедуплікацією за невпорядкованою парою.
         var spousePairs = target.SpouseLinks.Select(l => OrderPair(l.Person1Id, l.Person2Id)).ToHashSet();
+        var acceptedSpouseLinks = new List<SpouseLink>(target.SpouseLinks);
         foreach (var link in source.SpouseLinks)
         {
             if (!remap.TryGetValue(link.Person1Id, out var a) ||
@@ -124,9 +159,20 @@ public sealed class FamilyMerger
                 continue;
             }
 
-            plan.SpouseLinksToAdd.Add(SpouseLink.Create(a, b, link.MarriageDate, link.DivorceDate, link.Divorced));
+            var candidate = SpouseLink.Create(a, b, link.MarriageDate, link.DivorceDate, link.Divorced);
+
+            // Ловить самошлюб (обидві особи зіставилися в одну) та перетин періодів.
+            if (!_validator.ValidateSpouse(candidate, acceptedSpouseLinks).IsValid)
+            {
+                rejected++;
+                continue;
+            }
+
+            plan.SpouseLinksToAdd.Add(candidate);
+            acceptedSpouseLinks.Add(candidate);
         }
 
+        plan.RejectedLinks = rejected;
         return plan;
     }
 

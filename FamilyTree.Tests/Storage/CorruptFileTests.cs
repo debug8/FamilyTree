@@ -341,6 +341,66 @@ public sealed class CorruptFileTests : IDisposable
         doc.RepairedIssues.ShouldNotBeEmpty();
     }
 
+    // ---- B-15: глобальні дефекти (цикли, зайві біо-батьки) ---------------
+
+    [Fact]
+    public async Task Parent_child_cycle_is_broken_and_reported()
+    {
+        // A — батько B, і водночас B — батько A: цикл. Раніше файл завантажувався без
+        // жодного зауваження, після чого «Хто кому» видавало суперечливе родство.
+        var path = await WriteAsync("cycle.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{PersonB}}}]," +
+            $"\"parentChildLinks\":[{{\"parentId\":\"{IdA}\",\"childId\":\"{IdB}\"}}," +
+            $"{{\"parentId\":\"{IdB}\",\"childId\":\"{IdA}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.ParentChildLinks.Count.ShouldBe(1); // ребро, що замикало цикл, відкинуто
+        doc.RepairedIssues.Single(i => i.MessageKey == FileErrorKeys.RepairedCycles).Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Extra_biological_parent_of_same_gender_is_dropped_and_reported()
+    {
+        // У дитини два біологічні батьки чоловічої статі — біологічно неможливо.
+        // Валідатор блокує це при вводі, а файл — ні (B-15).
+        const string father2 = "\"id\":\"33333333-3333-4333-8333-333333333333\",\"lastName\":\"Петров\",\"firstName\":\"Петро\",\"gender\":\"Male\"";
+        const string childP = "\"id\":\"44444444-4444-4444-8444-444444444444\",\"lastName\":\"Іванов\",\"firstName\":\"Малий\",\"gender\":\"Male\"";
+        var id2 = Guid.Parse("33333333-3333-4333-8333-333333333333");
+        var childId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+
+        var path = await WriteAsync("twofathers.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{father2}}},{{{childP}}}]," +
+            $"\"parentChildLinks\":[{{\"parentId\":\"{IdA}\",\"childId\":\"{childId}\"}}," +
+            $"{{\"parentId\":\"{id2}\",\"childId\":\"{childId}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.ParentChildLinks.Count.ShouldBe(1); // лишився один біологічний батько
+        doc.ParentChildLinks[0].ParentId.ShouldBe(IdA); // саме перший
+        doc.RepairedIssues.Single(i => i.MessageKey == FileErrorKeys.RepairedExtraBioParents).Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Two_biological_parents_of_different_genders_are_kept()
+    {
+        // Нормальний випадок: батько (чол.) + мати (жін.) — обидва лишаються.
+        const string mother = "\"id\":\"55555555-5555-4555-8555-555555555555\",\"lastName\":\"Іванова\",\"firstName\":\"Мати\",\"gender\":\"Female\"";
+        const string childP = "\"id\":\"44444444-4444-4444-8444-444444444444\",\"lastName\":\"Іванов\",\"firstName\":\"Малий\",\"gender\":\"Male\"";
+        var motherId = Guid.Parse("55555555-5555-4555-8555-555555555555");
+        var childId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+
+        var path = await WriteAsync("twoparents.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{mother}}},{{{childP}}}]," +
+            $"\"parentChildLinks\":[{{\"parentId\":\"{IdA}\",\"childId\":\"{childId}\"}}," +
+            $"{{\"parentId\":\"{motherId}\",\"childId\":\"{childId}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.ParentChildLinks.Count.ShouldBe(2);
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
+
     [Fact]
     public void Graph_tolerates_duplicate_person_ids_as_last_resort()
     {

@@ -104,4 +104,64 @@ public class FamilyMergerTests
         report.DuplicatePersons.ShouldBe(0);
         target.Persons.Count.ShouldBe(2);
     }
+
+    // ---- B-14: валідація зв'язків при злитті ------------------------------
+
+    [Fact]
+    public void Merge_rejects_link_that_would_create_a_cycle()
+    {
+        // У цілі: Іван — батько Петра. У джерелі ті самі люди (збіг ПІБ+дати), але
+        // записані навпаки: Петро — батько Івана. Після зіставлення це замкнуло б цикл.
+        var ivan = Make("Коваленко", "Іван", 1950);
+        var petro = Make("Коваленко", "Петро", 1980);
+        var target = DocOf(ivan, petro);
+        target.ParentChildLinks.Add(new ParentChildLink { ParentId = ivan.Id, ChildId = petro.Id });
+
+        var ivanSrc = Make("Коваленко", "Іван", 1950);   // інший Id, той самий ПІБ+дата
+        var petroSrc = Make("Коваленко", "Петро", 1980);
+        var source = DocOf(ivanSrc, petroSrc);
+        source.ParentChildLinks.Add(new ParentChildLink { ParentId = petroSrc.Id, ChildId = ivanSrc.Id });
+
+        var report = _merger.Merge(target, source);
+
+        report.RejectedLinks.ShouldBe(1);
+        report.AddedParentLinks.ShouldBe(0);
+        target.ParentChildLinks.Count.ShouldBe(1); // лишився тільки початковий Іван→Петро
+    }
+
+    [Fact]
+    public void Merge_rejects_third_biological_parent_of_same_gender()
+    {
+        // У цілі в дитини вже є біологічний батько. Джерело додає ще одного чоловіка
+        // як біологічного батька тієї самої дитини — валідатор має відхилити зв'язок.
+        var child = Make("Шевченко", "Мала", 2015, Gender.Female);
+        var father = Make("Шевченко", "Іван", 1980, Gender.Male);
+        var target = DocOf(child, father);
+        target.ParentChildLinks.Add(new ParentChildLink { ParentId = father.Id, ChildId = child.Id });
+
+        var childSrc = Make("Шевченко", "Мала", 2015, Gender.Female); // зіставиться з наявною
+        var otherMan = Make("Петренко", "Олег", 1979, Gender.Male);   // новий «батько»
+        var source = DocOf(childSrc, otherMan);
+        source.ParentChildLinks.Add(new ParentChildLink { ParentId = otherMan.Id, ChildId = childSrc.Id });
+
+        var report = _merger.Merge(target, source);
+
+        report.AddedPersons.ShouldBe(1);       // сам Олег додається як особа
+        report.RejectedLinks.ShouldBe(1);      // а ось зв'язок «другий батько» — ні
+        target.ParentChildLinks.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Valid_links_are_added_and_nothing_is_rejected()
+    {
+        var father = Make("Коваленко", "Іван", 1950);
+        var son = Make("Коваленко", "Петро", 1980);
+        var source = DocOf(father, son);
+        source.ParentChildLinks.Add(new ParentChildLink { ParentId = father.Id, ChildId = son.Id });
+
+        var report = _merger.Merge(FamilyDocument.CreateNew("mine"), source);
+
+        report.AddedParentLinks.ShouldBe(1);
+        report.RejectedLinks.ShouldBe(0);
+    }
 }

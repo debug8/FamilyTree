@@ -60,6 +60,16 @@ internal static class DocumentIntegrity
         var duplicates = RemoveDuplicateLinks(document);
         Add(issues, FileErrorKeys.RepairedDuplicateLinks, duplicates);
 
+        // Глобальні інваріанти (B-15). Локальні перевірки вище дивляться на одну пару Id;
+        // ці — на граф загалом: цикл «батько-дитина» довжиною ≥2 і кілька біологічних
+        // батьків тієї самої статі в однієї дитини. У UI валідатор це блокує, а «сирий»
+        // чи чужий файл — ні, тож застосунок міг показувати взаємно суперечливе родство.
+        var cycles = RemoveParentChildCycles(document);
+        Add(issues, FileErrorKeys.RepairedCycles, cycles);
+
+        var extraBioParents = RemoveExtraBiologicalParents(document);
+        Add(issues, FileErrorKeys.RepairedExtraBioParents, extraBioParents);
+
         return issues;
     }
 
@@ -200,5 +210,91 @@ internal static class DocumentIntegrity
         removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add((l.Person1Id, l.Person2Id, l.MarriageDate)));
 
         return removed;
+    }
+
+    /// <summary>
+    /// Відкидає ребра «батько-дитина», що замикають цикл (особа стає власним предком).
+    /// Ребра обробляються по порядку; ребро приймається, лише якщо дитина ще НЕ є предком
+    /// батька в уже прийнятому графі — інакше воно замкнуло б цикл і його відкидаємо.
+    /// Детерміновано за порядком у файлі; ловить цикли будь-якої довжини (A→B→A і довші).
+    /// </summary>
+    private static int RemoveParentChildCycles(FamilyDocument document)
+    {
+        // childId -> його вже прийняті батьки (для обходу вгору).
+        var parentsOf = new Dictionary<Guid, List<Guid>>();
+
+        var removed = document.ParentChildLinks.RemoveAll(link =>
+        {
+            // Додавання parent→child замкнуло б цикл, якщо child уже є предком parent
+            // (тобто, йдучи вгору від parent, ми досягаємо child).
+            if (IsReachableUpward(link.ParentId, link.ChildId, parentsOf))
+            {
+                return true; // відкинути
+            }
+
+            if (!parentsOf.TryGetValue(link.ChildId, out var parents))
+            {
+                parentsOf[link.ChildId] = parents = new List<Guid>();
+            }
+
+            parents.Add(link.ParentId);
+            return false;
+        });
+
+        return removed;
+    }
+
+    /// <summary>Чи досяжний <paramref name="target"/>, йдучи вгору (дитина→батьки) від <paramref name="start"/>.</summary>
+    private static bool IsReachableUpward(Guid start, Guid target, Dictionary<Guid, List<Guid>> parentsOf)
+    {
+        var stack = new Stack<Guid>();
+        var seen = new HashSet<Guid>();
+        stack.Push(start);
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            if (!parentsOf.TryGetValue(current, out var parents))
+            {
+                continue;
+            }
+
+            foreach (var parent in parents)
+            {
+                if (parent == target)
+                {
+                    return true;
+                }
+
+                if (seen.Add(parent))
+                {
+                    stack.Push(parent);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Лишає в дитини не більше одного біологічного батька кожної статі (по одному на
+    /// Male/Female/Unknown); наступні біологічні зв'язки тієї самої статі відкидає.
+    /// Валідатор забороняє це при вводі, а файл — ні (B-15). Порядок: лишається перший.
+    /// </summary>
+    private static int RemoveExtraBiologicalParents(FamilyDocument document)
+    {
+        var genderById = document.Persons.ToDictionary(p => p.Id, p => p.Gender);
+        var seen = new HashSet<(Guid Child, Gender Gender)>();
+
+        return document.ParentChildLinks.RemoveAll(link =>
+        {
+            if (link.ParentRole != ParentRole.Biological)
+            {
+                return false;
+            }
+
+            var gender = genderById.GetValueOrDefault(link.ParentId, Gender.Unknown);
+            return !seen.Add((link.ChildId, gender));
+        });
     }
 }

@@ -266,6 +266,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             report.AddedPersons,
             report.DuplicatePersons,
             report.AddedParentLinks + report.AddedSpouseLinks);
+        confirm += RejectedSuffix(report.RejectedLinks);
         if (!_dialogs.Confirm(confirm, _localization.GetString("Import_Title")))
         {
             return;
@@ -276,8 +277,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         var done = string.Format(
             _localization.GetString("Import_Done"), report.AddedPersons, report.DuplicatePersons);
+        done += RejectedSuffix(report.RejectedLinks);
         _dialogs.ShowMessage(done, _localization.GetString("Import_Title"));
     }
+
+    /// <summary>Локалізований рядок про відхилені при злитті зв'язки (порожній, якщо їх немає).</summary>
+    private string RejectedSuffix(int rejected) =>
+        rejected > 0
+            ? Environment.NewLine + Environment.NewLine
+                + string.Format(_localization.GetString("Import_Rejected"), rejected)
+            : string.Empty;
 
     [RelayCommand]
     private async Task CreateDemoFamily()

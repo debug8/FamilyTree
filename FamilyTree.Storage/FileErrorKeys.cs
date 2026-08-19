@@ -50,4 +50,10 @@ public static class FileErrorKeys
 
     /// <summary>Скинуто недопустимі значення переліків (стать, роль батька). {0} — кількість.</summary>
     public const string RepairedBadEnums = "FileRepair_BadEnums";
+
+    /// <summary>Відкинуто зв'язки, що утворювали цикл «батько-дитина». {0} — кількість.</summary>
+    public const string RepairedCycles = "FileRepair_Cycles";
+
+    /// <summary>Відкинуто зайвих біологічних батьків тієї самої статі. {0} — кількість.</summary>
+    public const string RepairedExtraBioParents = "FileRepair_ExtraBioParents";
 }
