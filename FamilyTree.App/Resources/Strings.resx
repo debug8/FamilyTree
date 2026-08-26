@@ -445,6 +445,9 @@
   <data name="FileRepair_ExtraBioParents" xml:space="preserve">
     <value>• зайвих біологічних батьків однієї статі: {0}</value>
   </data>
+  <data name="FileRepair_BadPhotoPaths" xml:space="preserve">
+    <value>• небезпечних шляхів до фото (очищено): {0}</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Незбережені зміни</value>
   </data>

@@ -70,6 +70,13 @@ internal static class DocumentIntegrity
         var extraBioParents = RemoveExtraBiologicalParents(document);
         Add(issues, FileErrorKeys.RepairedExtraBioParents, extraBioParents);
 
+        // Безпека (B-13). PhotoPath з чужого файлу потрапляє прямо в Image.Source картки
+        // особи. UNC/URL/абсолютний/«..»-шлях дозволяв би SMB-хендшейк до атакувальника
+        // (витік NTLM), зовнішній HTTP-трекер або читання поза текою даних. Захист тут,
+        // у сховищі, щоб не залежати від того, як саме UI резолвить і показує фото.
+        var badPhotoPaths = SanitizePhotoPaths(document);
+        Add(issues, FileErrorKeys.RepairedBadPhotoPaths, badPhotoPaths);
+
         return issues;
     }
 
@@ -296,5 +303,33 @@ internal static class DocumentIntegrity
             var gender = genderById.GetValueOrDefault(link.ParentId, Gender.Unknown);
             return !seen.Add((link.ChildId, gender));
         });
+    }
+
+    /// <summary>
+    /// Очищає <see cref="Person.PhotoPath"/>, який не є безпечним відносним шляхом усередині
+    /// теки даних (див. <see cref="PhotoPathPolicy"/>): абсолютні шляхи, UNC, URL і обхід
+    /// каталогів через «..». Небезпечне значення скидається в <see langword="null"/> —
+    /// картка тоді показує силует за статтю замість звертання до чужого ресурсу (B-13).
+    /// Порожні/пробільні значення не чіпаємо й не рахуємо.
+    /// </summary>
+    private static int SanitizePhotoPaths(FamilyDocument document)
+    {
+        var cleared = 0;
+
+        foreach (var person in document.Persons)
+        {
+            if (string.IsNullOrWhiteSpace(person.PhotoPath))
+            {
+                continue;
+            }
+
+            if (!PhotoPathPolicy.IsSafeRelativePhotoPath(person.PhotoPath))
+            {
+                person.PhotoPath = null;
+                cleared++;
+            }
+        }
+
+        return cleared;
     }
 }

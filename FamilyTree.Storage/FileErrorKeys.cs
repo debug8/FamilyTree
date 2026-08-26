@@ -56,4 +56,7 @@ public static class FileErrorKeys
 
     /// <summary>Відкинуто зайвих біологічних батьків тієї самої статі. {0} — кількість.</summary>
     public const string RepairedExtraBioParents = "FileRepair_ExtraBioParents";
+
+    /// <summary>Очищено небезпечні шляхи до фото (абсолютні/UNC/URL/обхід каталогів). {0} — кількість.</summary>
+    public const string RepairedBadPhotoPaths = "FileRepair_BadPhotoPaths";
 }

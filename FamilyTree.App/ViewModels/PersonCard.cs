@@ -167,18 +167,21 @@ public sealed class PersonCardBuilder
         };
     }
 
-    /// <summary>Абсолютний шлях до фото у папці даних (поки лише резолвинг; місце під фото).</summary>
+    /// <summary>
+    /// Абсолютний шлях до фото у теці даних (поки лише резолвинг; місце під фото).
+    /// Приймає ЛИШЕ безпечний відносний шлях усередині теки даних; абсолютні/UNC/URL і
+    /// «..»-шляхи відкидаються в null (захист у глибину до санітизації у сховищі, B-13),
+    /// тож картка ніколи не звертається до зовнішнього чи стороннього ресурсу.
+    /// </summary>
     public static string? ResolvePhoto(string? relativePath)
     {
-        if (string.IsNullOrWhiteSpace(relativePath))
+        if (!PhotoPathPolicy.IsSafeRelativePhotoPath(relativePath))
         {
             return null;
         }
 
-        return Path.IsPathRooted(relativePath)
-            ? relativePath
-            : Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "FamilyTree", relativePath);
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "FamilyTree", relativePath!);
     }
 }

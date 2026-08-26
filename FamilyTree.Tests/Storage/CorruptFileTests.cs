@@ -447,4 +447,52 @@ public sealed class CorruptFileTests : IDisposable
 
         graph.GetPerson(IdA).ShouldNotBeNull();
     }
+
+    // ---- B-13: небезпечні шляхи до фото ----------------------------------
+
+    // System.Text.Json екранує лише кому в бекслеші як \\; форвард-слеші й двокрапка
+    // йдуть у JSON як є. Тож бекслеш-шляхи (UNC, «..») подаємо через цей екранувальник.
+    private static string JsonEscape(string raw) => raw.Replace("\\", "\\\\");
+
+    [Fact]
+    public async Task Unsafe_photo_paths_are_cleared_and_reported()
+    {
+        // Чужий .familytree може підсунути шлях, який WPF Image.Source завантажить при
+        // показі картки особи: UNC → SMB-хендшейк до атакувальника (витік NTLM),
+        // URL → зовнішній запит-трекер, абсолютний/«..» → доступ поза текою даних (B-13).
+        // Усі чотири мають бути обнулені, а не потрапити в Image.Source.
+        var unc = JsonEscape(@"\\evil.example.com\share\a.png");
+        const string url = "http://tracker.example.com/1.png";
+        var traversal = JsonEscape(@"..\..\..\Users\Public\secret.png");
+        var absolute = JsonEscape(@"C:\Windows\System32\x.png");
+
+        var path = await WriteAsync("badphoto.familytree",
+            "{\"schemaVersion\":1,\"persons\":[" +
+            $"{{{PersonA},\"photoPath\":\"{unc}\"}}," +
+            $"{{{PersonB},\"photoPath\":\"{url}\"}}," +
+            "{\"id\":\"33333333-3333-4333-8333-333333333333\",\"lastName\":\"В\",\"firstName\":\"В\",\"gender\":\"Male\"," +
+            $"\"photoPath\":\"{traversal}\"}}," +
+            "{\"id\":\"44444444-4444-4444-8444-444444444444\",\"lastName\":\"Г\",\"firstName\":\"Г\",\"gender\":\"Female\"," +
+            $"\"photoPath\":\"{absolute}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.Persons.ShouldAllBe(p => p.PhotoPath == null);
+        doc.RepairedIssues
+            .Single(i => i.MessageKey == FileErrorKeys.RepairedBadPhotoPaths)
+            .Count.ShouldBe(4);
+    }
+
+    [Fact]
+    public async Task Safe_relative_photo_path_is_preserved()
+    {
+        // Легітимний відносний шлях усередині теки даних лишається незмінним і не звітується.
+        var path = await WriteAsync("okphoto.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA},\"photoPath\":\"photos/ivanov.png\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.Persons.Single().PhotoPath.ShouldBe("photos/ivanov.png");
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
 }
