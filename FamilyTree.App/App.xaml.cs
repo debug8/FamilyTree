@@ -129,6 +129,11 @@ public partial class App : Application
         Theming.TitleBarThemer.Track(mainWindow, theme);
         mainWindow.Show();
 
+        // 5b. Завершення/вихід із сеансу Windows (перезавантаження, вихід користувача) НЕ
+        //     проходить через OnClosing — перехоплюємо SessionEnding і синхронно питаємо про
+        //     збереження, інакше незбережене дерево тихо гине (B-05).
+        SessionEnding += OnSessionEnding;
+
         // 6. Якщо застосунок запущено з файлом (асоціація .familytree) — відкрити його.
         var startupFile = e.Args.FirstOrDefault(arg =>
             arg.EndsWith(".familytree", StringComparison.OrdinalIgnoreCase) && File.Exists(arg));
@@ -147,6 +152,28 @@ public partial class App : Application
         _host.Dispose();
         AppLog.Shutdown();
         base.OnExit(e);
+    }
+
+    /// <summary>
+    /// B-05: синхронний запит про збереження при завершенні сеансу Windows. Якщо користувач
+    /// скасовує — скасовуємо й завершення сеансу; інакше дозволяємо вікну закритися без
+    /// повторного запиту в OnClosing під час подальшого shutdown.
+    /// </summary>
+    private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
+    {
+        var vm = _host.Services.GetService<MainViewModel>();
+        if (vm is null)
+        {
+            return;
+        }
+
+        if (vm.HasUnsavedChanges && !vm.PromptSaveIfDirtyBlocking())
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        _host.Services.GetService<MainWindow>()?.AllowClose();
     }
 
     // --- Глобальна обробка помилок --------------------------------------

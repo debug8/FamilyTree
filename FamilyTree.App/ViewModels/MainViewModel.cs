@@ -396,6 +396,65 @@ public partial class MainViewModel : ObservableObject, IDisposable
         };
     }
 
+    /// <summary>
+    /// Синхронний варіант запиту про збереження — для <c>Application.SessionEnding</c> (B-05):
+    /// завершення/вихід із сеансу Windows не проходить через <c>OnClosing</c> і не дає чекати
+    /// на await, тож рішення й запис виконуються блокуюче (Windows дає лише кілька секунд).
+    /// Повертає true, якщо можна завершувати (збережено або відкинуто), false — скасувати.
+    /// </summary>
+    public bool PromptSaveIfDirtyBlocking()
+    {
+        if (!HasUnsavedChanges)
+        {
+            return true;
+        }
+
+        switch (_dialogs.ConfirmSaveChanges(
+            _localization.GetString("SaveChanges_Message"),
+            _localization.GetString("SaveChanges_Title")))
+        {
+            case SaveChangesResult.Save:
+                // Шлях визначаємо на UI-потоці (може відкритися «Зберегти як»),
+                // а сам запис — блокуюче на пулі потоків, щоб уникнути дедлоку від
+                // захопленого контексту синхронізації.
+                var path = _session.FilePath;
+                if (string.IsNullOrEmpty(path))
+                {
+                    if (_dialogs.AskSavePath(FileFilter, DocumentName + ".familytree") is not { } chosen)
+                    {
+                        return false;
+                    }
+
+                    path = chosen;
+                    _session.FilePath = path;
+                }
+
+                return WriteBlocking(path);
+
+            case SaveChangesResult.Discard:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private bool WriteBlocking(string path)
+    {
+        try
+        {
+            Task.Run(() => _storage.SaveAsync(_session.Current, path)).GetAwaiter().GetResult();
+            AddRecent(path);
+            RaiseDocumentInfo();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
+            return false;
+        }
+    }
+
     private async Task<bool> SaveInternalAsync() =>
         string.IsNullOrEmpty(_session.FilePath)
             ? await SaveAsInternalAsync()

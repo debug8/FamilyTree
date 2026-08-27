@@ -14,6 +14,14 @@ public partial class MainWindow : Window
         DataContext = viewModel;
     }
 
+    /// <summary>
+    /// Дозволяє закрити вікно без повторного запиту в <see cref="OnClosing"/>.
+    /// Викликається з <c>App.SessionEnding</c> (B-05) після того, як питання про
+    /// збереження вже опрацьовано синхронно — інакше під час shutdown Windows
+    /// користувача перепитали б удруге.
+    /// </summary>
+    public void AllowClose() => _forceClose = true;
+
     protected override async void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
