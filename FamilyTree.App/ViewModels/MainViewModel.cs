@@ -254,7 +254,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _dialogs.ShowMessage(ex.Message, _localization.GetString("File_ErrorTitle"));
+            // B-25: локалізований опис (як у відкритті/збереженні), а не сирий ex.Message.
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
             return;
         }
 
