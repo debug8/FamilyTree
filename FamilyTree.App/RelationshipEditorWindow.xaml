@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
+        xmlns:controls="clr-namespace:FamilyTree.App.Controls"
         Title="{Binding TitleKey, Converter={StaticResource LocalizeConverter}}"
         Height="640" Width="520" MinHeight="500" MinWidth="500"
         WindowStartupLocation="CenterOwner"
@@ -113,18 +114,17 @@
         <!-- Дати шлюбу/розлучення — лише для подружжя -->
         <StackPanel Grid.Row="3" Margin="0,10,0,0"
                     Visibility="{Binding IsSpouse, Converter={StaticResource BoolToVisibility}}">
-            <TextBlock Text="{loc:Localize Rel_MarriageDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,3" />
-            <DatePicker SelectedDate="{Binding MarriageDate}" HorizontalAlignment="Left" MinWidth="200"
-                        ToolTip="{Binding SelectedDate, RelativeSource={RelativeSource Self}, Converter={StaticResource LongDateConverter}}" />
+            <GroupBox Header="{loc:Localize Rel_MarriageDate}" Style="{StaticResource FieldGroupBox}" Margin="0,0,0,0">
+                <controls:FamilyDateEditor Value="{Binding MarriageDate}" />
+            </GroupBox>
 
             <CheckBox Content="{loc:Localize Rel_IsMarried}" IsChecked="{Binding IsMarried}"
                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,0" />
 
-            <StackPanel Visibility="{Binding ShowDivorceDate, Converter={StaticResource BoolToVisibility}}">
-                <TextBlock Text="{loc:Localize Rel_DivorceDate}" Style="{StaticResource SecondaryTextStyle}" Margin="0,8,0,3" />
-                <DatePicker SelectedDate="{Binding DivorceDate}" HorizontalAlignment="Left" MinWidth="200"
-                            ToolTip="{Binding SelectedDate, RelativeSource={RelativeSource Self}, Converter={StaticResource LongDateConverter}}" />
-            </StackPanel>
+            <GroupBox Header="{loc:Localize Rel_DivorceDate}" Style="{StaticResource FieldGroupBox}"
+                      Visibility="{Binding ShowDivorceDate, Converter={StaticResource BoolToVisibility}}">
+                <controls:FamilyDateEditor Value="{Binding DivorceDate}" />
+            </GroupBox>
         </StackPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">

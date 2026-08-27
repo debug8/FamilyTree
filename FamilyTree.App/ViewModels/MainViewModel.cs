@@ -696,8 +696,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive);
         if (_dialogs.ShowRelationshipEditor(editor))
         {
-            link.MarriageDate = editor.MarriageDateOnly;
-            link.DivorceDate = editor.DivorceDateOnly;
+            link.MarriageDate = editor.MarriageDate;
+            link.DivorceDate = editor.DivorceDate;
             link.Divorced = editor.Divorced;
             _session.MarkContentChanged();
         }
@@ -725,8 +725,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         bool Confirmed,
         Person? Candidate,
         bool HasCreatedPersons,
-        DateOnly? MarriageDate,
-        DateOnly? DivorceDate,
+        FamilyDate? MarriageDate,
+        FamilyDate? DivorceDate,
         bool Divorced);
 
     /// <summary>
@@ -750,8 +750,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             confirmed,
             editor.SelectedCandidate,
             editor.HasCreatedPersons,
-            editor.MarriageDateOnly,
-            editor.DivorceDateOnly,
+            editor.MarriageDate,
+            editor.DivorceDate,
             editor.Divorced);
     }
 

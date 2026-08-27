@@ -34,7 +34,7 @@ public partial class PersonEditorViewModel : ObservableValidator
     private GenderOption? _selectedGender;
 
     [ObservableProperty]
-    private DateTime? _birthDate;
+    private FamilyDate? _birthDate;
 
     [ObservableProperty]
     private string? _birthPlace;
@@ -44,7 +44,7 @@ public partial class PersonEditorViewModel : ObservableValidator
     private bool _isAlive = true;
 
     [ObservableProperty]
-    private DateTime? _deathDate;
+    private FamilyDate? _deathDate;
 
     [ObservableProperty]
     private string? _notes;
@@ -60,9 +60,9 @@ public partial class PersonEditorViewModel : ObservableValidator
             _middleName = existing.MiddleName;
             _maidenName = existing.MaidenName;
             _selectedGender = Genders.FirstOrDefault(g => g.Value == existing.Gender);
-            _birthDate = ToDateTime(existing.BirthDate);
+            _birthDate = existing.BirthDate;
             _birthPlace = existing.BirthPlace;
-            _deathDate = ToDateTime(existing.DeathDate);
+            _deathDate = existing.DeathDate;
             _isAlive = existing.DeathDate is null;
             _notes = existing.Notes;
         }
@@ -121,9 +121,9 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.Gender = SelectedGender!.Value;
         person.MiddleName = Normalize(MiddleName);
         person.MaidenName = Normalize(MaidenName);
-        person.BirthDate = ToFamilyDate(BirthDate);
+        person.BirthDate = BirthDate;
         person.BirthPlace = Normalize(BirthPlace);
-        person.DeathDate = IsAlive ? null : ToFamilyDate(DeathDate);
+        person.DeathDate = IsAlive ? null : DeathDate;
         person.Notes = Normalize(Notes);
         person.UpdatedAt = DateTime.UtcNow;
 
@@ -160,13 +160,4 @@ public partial class PersonEditorViewModel : ObservableValidator
 
     private static string? Normalize(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    // Наразі редактор працює лише з точною датою через DatePicker (T-5.2a, Частина 1b):
-    // FamilyDate зводиться до представницької дати для показу, а збереження створює Exact.
-    // Повноцінний вибір типу дати додасть FamilyDateEditor (Частина 2).
-    private static DateTime? ToDateTime(FamilyDate? date) =>
-        date?.ToComparable() is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
-
-    private static FamilyDate? ToFamilyDate(DateTime? date) =>
-        date is { } d ? FamilyDate.Exact(DateOnly.FromDateTime(d)) : null;
 }

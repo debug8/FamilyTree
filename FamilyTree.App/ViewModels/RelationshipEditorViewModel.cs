@@ -50,14 +50,14 @@ public partial class RelationshipEditorViewModel : ObservableObject
     private bool _hideRelated = true;
 
     [ObservableProperty]
-    private DateTime? _marriageDate;
+    private FamilyDate? _marriageDate;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDivorceDate))]
     private bool _isMarried = true;
 
     [ObservableProperty]
-    private DateTime? _divorceDate;
+    private FamilyDate? _divorceDate;
 
     public RelationshipEditorViewModel(
         RelationshipRole role,
@@ -146,10 +146,9 @@ public partial class RelationshipEditorViewModel : ObservableObject
         vm.SelectedCandidate = spouse;
         vm.IsMarried = isActive;
 
-        // Наразі редактор дат — лише точна дата через DatePicker (T-5.2a, Частина 1b):
-        // неточну дату зводимо до представницької для показу.
-        vm.MarriageDate = marriageDate?.ToComparable() is { } m ? m.ToDateTime(TimeOnly.MinValue) : null;
-        vm.DivorceDate = divorceDate?.ToComparable() is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
+        // FamilyDateEditor редагує неточну дату напряму — без зведення до представницької (T-5.2a, 2.5).
+        vm.MarriageDate = marriageDate;
+        vm.DivorceDate = divorceDate;
         return vm;
     }
 
@@ -168,11 +167,6 @@ public partial class RelationshipEditorViewModel : ObservableObject
     public ObservableCollection<Person> Candidates { get; } = new();
 
     public bool CanConfirm => SelectedCandidate is not null;
-
-    public DateOnly? MarriageDateOnly => MarriageDate is { } d ? DateOnly.FromDateTime(d) : null;
-
-    public DateOnly? DivorceDateOnly =>
-        !IsMarried && DivorceDate is { } d ? DateOnly.FromDateTime(d) : null;
 
     /// <summary>
     /// Чи позначено шлюб завершеним (галочку «В шлюбі» знято). Зберігається окремо від дати,

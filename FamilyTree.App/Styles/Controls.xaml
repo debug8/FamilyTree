@@ -367,4 +367,13 @@
         <Setter Property="MinWidth" Value="140" />
     </Style>
 
+    <!-- Групбокс поля-дати: заголовок як хедер, тематизована рамка/текст -->
+    <Style x:Key="FieldGroupBox" TargetType="GroupBox">
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Margin" Value="0,10,0,0" />
+    </Style>
+
 </ResourceDictionary>

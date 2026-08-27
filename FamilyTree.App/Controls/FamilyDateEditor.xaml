@@ -1,0 +1,117 @@
+<UserControl x:Class="FamilyTree.App.Controls.FamilyDateEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:FamilyTree.App.Localization">
+    <!-- Редактор неточної дати (T-5.2a). DataContext контенту = FamilyDateEditorViewModel
+         (ставиться в code-behind на LayoutRoot, НЕ на UserControl, щоб не перебити прив'язку Value,
+         яку задає споживач). Value ↔ VM синхронізує code-behind (LoadValue / ValueChanged+BuildValue).
+         Верхній рядок (WrapPanel): [тип] [приблизність/діапазон] [точка] [друга точка] [календар].
+         Режим «Текст» — окремий вищий textbox під рядком типу (фіксованої ширини, з прикладом-підказкою).
+         Підписи — {loc:Localize}/LocalizeConverter; кольори — DynamicResource. -->
+    <StackPanel x:Name="LayoutRoot">
+        <WrapPanel Orientation="Horizontal">
+
+            <!-- Тип дати -->
+            <ComboBox MinWidth="120" Margin="0,0,6,4" VerticalAlignment="Center"
+                      ItemsSource="{Binding Kinds}"
+                      SelectedValuePath="Value" SelectedValue="{Binding SelectedKind}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding ResourceKey, Converter={StaticResource LocalizeConverter}}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- Рівень приблизності (≈ / обч. / оц.) -->
+            <ComboBox MinWidth="110" Margin="0,0,6,4" VerticalAlignment="Center"
+                      Visibility="{Binding ShowApproximate, Converter={StaticResource BoolToVisibility}}"
+                      ItemsSource="{Binding Approximations}"
+                      SelectedValuePath="Value" SelectedValue="{Binding Approximation}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding ResourceKey, Converter={StaticResource LocalizeConverter}}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- Вид діапазону (до / після / між) -->
+            <ComboBox MinWidth="90" Margin="0,0,6,4" VerticalAlignment="Center"
+                      Visibility="{Binding ShowRange, Converter={StaticResource BoolToVisibility}}"
+                      ItemsSource="{Binding Ranges}"
+                      SelectedValuePath="Value" SelectedValue="{Binding RangeKind}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding ResourceKey, Converter={StaticResource LocalizeConverter}}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- Точна дата: DatePicker (мова/парсинг — успадковується від вікна через UiLanguage) -->
+            <DatePicker MinWidth="150" Margin="0,0,6,4" VerticalAlignment="Center"
+                        Visibility="{Binding ShowExact, Converter={StaticResource BoolToVisibility}}"
+                        SelectedDate="{Binding ExactDate}"
+                        ToolTip="{Binding SelectedDate, RelativeSource={RelativeSource Self}, Converter={StaticResource LongDateConverter}}" />
+
+            <!-- Точка «рік (+місяць)»: часткова / приблизна / діапазон. Рік — до 4 цифр, лише цифри. -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,6,4" VerticalAlignment="Center"
+                        Visibility="{Binding ShowPoint, Converter={StaticResource BoolToVisibility}}">
+                <TextBox Style="{StaticResource InputTextBoxStyle}" Width="64" MaxLength="4"
+                         PreviewTextInput="Year_PreviewTextInput" DataObject.Pasting="Year_Pasting"
+                         ToolTip="{loc:Localize DateField_Year}"
+                         Text="{Binding Year, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" />
+                <ComboBox MinWidth="60" Margin="4,0,0,0"
+                          ToolTip="{loc:Localize DateField_Month}"
+                          ItemsSource="{Binding MonthNumbers}" SelectedItem="{Binding Month}" />
+            </StackPanel>
+
+            <!-- Друга точка діапазону «між … по …» -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,6,4" VerticalAlignment="Center"
+                        Visibility="{Binding ShowSecondPoint, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{loc:Localize DateField_To}" VerticalAlignment="Center" Margin="0,0,4,0"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBox Style="{StaticResource InputTextBoxStyle}" Width="64" MaxLength="4"
+                         PreviewTextInput="Year_PreviewTextInput" DataObject.Pasting="Year_Pasting"
+                         ToolTip="{loc:Localize DateField_Year}"
+                         Text="{Binding Year2, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" />
+                <ComboBox MinWidth="60" Margin="4,0,0,0"
+                          ToolTip="{loc:Localize DateField_Month}"
+                          ItemsSource="{Binding MonthNumbers}" SelectedItem="{Binding Month2}" />
+            </StackPanel>
+
+            <!-- Юліанський календар (для точки-дати; за замовчуванням григоріанський) -->
+            <CheckBox Content="{loc:Localize DateCal_Julian}" VerticalAlignment="Center" Margin="0,0,0,4"
+                      Foreground="{DynamicResource TextPrimaryBrush}"
+                      Visibility="{Binding ShowCalendar, Converter={StaticResource BoolToVisibility}}"
+                      IsChecked="{Binding IsJulian}" />
+        </WrapPanel>
+
+        <!-- Текстова дата (фраза): окремий вищий textbox під рядком типу, фіксованої ширини,
+             з прикладом-водяним знаком (напр. «кінець зими 1902»). -->
+        <Grid HorizontalAlignment="Left" Width="260" Margin="0,4,0,0"
+              Visibility="{Binding ShowPhrase, Converter={StaticResource BoolToVisibility}}">
+            <TextBox x:Name="PhraseBox" Style="{StaticResource InputTextBoxStyle}"
+                     Height="60" AcceptsReturn="True" TextWrapping="Wrap"
+                     VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"
+                     ToolTip="{loc:Localize DateField_Phrase}"
+                     Text="{Binding PhraseText, UpdateSourceTrigger=PropertyChanged}" />
+            <!-- Приклад-підказка: видима, поки поле порожнє; кліки проходять до TextBox. -->
+            <TextBlock Text="{loc:Localize DateField_PhraseHint}" IsHitTestVisible="False"
+                       Margin="10,8,10,0" VerticalAlignment="Top"
+                       Foreground="{DynamicResource TextSecondaryBrush}" FontStyle="Italic">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding PhraseText}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding PhraseText}" Value="">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+    </StackPanel>
+</UserControl>
