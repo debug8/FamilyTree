@@ -77,6 +77,11 @@ internal static class DocumentIntegrity
         var badPhotoPaths = SanitizePhotoPaths(document);
         Add(issues, FileErrorKeys.RepairedBadPhotoPaths, badPhotoPaths);
 
+        // Структурно биті неточні дати (T-5.2a): напр. range без меж, approx без кваліфікатора,
+        // порожня фраза — у чужому/ручному файлі. Скидаємо в null (дата «невідома») зі звітом.
+        var badDates = SanitizeDates(document);
+        Add(issues, FileErrorKeys.RepairedBadDates, badDates);
+
         return issues;
     }
 
@@ -213,7 +218,7 @@ internal static class DocumentIntegrity
         var seenParentChild = new HashSet<(Guid Parent, Guid Child)>();
         removed += document.ParentChildLinks.RemoveAll(l => !seenParentChild.Add((l.ParentId, l.ChildId)));
 
-        var seenSpouse = new HashSet<(Guid First, Guid Second, DateOnly? Marriage)>();
+        var seenSpouse = new HashSet<(Guid First, Guid Second, FamilyDate? Marriage)>();
         removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add((l.Person1Id, l.Person2Id, l.MarriageDate)));
 
         return removed;
@@ -347,5 +352,49 @@ internal static class DocumentIntegrity
         }
 
         return cleared;
+    }
+
+    /// <summary>
+    /// Скидає структурно некоректні неточні дати (T-5.2a) у <see langword="null"/>: напр.
+    /// діапазон без меж, приблизна без кваліфікатора, порожня фраза, точка без року — таке
+    /// може прийти з ручного чи чужого v2-файлу. Перевірка — <see cref="FamilyDate.IsStructurallyValid"/>.
+    /// </summary>
+    private static int SanitizeDates(FamilyDocument document)
+    {
+        var cleared = 0;
+
+        foreach (var person in document.Persons)
+        {
+            if (Invalid(person.BirthDate))
+            {
+                person.BirthDate = null;
+                cleared++;
+            }
+
+            if (Invalid(person.DeathDate))
+            {
+                person.DeathDate = null;
+                cleared++;
+            }
+        }
+
+        foreach (var link in document.SpouseLinks)
+        {
+            if (Invalid(link.MarriageDate))
+            {
+                link.MarriageDate = null;
+                cleared++;
+            }
+
+            if (Invalid(link.DivorceDate))
+            {
+                link.DivorceDate = null;
+                cleared++;
+            }
+        }
+
+        return cleared;
+
+        static bool Invalid(FamilyDate? date) => date is not null && !date.IsStructurallyValid();
     }
 }

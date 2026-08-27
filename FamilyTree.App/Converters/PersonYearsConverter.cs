@@ -7,6 +7,7 @@ namespace FamilyTree.App.Converters;
 /// <summary>
 /// Роки життя особи для списку: «1954–2020», «1988» (лише народження) тощо.
 /// Мовонезалежний (тільки числа), тож не потребує оновлення при зміні мови.
+/// Неточну дату представляє її роком (<see cref="FamilyDate.EffectiveYear"/>).
 /// </summary>
 public sealed class PersonYearsConverter : IValueConverter
 {
@@ -17,8 +18,8 @@ public sealed class PersonYearsConverter : IValueConverter
             return string.Empty;
         }
 
-        var birth = person.BirthDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.Year.ToString(CultureInfo.InvariantCulture);
+        var birth = person.BirthDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var death = person.DeathDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
 
         return (birth, death) switch
         {

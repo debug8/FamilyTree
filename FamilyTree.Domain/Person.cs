@@ -22,14 +22,14 @@ public sealed class Person : Entity
     /// <summary>Дівоче прізвище.</summary>
     public string? MaidenName { get; set; }
 
-    /// <summary>Дата народження (може бути невідома).</summary>
-    public DateOnly? BirthDate { get; set; }
+    /// <summary>Дата народження (може бути невідома; неточна — див. <see cref="FamilyDate"/>, T-5.2a).</summary>
+    public FamilyDate? BirthDate { get; set; }
 
     /// <summary>Місце народження.</summary>
     public string? BirthPlace { get; set; }
 
-    /// <summary>Дата смерті (null — особа вважається живою).</summary>
-    public DateOnly? DeathDate { get; set; }
+    /// <summary>Дата смерті (null — особа вважається живою; неточна — <see cref="FamilyDate"/>, T-5.2a).</summary>
+    public FamilyDate? DeathDate { get; set; }
 
     /// <summary>Відносний шлях до фото у папці даних застосунку.</summary>
     public string? PhotoPath { get; set; }

@@ -186,6 +186,13 @@ public sealed record FamilyDate
     /// <summary>Точна дата з повної григоріанської <see cref="DateOnly"/>.</summary>
     public static FamilyDate Exact(DateOnly date) => Exact(DatePoint.FromDateOnly(date));
 
+    /// <summary>
+    /// Неявне перетворення повної дати на <see cref="FamilyDateKind.Exact"/>. Дозволяє коду,
+    /// що працював із <see cref="DateOnly"/> (домен, сидер, тести), лишитися без змін — C#
+    /// піднімає це перетворення й до <c>DateOnly?</c> → <c>FamilyDate?</c> (T-5.2a).
+    /// </summary>
+    public static implicit operator FamilyDate(DateOnly date) => Exact(date);
+
     /// <summary>Приблизна дата (точка + кваліфікатор).</summary>
     public static FamilyDate Approximate(DateApproximation approximation, DatePoint point)
     {

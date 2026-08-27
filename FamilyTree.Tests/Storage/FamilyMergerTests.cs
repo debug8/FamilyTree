@@ -187,7 +187,7 @@ public class FamilyMergerTests
         report.AddedPersons.ShouldBe(0);
         existing.BirthPlace.ShouldBe("Київ");
         existing.Notes.ShouldBe("уточнення від родича");
-        existing.DeathDate.ShouldBe(new DateOnly(2020, 5, 1));
+        existing.DeathDate.ShouldBe(FamilyDate.Exact(new DateOnly(2020, 5, 1)));
     }
 
     [Fact]

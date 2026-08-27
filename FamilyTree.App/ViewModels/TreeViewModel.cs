@@ -489,7 +489,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
         var since = string.Format(
             _localization.GetString("Tree_Card_MarriedSince"),
-            date.ToString("d", CultureInfo.CurrentCulture));
+            date?.ToComparable()?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty);
         return $"{couple}\n{since}";
     }
 

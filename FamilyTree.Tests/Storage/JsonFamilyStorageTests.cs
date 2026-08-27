@@ -79,11 +79,11 @@ public sealed class JsonFamilyStorageTests : IDisposable
         loadedFather.FirstName.ShouldBe("Тарас");
         loadedFather.MiddleName.ShouldBe("Григорович");
         loadedFather.Gender.ShouldBe(Gender.Male);
-        loadedFather.BirthDate.ShouldBe(new DateOnly(1814, 3, 9));
-        loadedFather.DeathDate.ShouldBe(new DateOnly(1861, 3, 10));
+        loadedFather.BirthDate.ShouldBe(FamilyDate.Exact(new DateOnly(1814, 3, 9)));
+        loadedFather.DeathDate.ShouldBe(FamilyDate.Exact(new DateOnly(1861, 3, 10)));
         loadedFather.IsAlive.ShouldBeFalse();
 
-        loaded.SpouseLinks[0].MarriageDate.ShouldBe(new DateOnly(1840, 6, 1));
+        loaded.SpouseLinks[0].MarriageDate.ShouldBe(FamilyDate.Exact(new DateOnly(1840, 6, 1)));
         original.IsDirty.ShouldBeFalse();
     }
 

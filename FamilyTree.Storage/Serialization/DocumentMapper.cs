@@ -73,9 +73,9 @@ internal static class DocumentMapper
         Gender = p.Gender,
         MiddleName = p.MiddleName,
         MaidenName = p.MaidenName,
-        BirthDate = p.BirthDate,
+        BirthDate = ToDto(p.BirthDate),
         BirthPlace = p.BirthPlace,
-        DeathDate = p.DeathDate,
+        DeathDate = ToDto(p.DeathDate),
         PhotoPath = p.PhotoPath,
         Notes = p.Notes,
         CreatedAt = p.CreatedAt,
@@ -90,9 +90,9 @@ internal static class DocumentMapper
         Gender = d.Gender,
         MiddleName = d.MiddleName,
         MaidenName = d.MaidenName,
-        BirthDate = d.BirthDate,
+        BirthDate = ToDomain(d.BirthDate),
         BirthPlace = d.BirthPlace,
-        DeathDate = d.DeathDate,
+        DeathDate = ToDomain(d.DeathDate),
         PhotoPath = d.PhotoPath,
         Notes = d.Notes,
         CreatedAt = d.CreatedAt,
@@ -131,8 +131,8 @@ internal static class DocumentMapper
         Id = l.Id,
         Person1Id = l.Person1Id,
         Person2Id = l.Person2Id,
-        MarriageDate = l.MarriageDate,
-        DivorceDate = l.DivorceDate,
+        MarriageDate = ToDto(l.MarriageDate),
+        DivorceDate = ToDto(l.DivorceDate),
         Divorced = l.Divorced,
     };
 
@@ -144,8 +144,8 @@ internal static class DocumentMapper
         {
             Person1Id = d.Person1Id,
             Person2Id = d.Person2Id,
-            MarriageDate = d.MarriageDate,
-            DivorceDate = d.DivorceDate,
+            MarriageDate = ToDomain(d.MarriageDate),
+            DivorceDate = ToDomain(d.DivorceDate),
             Divorced = d.Divorced,
         }
         : new SpouseLink
@@ -153,8 +153,148 @@ internal static class DocumentMapper
             Id = d.Id,
             Person1Id = d.Person1Id,
             Person2Id = d.Person2Id,
-            MarriageDate = d.MarriageDate,
-            DivorceDate = d.DivorceDate,
+            MarriageDate = ToDomain(d.MarriageDate),
+            DivorceDate = ToDomain(d.DivorceDate),
             Divorced = d.Divorced,
         };
+
+    // ---- Дати: FamilyDate ↔ FamilyDateDto (формат v2, T-5.2a) ----------------
+
+    private static FamilyDateDto? ToDto(FamilyDate? date)
+    {
+        if (date is null)
+        {
+            return null;
+        }
+
+        var dto = new FamilyDateDto { Gedcom = date.OriginalGedcom };
+        switch (date.Kind)
+        {
+            case FamilyDateKind.Exact:
+                dto.Kind = "exact";
+                WriteInlinePoint(dto, date.Start);
+                break;
+
+            case FamilyDateKind.Approximate:
+                dto.Kind = "approx";
+                dto.Q = ApproximationToString(date.Approximation);
+                WriteInlinePoint(dto, date.Start);
+                break;
+
+            case FamilyDateKind.Range:
+                dto.Kind = "range";
+                dto.Range = RangeToString(date.RangeKind);
+                dto.From = PointToDto(date.Start);
+                dto.To = PointToDto(date.End);
+                break;
+
+            case FamilyDateKind.Phrase:
+                dto.Kind = "phrase";
+                dto.Text = date.Phrase;
+                break;
+        }
+
+        return dto;
+    }
+
+    // Будуємо запис напряму (не через фабрики, що кидають): «брудний» v2-файл із неповною
+    // датою не має валити завантаження — структурно биту дату відкине DocumentIntegrity.
+    private static FamilyDate? ToDomain(FamilyDateDto? dto)
+    {
+        if (dto is null)
+        {
+            return null;
+        }
+
+        FamilyDate? result = dto.Kind switch
+        {
+            "exact" => new FamilyDate { Kind = FamilyDateKind.Exact, Start = InlinePointToDomain(dto) },
+            "approx" => new FamilyDate
+            {
+                Kind = FamilyDateKind.Approximate,
+                Approximation = ParseApproximation(dto.Q),
+                Start = InlinePointToDomain(dto),
+            },
+            "range" => new FamilyDate
+            {
+                Kind = FamilyDateKind.Range,
+                RangeKind = ParseRange(dto.Range),
+                Start = PointToDomain(dto.From),
+                End = PointToDomain(dto.To),
+            },
+            "phrase" => new FamilyDate { Kind = FamilyDateKind.Phrase, Phrase = dto.Text },
+            _ => null,
+        };
+
+        return dto.Gedcom is { } gedcom && result is not null ? result.WithOriginalGedcom(gedcom) : result;
+    }
+
+    private static void WriteInlinePoint(FamilyDateDto dto, DatePoint? point)
+    {
+        if (point is null)
+        {
+            return;
+        }
+
+        dto.Y = point.Year;
+        dto.M = point.Month;
+        dto.D = point.Day;
+        dto.Cal = point.Calendar == DateCalendar.Julian ? "julian" : null;
+    }
+
+    private static DatePoint? InlinePointToDomain(FamilyDateDto dto) =>
+        dto.Y is { } year
+            ? new DatePoint { Year = year, Month = dto.M, Day = dto.D, Calendar = ParseCalendar(dto.Cal) }
+            : null;
+
+    private static DatePointDto? PointToDto(DatePoint? point) =>
+        point is null
+            ? null
+            : new DatePointDto
+            {
+                Y = point.Year,
+                M = point.Month,
+                D = point.Day,
+                Cal = point.Calendar == DateCalendar.Julian ? "julian" : null,
+            };
+
+    private static DatePoint? PointToDomain(DatePointDto? point) =>
+        point?.Y is { } year
+            ? new DatePoint { Year = year, Month = point.M, Day = point.D, Calendar = ParseCalendar(point.Cal) }
+            : null;
+
+    private static DateCalendar ParseCalendar(string? cal) =>
+        string.Equals(cal, "julian", StringComparison.OrdinalIgnoreCase)
+            ? DateCalendar.Julian
+            : DateCalendar.Gregorian;
+
+    private static DateApproximation? ParseApproximation(string? q) => q?.ToLowerInvariant() switch
+    {
+        "about" => DateApproximation.About,
+        "calculated" => DateApproximation.Calculated,
+        "estimated" => DateApproximation.Estimated,
+        _ => null,
+    };
+
+    private static string ApproximationToString(DateApproximation? approximation) => approximation switch
+    {
+        DateApproximation.Calculated => "calculated",
+        DateApproximation.Estimated => "estimated",
+        _ => "about",
+    };
+
+    private static DateRangeKind? ParseRange(string? range) => range?.ToLowerInvariant() switch
+    {
+        "before" => DateRangeKind.Before,
+        "after" => DateRangeKind.After,
+        "between" => DateRangeKind.Between,
+        _ => null,
+    };
+
+    private static string RangeToString(DateRangeKind? range) => range switch
+    {
+        DateRangeKind.After => "after",
+        DateRangeKind.Between => "between",
+        _ => "before",
+    };
 }

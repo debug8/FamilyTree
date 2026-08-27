@@ -59,4 +59,7 @@ public static class FileErrorKeys
 
     /// <summary>Очищено небезпечні шляхи до фото (абсолютні/UNC/URL/обхід каталогів). {0} — кількість.</summary>
     public const string RepairedBadPhotoPaths = "FileRepair_BadPhotoPaths";
+
+    /// <summary>Скинуто структурно некоректні неточні дати. {0} — кількість.</summary>
+    public const string RepairedBadDates = "FileRepair_BadDates";
 }

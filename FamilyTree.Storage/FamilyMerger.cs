@@ -22,7 +22,7 @@ public sealed record MergeReport(
 /// </summary>
 public sealed record PersonFieldFill(
     Person Target,
-    DateOnly? DeathDate = null,
+    FamilyDate? DeathDate = null,
     string? BirthPlace = null,
     string? MaidenName = null,
     string? Notes = null,
@@ -253,7 +253,10 @@ public sealed class FamilyMerger
     /// </summary>
     private static string? IdentityKey(Person p)
     {
-        if (p.BirthDate is not { } birth)
+        // Ключем беремо представницьку дату (ToComparable): для точних дат це та сама
+        // ISO-стрічка, що й раніше, тож зіставлення наявних файлів не змінюється. Нерезолвна
+        // (напр. фраза) чи відсутня дата → null: таких людей автоматично не зливаємо (T-5.2a).
+        if (p.BirthDate?.ToComparable() is not { } birth)
         {
             return null;
         }
@@ -292,7 +295,7 @@ public sealed class FamilyMerger
         var any = false;
         var localConflicts = 0;
 
-        DateOnly? death = null;
+        FamilyDate? death = null;
         if (target.DeathDate is null)
         {
             if (source.DeathDate is { } d)
@@ -301,7 +304,7 @@ public sealed class FamilyMerger
                 any = true;
             }
         }
-        else if (source.DeathDate is { } sd && sd != target.DeathDate.Value)
+        else if (source.DeathDate is { } sd && sd != target.DeathDate)
         {
             localConflicts++;
         }

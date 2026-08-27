@@ -17,7 +17,7 @@ namespace FamilyTree.Storage;
 public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 {
     /// <summary>Поточна підтримувана версія схеми файлу.</summary>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>
     /// Значення <see cref="DocumentMeta.AppVersion"/> за замовчуванням, коли реальну версію
@@ -42,6 +42,13 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    // Вбудовані міграції формату — інтринсик сховища, а не зовнішній плагін: без них
+    // будь-який файл v1 (усі наявні) не відкрився б. Тому дефолтний ctor їх завжди підключає.
+    private static readonly IReadOnlyList<IFormatMigration> BuiltInMigrations =
+    [
+        new FormatMigrationV1ToV2(),
+    ];
+
     private readonly IReadOnlyList<IFormatMigration> _migrations;
 
     // Версія застосунку, яку проставляємо в meta.AppVersion при кожному записі.
@@ -64,7 +71,7 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     /// тести й інструменти не мусили її передавати.
     /// </param>
     public JsonFamilyStorage(string appVersion = UnknownVersion)
-        : this(appVersion, Array.Empty<IFormatMigration>())
+        : this(appVersion, BuiltInMigrations)
     {
     }
 

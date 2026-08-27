@@ -27,10 +27,11 @@ internal static class PersonQuery
             PersonSortField.FirstName => Direction(source, p => p.FirstName, StringComparer.CurrentCulture, descending)
                 .ThenBy(p => p.LastName, StringComparer.CurrentCulture),
 
-            // Невідома дата народження завжди в кінці списку — незалежно від напрямку.
+            // Невідома (чи нерезолвна, напр. фраза) дата народження завжди в кінці списку —
+            // незалежно від напрямку. Неточну дату зводимо до представницької (ToComparable).
             PersonSortField.BirthDate => Direction(
                     source,
-                    p => p.BirthDate ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
+                    p => p.BirthDate?.ToComparable() ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
                     Comparer<DateOnly>.Default,
                     descending)
                 .ThenBy(p => p.LastName, StringComparer.CurrentCulture),

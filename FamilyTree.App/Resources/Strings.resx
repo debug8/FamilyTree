@@ -448,6 +448,9 @@
   <data name="FileRepair_BadPhotoPaths" xml:space="preserve">
     <value>• небезпечних шляхів до фото (очищено): {0}</value>
   </data>
+  <data name="FileRepair_BadDates" xml:space="preserve">
+    <value>• некоректних дат (скинуто): {0}</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Незбережені зміни</value>
   </data>

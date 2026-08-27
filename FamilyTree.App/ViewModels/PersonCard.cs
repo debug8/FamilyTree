@@ -106,8 +106,8 @@ public sealed class PersonCardBuilder
     /// <summary>Роки життя для підпису вузла: «1980–2021», «1980», «–2021» або порожньо.</summary>
     public static string FormatYears(Person person)
     {
-        var birth = person.BirthDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.Year.ToString(CultureInfo.InvariantCulture);
+        var birth = person.BirthDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var death = person.DeathDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
         return (birth, death) switch
         {
             (null, null) => string.Empty,
@@ -117,8 +117,10 @@ public sealed class PersonCardBuilder
         };
     }
 
-    public static string FormatDate(DateOnly? date) =>
-        date?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
+    // Проміжний показ (T-5.2a, Частина 1b): неточну дату зводимо до представницької.
+    // Повноцінне форматування типів дати додасть FamilyDateFormatter (Частина 2).
+    public static string FormatDate(FamilyDate? date) =>
+        date?.ToComparable()?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
 
     /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
     public static string FormatBirth(Person person)
@@ -156,8 +158,8 @@ public sealed class PersonCardBuilder
 
     public static string FormatMarriagePeriod(SpouseLink link)
     {
-        var from = link.MarriageDate?.Year.ToString(CultureInfo.InvariantCulture);
-        var to = link.DivorceDate?.Year.ToString(CultureInfo.InvariantCulture);
+        var from = link.MarriageDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var to = link.DivorceDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
         return (from, to) switch
         {
             (null, null) => string.Empty,

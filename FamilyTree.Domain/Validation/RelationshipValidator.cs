@@ -79,8 +79,8 @@ public sealed class RelationshipValidator
         if (candidate.ParentRole == ParentRole.Biological &&
             byId.TryGetValue(candidate.ParentId, out var parentPerson) &&
             byId.TryGetValue(candidate.ChildId, out var childPerson) &&
-            parentPerson.BirthDate is { } parentBirth &&
-            childPerson.BirthDate is { } childBirth)
+            parentPerson.BirthDate?.ToComparable() is { } parentBirth &&
+            childPerson.BirthDate?.ToComparable() is { } childBirth)
         {
             if (parentBirth > childBirth)
             {
@@ -140,7 +140,9 @@ public sealed class RelationshipValidator
 
         var warnings = new List<ValidationMessage>();
 
-        if (person.BirthDate is { } birth && person.DeathDate is { } death && death < birth)
+        if (person.BirthDate?.ToComparable() is { } birth
+            && person.DeathDate?.ToComparable() is { } death
+            && death < birth)
         {
             warnings.Add(ValidationMessage.Of(ValidationKeys.DeathBeforeBirth));
         }

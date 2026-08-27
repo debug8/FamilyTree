@@ -138,15 +138,18 @@ public partial class RelationshipEditorViewModel : ObservableObject
     /// розлучення = null»: шлюб може бути завершеним і без дати (див. <see cref="Divorced"/>).
     /// </param>
     public static RelationshipEditorViewModel ForSpouseEdit(
-        Person basePerson, Person spouse, DateOnly? marriageDate, DateOnly? divorceDate, bool isActive)
+        Person basePerson, Person spouse, FamilyDate? marriageDate, FamilyDate? divorceDate, bool isActive)
     {
         var vm = new RelationshipEditorViewModel(
             RelationshipRole.Spouse, basePerson, new[] { spouse }, isEditMode: true);
 
         vm.SelectedCandidate = spouse;
         vm.IsMarried = isActive;
-        vm.MarriageDate = marriageDate is { } m ? m.ToDateTime(TimeOnly.MinValue) : null;
-        vm.DivorceDate = divorceDate is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
+
+        // Наразі редактор дат — лише точна дата через DatePicker (T-5.2a, Частина 1b):
+        // неточну дату зводимо до представницької для показу.
+        vm.MarriageDate = marriageDate?.ToComparable() is { } m ? m.ToDateTime(TimeOnly.MinValue) : null;
+        vm.DivorceDate = divorceDate?.ToComparable() is { } d ? d.ToDateTime(TimeOnly.MinValue) : null;
         return vm;
     }
 

@@ -13,11 +13,11 @@ public sealed class SpouseLink : Entity
     /// <summary>Другий із подружжя (більший Id).</summary>
     public required Guid Person2Id { get; init; }
 
-    /// <summary>Дата шлюбу.</summary>
-    public DateOnly? MarriageDate { get; set; }
+    /// <summary>Дата шлюбу (може бути неточною — <see cref="FamilyDate"/>, T-5.2a).</summary>
+    public FamilyDate? MarriageDate { get; set; }
 
     /// <summary>Дата розлучення (null — дата невідома або шлюб чинний; див. <see cref="Divorced"/>).</summary>
-    public DateOnly? DivorceDate { get; set; }
+    public FamilyDate? DivorceDate { get; set; }
 
     /// <summary>
     /// Явна позначка, що шлюб завершено, навіть коли дата розлучення невідома
@@ -43,7 +43,7 @@ public sealed class SpouseLink : Entity
     /// <paramref name="divorceDate"/>, шлюб і так неактивний незалежно від цього прапорця.
     /// </param>
     public static SpouseLink Create(
-        Guid personA, Guid personB, DateOnly? marriageDate = null, DateOnly? divorceDate = null, bool divorced = false)
+        Guid personA, Guid personB, FamilyDate? marriageDate = null, FamilyDate? divorceDate = null, bool divorced = false)
     {
         var (first, second) = personA.CompareTo(personB) <= 0 ? (personA, personB) : (personB, personA);
         return new SpouseLink
@@ -58,7 +58,8 @@ public sealed class SpouseLink : Entity
 
     /// <summary>
     /// Чи перетинаються періоди шлюбу цього та іншого зв'язку. Період — [MarriageDate, DivorceDate];
-    /// відсутня межа вважається відкритою (−∞ для дати шлюбу, +∞ для дати розлучення).
+    /// відсутня (або нерезолвна, напр. фраза) межа вважається відкритою (−∞ для дати шлюбу,
+    /// +∞ для дати розлучення). Дати зводяться до представницької через <see cref="FamilyDate.ToComparable"/>.
     /// <para>
     /// Призначення (B-16): відрізнити справжній дубль (та сама пара, шлюби перетинаються в часі —
     /// одночасним шлюб бути не може) від повторного шлюбу тієї самої пари з роздільними періодами
@@ -70,10 +71,10 @@ public sealed class SpouseLink : Entity
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        var start1 = MarriageDate ?? DateOnly.MinValue;
-        var end1 = DivorceDate ?? DateOnly.MaxValue;
-        var start2 = other.MarriageDate ?? DateOnly.MinValue;
-        var end2 = other.DivorceDate ?? DateOnly.MaxValue;
+        var start1 = MarriageDate?.ToComparable() ?? DateOnly.MinValue;
+        var end1 = DivorceDate?.ToComparable() ?? DateOnly.MaxValue;
+        var start2 = other.MarriageDate?.ToComparable() ?? DateOnly.MinValue;
+        var end2 = other.DivorceDate?.ToComparable() ?? DateOnly.MaxValue;
 
         return start1 <= end2 && start2 <= end1;
     }
