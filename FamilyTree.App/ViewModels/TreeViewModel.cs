@@ -126,6 +126,13 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     /// <summary>Напівпрозорі смуги-фони поколінь (позаду всього).</summary>
     public ObservableCollection<GenerationBandViewModel> Bands { get; } = new();
 
+    /// <summary>
+    /// Корінь дерева змінився (напр. подвійний клік по вузлу на полотні). Дозволяє власнику
+    /// (MainViewModel) синхронізувати вибір застосунку, щоб наступний RefreshPersons() не
+    /// «відкотив» корінь назад на стару виділену особу (B-06). Не спрацьовує на скидання (null).
+    /// </summary>
+    public event EventHandler<Guid>? RootChanged;
+
     /// <summary>Задає кореневу особу й перебудовує дерево. Повторний вибір тієї самої
     /// особи нічого не робить — інакше сортування/пошук у списку осіб коштували б
     /// повну перебудову дерева без жодної зміни на екрані.</summary>
@@ -138,6 +145,11 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
         _rootId = rootId;
         Rebuild();
+
+        if (rootId is { } id)
+        {
+            RootChanged?.Invoke(this, id);
+        }
     }
 
     /// <summary>Вибирає вузол (для підсвітки).</summary>

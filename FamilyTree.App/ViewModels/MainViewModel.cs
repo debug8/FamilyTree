@@ -121,6 +121,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _localization.LanguageChanged += OnLanguageChanged;
         _session.DocumentChanged += OnDocumentChanged;
         _session.ContentChanged += OnContentChanged;
+        _tree.RootChanged += OnTreeRootChanged;
 
         RefreshPersons();
     }
@@ -1012,6 +1013,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             _lastSelectedId = value.Id;
             _tree.SetRoot(value.Id);
+        }
+    }
+
+    /// <summary>
+    /// Дерево змінило корінь напряму (подвійний клік по вузлу) — робимо ту саму особу
+    /// вибраною в застосунку, щоб список, вкладка «Особа» й наступний RefreshPersons()
+    /// не «відкочували» корінь на попередню виділену особу (B-06). Якщо вибір уже той —
+    /// нічого не робимо (напр. корінь щойно виставлено через ApplySelection зі списку).
+    /// </summary>
+    private void OnTreeRootChanged(object? sender, Guid rootId)
+    {
+        if (SelectedPerson?.Id == rootId)
+        {
+            return;
+        }
+
+        if (_session.Current.Persons.FirstOrDefault(p => p.Id == rootId) is { } person)
+        {
+            SelectedPerson = person;
         }
     }
 
