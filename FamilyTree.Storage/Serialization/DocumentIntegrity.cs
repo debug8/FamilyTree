@@ -284,14 +284,17 @@ internal static class DocumentIntegrity
     }
 
     /// <summary>
-    /// Лишає в дитини не більше одного біологічного батька кожної статі (по одному на
-    /// Male/Female/Unknown); наступні біологічні зв'язки тієї самої статі відкидає.
-    /// Валідатор забороняє це при вводі, а файл — ні (B-15). Порядок: лишається перший.
+    /// Лишає в дитини не більше двох біологічних батьків і ніколи двох тієї самої ВІДОМОЇ
+    /// статі (двоє Male або двоє Female). Стать Unknown не тригерить правило «та сама стать»
+    /// (двоє з невідомою статтю припустимі), але рахується в межу двох: M+U, F+U, U+U — ок;
+    /// M+F+U чи будь-який третій — відкидається. Те саме правило застосовує
+    /// RelationshipValidator при вводі; файл — ні (B-15, B-18). Порядок:
+    /// лишаються перші прийнятні зв'язки.
     /// </summary>
     private static int RemoveExtraBiologicalParents(FamilyDocument document)
     {
         var genderById = document.Persons.ToDictionary(p => p.Id, p => p.Gender);
-        var seen = new HashSet<(Guid Child, Gender Gender)>();
+        var acceptedByChild = new Dictionary<Guid, List<Gender>>();
 
         return document.ParentChildLinks.RemoveAll(link =>
         {
@@ -301,7 +304,20 @@ internal static class DocumentIntegrity
             }
 
             var gender = genderById.GetValueOrDefault(link.ParentId, Gender.Unknown);
-            return !seen.Add((link.ChildId, gender));
+
+            if (!acceptedByChild.TryGetValue(link.ChildId, out var accepted))
+            {
+                acceptedByChild[link.ChildId] = accepted = new List<Gender>();
+            }
+
+            // Другий батько/мати тієї самої відомої статі, або вже двоє прийнятих — відкидаємо.
+            if ((gender != Gender.Unknown && accepted.Contains(gender)) || accepted.Count >= 2)
+            {
+                return true;
+            }
+
+            accepted.Add(gender);
+            return false;
         });
     }
 

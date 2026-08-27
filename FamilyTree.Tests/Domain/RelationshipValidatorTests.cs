@@ -90,6 +90,71 @@ public class RelationshipValidatorTests
         result.IsValid.ShouldBeTrue();
     }
 
+    // --- B-18: біологічні батьки з Gender.Unknown -------------------------
+
+    [Fact]
+    public void Second_biological_parent_of_unknown_gender_is_allowed()
+    {
+        // Уже є батько (Male); другий біо-батько з невідомою статтю — припустимо (M+U).
+        var father = Make("Father", Gender.Male);
+        var unknown = Make("Unknown"); // Gender.Unknown за замовчуванням
+        var child = Make("Child");
+        var existing = new[] { Pc(father, child) };
+
+        var result = _validator.ValidateParentChild(Pc(unknown, child), new[] { father, unknown, child }, existing);
+
+        result.IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Two_biological_parents_of_unknown_gender_are_allowed()
+    {
+        // Обидва біо-батьки з невідомою статтю (U+U) — межа двох не перевищена, дозволено.
+        var parent1 = Make("Unknown1");
+        var parent2 = Make("Unknown2");
+        var child = Make("Child");
+        var existing = new[] { Pc(parent1, child) };
+
+        var result = _validator.ValidateParentChild(Pc(parent2, child), new[] { parent1, parent2, child }, existing);
+
+        result.IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Third_biological_parent_unknown_over_two_is_error()
+    {
+        // Уже двоє (батько + мати); третій біо-батько (навіть із невідомою статтю) — забагато.
+        // Раніше кандидат із Gender.Unknown узагалі не перевірявся (B-18).
+        var father = Make("Father", Gender.Male);
+        var mother = Make("Mother", Gender.Female);
+        var third = Make("Third"); // Unknown
+        var child = Make("Child");
+        var existing = new[] { Pc(father, child), Pc(mother, child) };
+
+        var result = _validator.ValidateParentChild(
+            Pc(third, child), new[] { father, mother, third, child }, existing);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(m => m.Key == ValidationKeys.TooManyBiologicalParents);
+    }
+
+    [Fact]
+    public void Third_unknown_biological_parent_over_two_unknowns_is_error()
+    {
+        // Двоє з невідомою статтю вже прийняті; третій (теж Unknown) перевищує межу двох.
+        var parent1 = Make("Unknown1");
+        var parent2 = Make("Unknown2");
+        var parent3 = Make("Unknown3");
+        var child = Make("Child");
+        var existing = new[] { Pc(parent1, child), Pc(parent2, child) };
+
+        var result = _validator.ValidateParentChild(
+            Pc(parent3, child), new[] { parent1, parent2, parent3, child }, existing);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(m => m.Key == ValidationKeys.TooManyBiologicalParents);
+    }
+
     // --- М'які попередження ----------------------------------------------
 
     [Fact]

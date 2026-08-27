@@ -547,6 +547,9 @@
   <data name="Validation_SecondBiologicalMother" xml:space="preserve">
     <value>У дитини вже є біологічна мати.</value>
   </data>
+  <data name="Validation_TooManyBiologicalParents" xml:space="preserve">
+    <value>У дитини вже є двоє біологічних батьків.</value>
+  </data>
   <data name="Validation_ChildBornBeforeParentAdult" xml:space="preserve">
     <value>Попередження: дитину народжено, коли батькові/матері ({0}) було менше 12 років.</value>
   </data>

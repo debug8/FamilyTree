@@ -547,6 +547,9 @@ There is no way to tell which relationships belong to whom, so the file was not 
   <data name="Validation_SecondBiologicalMother" xml:space="preserve">
     <value>The child already has a biological mother.</value>
   </data>
+  <data name="Validation_TooManyBiologicalParents" xml:space="preserve">
+    <value>The child already has two biological parents.</value>
+  </data>
   <data name="Validation_ChildBornBeforeParentAdult" xml:space="preserve">
     <value>Warning: the child was born before the parent ({0}) turned 12.</value>
   </data>

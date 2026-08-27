@@ -16,6 +16,10 @@ public static class ValidationKeys
     public const string SecondBiologicalFather = "Validation_SecondBiologicalFather";
     public const string SecondBiologicalMother = "Validation_SecondBiologicalMother";
 
+    // Понад двох біологічних батьків у дитини (спрацьовує там, де немає збігу відомої
+    // статі — напр. коли третій кандидат має Gender.Unknown). Біологічно ≤2 (B-18).
+    public const string TooManyBiologicalParents = "Validation_TooManyBiologicalParents";
+
     // М'які попередження
     public const string ChildBornBeforeParentAdult = "Validation_ChildBornBeforeParentAdult";
     public const string ParentYoungerThanChild = "Validation_ParentYoungerThanChild";

@@ -495,4 +495,52 @@ public sealed class CorruptFileTests : IDisposable
         doc.Persons.Single().PhotoPath.ShouldBe("photos/ivanov.png");
         doc.RepairedIssues.ShouldBeEmpty();
     }
+
+    // ---- B-18: межа у два біологічні батьки (у т.ч. Gender.Unknown) ------
+
+    [Fact]
+    public async Task Third_biological_parent_via_unknown_gender_is_dropped_and_reported()
+    {
+        // Батько (Male) + мати (Female) + третій біо-батько з невідомою статтю.
+        // За правилом ≤2 третій зв'язок відкидається (перші два лишаються).
+        const string mother = "\"id\":\"55555555-5555-4555-8555-555555555555\",\"lastName\":\"Іванова\",\"firstName\":\"Мати\",\"gender\":\"Female\"";
+        const string unknownParent = "\"id\":\"66666666-6666-4666-8666-666666666666\",\"lastName\":\"Хтось\",\"firstName\":\"Невідомо\",\"gender\":\"Unknown\"";
+        const string childP = "\"id\":\"44444444-4444-4444-8444-444444444444\",\"lastName\":\"Іванов\",\"firstName\":\"Малий\",\"gender\":\"Male\"";
+        var motherId = Guid.Parse("55555555-5555-4555-8555-555555555555");
+        var unknownId = Guid.Parse("66666666-6666-4666-8666-666666666666");
+        var childId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+
+        var path = await WriteAsync("threeparents.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{mother}}},{{{unknownParent}}},{{{childP}}}]," +
+            $"\"parentChildLinks\":[{{\"parentId\":\"{IdA}\",\"childId\":\"{childId}\"}}," +
+            $"{{\"parentId\":\"{motherId}\",\"childId\":\"{childId}\"}}," +
+            $"{{\"parentId\":\"{unknownId}\",\"childId\":\"{childId}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.ParentChildLinks.Count.ShouldBe(2); // лишились батько + мати, Unknown відкинуто
+        doc.ParentChildLinks.ShouldContain(l => l.ParentId == IdA);
+        doc.ParentChildLinks.ShouldContain(l => l.ParentId == motherId);
+        doc.RepairedIssues.Single(i => i.MessageKey == FileErrorKeys.RepairedExtraBioParents).Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Two_biological_parents_of_unknown_gender_are_kept()
+    {
+        // Двоє біо-батьків із невідомою статтю (U+U) — межа двох не перевищена, обидва лишаються.
+        const string parent2 = "\"id\":\"33333333-3333-4333-8333-333333333333\",\"lastName\":\"Хтось\",\"firstName\":\"Другий\",\"gender\":\"Unknown\"";
+        const string childP = "\"id\":\"44444444-4444-4444-8444-444444444444\",\"lastName\":\"Іванов\",\"firstName\":\"Малий\",\"gender\":\"Male\"";
+        const string parent1 = "\"id\":\"22222222-2222-4222-8222-222222222222\",\"lastName\":\"Хтось\",\"firstName\":\"Перший\",\"gender\":\"Unknown\"";
+        var childId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+
+        var path = await WriteAsync("twounknown.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{parent1}}},{{{parent2}}},{{{childP}}}]," +
+            $"\"parentChildLinks\":[{{\"parentId\":\"{IdB}\",\"childId\":\"{childId}\"}}," +
+            $"{{\"parentId\":\"33333333-3333-4333-8333-333333333333\",\"childId\":\"{childId}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.ParentChildLinks.Count.ShouldBe(2);
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
 }

@@ -45,23 +45,33 @@ public sealed class RelationshipValidator
             errors.Add(ValidationMessage.Of(ValidationKeys.CycleDetected));
         }
 
-        // 4. Не більше одного біологічного батька та однієї біологічної матері (п.1).
+        // 4. Біологічних батьків у дитини — не більше двох, і ніколи двоє тієї самої
+        //    ВІДОМОЇ статі (двоє батьків або двоє матерів) (розд. 3.3, п.1).
+        //    Стать Unknown не тригерить правило «та сама стать» (двоє з невідомою статтю —
+        //    припустимо), але рахується в межу двох: M+U, F+U, U+U — ок; M+F+U чи будь-який
+        //    третій — заборонено. Раніше кандидат із Gender.Unknown узагалі не перевірявся,
+        //    тож через UI можна було додати необмежену кількість біо-батьків (B-18).
         if (candidate.ParentRole == ParentRole.Biological &&
-            byId.TryGetValue(candidate.ParentId, out var parent) &&
-            parent.Gender != Gender.Unknown)
+            byId.TryGetValue(candidate.ParentId, out var parent))
         {
-            var hasSameGenderBioParent = existingLinks
+            var otherBioGenders = existingLinks
                 .Where(l => l.ChildId == candidate.ChildId
                             && l.ParentRole == ParentRole.Biological
                             && l.ParentId != candidate.ParentId)
                 .Select(l => byId.GetValueOrDefault(l.ParentId))
-                .Any(p => p is not null && p.Gender == parent.Gender);
+                .Where(p => p is not null)
+                .Select(p => p!.Gender)
+                .ToList();
 
-            if (hasSameGenderBioParent)
+            if (parent.Gender != Gender.Unknown && otherBioGenders.Contains(parent.Gender))
             {
                 errors.Add(ValidationMessage.Of(parent.Gender == Gender.Male
                     ? ValidationKeys.SecondBiologicalFather
                     : ValidationKeys.SecondBiologicalMother));
+            }
+            else if (otherBioGenders.Count >= 2)
+            {
+                errors.Add(ValidationMessage.Of(ValidationKeys.TooManyBiologicalParents));
             }
         }
 
