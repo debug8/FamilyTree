@@ -451,6 +451,57 @@ There is no way to tell which relationships belong to whom, so the file was not 
   <data name="FileRepair_BadDates" xml:space="preserve">
     <value>• invalid dates (reset): {0}</value>
   </data>
+  <data name="DateType_Exact" xml:space="preserve">
+    <value>Exact date</value>
+  </data>
+  <data name="DateType_Partial" xml:space="preserve">
+    <value>Year / month</value>
+  </data>
+  <data name="DateType_Approximate" xml:space="preserve">
+    <value>Approximate</value>
+  </data>
+  <data name="DateType_Range" xml:space="preserve">
+    <value>Range</value>
+  </data>
+  <data name="DateType_Phrase" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="DateApprox_About" xml:space="preserve">
+    <value>≈ about</value>
+  </data>
+  <data name="DateApprox_Calculated" xml:space="preserve">
+    <value>Calculated</value>
+  </data>
+  <data name="DateApprox_Estimated" xml:space="preserve">
+    <value>Estimated</value>
+  </data>
+  <data name="DateRange_Before" xml:space="preserve">
+    <value>before</value>
+  </data>
+  <data name="DateRange_After" xml:space="preserve">
+    <value>after</value>
+  </data>
+  <data name="DateRange_Between" xml:space="preserve">
+    <value>between</value>
+  </data>
+  <data name="DateCal_Gregorian" xml:space="preserve">
+    <value>Gregorian</value>
+  </data>
+  <data name="DateCal_Julian" xml:space="preserve">
+    <value>Julian</value>
+  </data>
+  <data name="DateField_Year" xml:space="preserve">
+    <value>Year</value>
+  </data>
+  <data name="DateField_Month" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="DateField_Phrase" xml:space="preserve">
+    <value>Date text</value>
+  </data>
+  <data name="DateField_To" xml:space="preserve">
+    <value>to</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Unsaved changes</value>
   </data>

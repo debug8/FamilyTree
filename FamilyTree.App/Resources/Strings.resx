@@ -451,6 +451,57 @@
   <data name="FileRepair_BadDates" xml:space="preserve">
     <value>• некоректних дат (скинуто): {0}</value>
   </data>
+  <data name="DateType_Exact" xml:space="preserve">
+    <value>Точна дата</value>
+  </data>
+  <data name="DateType_Partial" xml:space="preserve">
+    <value>Рік / місяць</value>
+  </data>
+  <data name="DateType_Approximate" xml:space="preserve">
+    <value>Приблизна</value>
+  </data>
+  <data name="DateType_Range" xml:space="preserve">
+    <value>Діапазон</value>
+  </data>
+  <data name="DateType_Phrase" xml:space="preserve">
+    <value>Текст</value>
+  </data>
+  <data name="DateApprox_About" xml:space="preserve">
+    <value>≈ близько</value>
+  </data>
+  <data name="DateApprox_Calculated" xml:space="preserve">
+    <value>Обчислено</value>
+  </data>
+  <data name="DateApprox_Estimated" xml:space="preserve">
+    <value>Оцінка</value>
+  </data>
+  <data name="DateRange_Before" xml:space="preserve">
+    <value>до</value>
+  </data>
+  <data name="DateRange_After" xml:space="preserve">
+    <value>після</value>
+  </data>
+  <data name="DateRange_Between" xml:space="preserve">
+    <value>між</value>
+  </data>
+  <data name="DateCal_Gregorian" xml:space="preserve">
+    <value>Григоріанський</value>
+  </data>
+  <data name="DateCal_Julian" xml:space="preserve">
+    <value>Юліанський</value>
+  </data>
+  <data name="DateField_Year" xml:space="preserve">
+    <value>Рік</value>
+  </data>
+  <data name="DateField_Month" xml:space="preserve">
+    <value>Місяць</value>
+  </data>
+  <data name="DateField_Phrase" xml:space="preserve">
+    <value>Текст дати</value>
+  </data>
+  <data name="DateField_To" xml:space="preserve">
+    <value>по</value>
+  </data>
   <data name="SaveChanges_Title" xml:space="preserve">
     <value>Незбережені зміни</value>
   </data>

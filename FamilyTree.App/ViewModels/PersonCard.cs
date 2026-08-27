@@ -117,10 +117,10 @@ public sealed class PersonCardBuilder
         };
     }
 
-    // Проміжний показ (T-5.2a, Частина 1b): неточну дату зводимо до представницької.
-    // Повноцінне форматування типів дати додасть FamilyDateFormatter (Частина 2).
+    // Показ дати за її типом (T-5.2a): точна/часткова/приблизна/діапазон/фраза.
+    // Культура — поточна мова UI (її виставляє LocalizationService).
     public static string FormatDate(FamilyDate? date) =>
-        date?.ToComparable()?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
+        FamilyDateFormatter.Format(date, CultureInfo.CurrentCulture);
 
     /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
     public static string FormatBirth(Person person)
