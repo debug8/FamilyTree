@@ -1,17 +1,39 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using FamilyTree.App.ViewModels;
 
 namespace FamilyTree.App;
 
 public partial class MainWindow : Window
 {
+    // Індекс вкладки «Дерево» у MainTabs (0 — «Особа», 1 — «Дерево», 2 — «Хто кому»).
+    private const int TreeTabIndex = 1;
+
     private bool _forceClose;
 
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+    }
+
+    /// <summary>
+    /// Вмикає побудову дерева лише коли активна вкладка «Дерево» (B-07): поки відкрито
+    /// «Особа»/«Хто кому», гортання списку й зміни вмісту не будують невидиме дерево.
+    /// </summary>
+    private void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Лише зміна вкладки верхнього TabControl, а не вкладених списків/комбо.
+        if (!ReferenceEquals(e.OriginalSource, sender))
+        {
+            return;
+        }
+
+        if (sender is TabControl tabs && DataContext is MainViewModel vm)
+        {
+            vm.Tree.IsActive = tabs.SelectedIndex == TreeTabIndex;
+        }
     }
 
     /// <summary>

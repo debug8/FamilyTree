@@ -178,7 +178,8 @@
         </Border>
 
         <!-- Центральна область: вкладки «Особа» та «Дерево» -->
-        <TabControl Background="Transparent" BorderThickness="0">
+        <TabControl x:Name="MainTabs" SelectionChanged="MainTabs_SelectionChanged"
+                    Background="Transparent" BorderThickness="0">
         <TabItem Header="{loc:Localize Tab_Person}">
         <Grid>
             <TextBlock Text="{loc:Localize MainWindow_Welcome}"

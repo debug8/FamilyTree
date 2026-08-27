@@ -23,6 +23,10 @@ namespace FamilyTree.App.ViewModels;
 public partial class MainViewModel : ObservableObject, IDisposable
 {
     private const int SearchDebounceMs = 300;
+
+    // Коротка затримка коалесціює швидкі зміни виділення (затиснута стрілка у списку),
+    // щоб не робити RefreshRelations + перебудову дерева на кожен проміжний запис (B-07).
+    private const int SelectionDebounceMs = 120;
     private const int MaxRecentFiles = 8;
 
     private readonly ILocalizationService _localization;
@@ -41,6 +45,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly PersonCardBuilder _cards;
 
     private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _selectionCts;
 
     // Глушник round-trip'у виділення під час перезаповнення списку осіб.
     // Persons.Clear() змушує ListBox синхронно записати null у SelectedPerson
@@ -996,7 +1001,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        ApplySelection(value);
+        DebounceSelection();
     }
 
     /// <summary>
@@ -1103,6 +1108,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    // Застосовує ОСТАННІЙ вибір після короткої паузи: проміжні значення (гортання
+    // стрілками) скасовуються, тож важка робота (RefreshRelations + дерево) виконується
+    // один раз для фінальної особи (B-07).
+    private async void DebounceSelection()
+    {
+        _selectionCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _selectionCts = cts;
+        try
+        {
+            await Task.Delay(SelectionDebounceMs, cts.Token).ConfigureAwait(true);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (!cts.IsCancellationRequested)
+        {
+            ApplySelection(SelectedPerson);
+        }
+    }
+
     private void RefreshPersons()
     {
         // Пріоритет: явно запланований вибір → поточний → останній осмислений
@@ -1138,6 +1166,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             _suppressSelectionSync = false;
         }
+
+        // Фінальний вибір застосовуємо синхронно тут; скасовуємо відкладений дебаунс,
+        // щоб він не спрацював повторно з тим самим вибором.
+        _selectionCts?.Cancel();
 
         // SetRoot усередині сам відкидає повторний вибір того самого кореня,
         // тож коли виділення не змінилося (сортування, пошук), дерево не перебудовується.
@@ -1259,5 +1291,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _localization.LanguageChanged -= OnLanguageChanged;
         _session.DocumentChanged -= OnDocumentChanged;
         _session.ContentChanged -= OnContentChanged;
+        _tree.RootChanged -= OnTreeRootChanged;
+        _searchCts?.Cancel();
+        _selectionCts?.Cancel();
     }
 }

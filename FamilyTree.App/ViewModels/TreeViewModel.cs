@@ -70,6 +70,12 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     private readonly Dictionary<Guid, string> _badges = new();
     private Guid? _badgeRootId;
 
+    // Чи показано вкладку «Дерево». Коли ні — важку перебудову відкладаємо (B-07): гортання
+    // списку осіб і зміни вмісту не мають будувати невидиме дерево. За замовчуванням false:
+    // на старті активна вкладка «Особа», тож перше побудування відбувається при відкритті вкладки.
+    private bool _isActive;
+    private bool _rebuildPending;
+
     public TreeViewModel(IDocumentSession session, TreeLayoutEngine engine, ILocalizationService localization, KinshipCalculator kinship)
     {
         _session = session;
@@ -82,6 +88,29 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         _session.DocumentChanged += OnDocumentOrContentChanged;
         _session.ContentChanged += OnDocumentOrContentChanged;
         _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    /// <summary>
+    /// Чи показано вкладку «Дерево». Коли вкладка неактивна, перебудову відкладаємо; при
+    /// поверненні на вкладку добудовуємо один раз, якщо назбиралися зміни (B-07).
+    /// </summary>
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (_isActive == value)
+            {
+                return;
+            }
+
+            _isActive = value;
+            if (_isActive && _rebuildPending)
+            {
+                _rebuildPending = false;
+                Rebuild();
+            }
+        }
     }
 
     /// <summary>Перебудувати дерево (напр. після зміни стилю назв родства).</summary>
@@ -232,6 +261,13 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     /// </summary>
     private void Rebuild()
     {
+        // Вкладка «Дерево» неактивна — відкладаємо (B-07). Побудуємо один раз при активації.
+        if (!_isActive)
+        {
+            _rebuildPending = true;
+            return;
+        }
+
         if (_rootId is not { } rootId)
         {
             ClearScene();
