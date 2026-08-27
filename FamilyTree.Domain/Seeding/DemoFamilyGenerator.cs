@@ -84,7 +84,9 @@ public sealed class DemoFamilyGenerator
             for (var c = 0; c < childrenCount && _persons.Count < _opts.MaxPersons; c++)
             {
                 var gender = PickChildGender();
-                var childBirth = couple.ParentsBirthYear + _rnd.Next(24, 43); // батькам 24–42
+                // B-02: крок 22–28 років (середнє ~25 = GenerationGap), інакше фактичний
+                // середній ~33 накопичував дрейф і давав народження в майбутньому.
+                var childBirth = couple.ParentsBirthYear + _rnd.Next(22, 29); // батькам 22–28
                 var child = AddPerson(couple.Surname, gender, childBirth, couple.FatherFirst, maiden: null, childGeneration);
                 _links.Add(Parent(couple.FatherId, child.Id));
                 _links.Add(Parent(couple.MotherId, child.Id));
@@ -135,7 +137,7 @@ public sealed class DemoFamilyGenerator
         }
 
         var gender = PickChildGender();
-        var childBirth = couple.ParentsBirthYear + _rnd.Next(24, 43);
+        var childBirth = couple.ParentsBirthYear + _rnd.Next(22, 29); // B-02: див. коментар вище
         var halfChild = AddPerson(couple.Surname, gender, childBirth, couple.FatherFirst, maiden: null, childGeneration);
         _links.Add(Parent(couple.FatherId, halfChild.Id));
         _links.Add(Parent(partner.Id, halfChild.Id));
@@ -202,7 +204,14 @@ public sealed class DemoFamilyGenerator
         return _rnd.NextDouble() < 0.5 ? Gender.Female : Gender.Male;
     }
 
-    private DateOnly RandomDate(int year) => new(year, _rnd.Next(1, 13), _rnd.Next(1, 28));
+    // B-02: жодна згенерована дата (народження/шлюб/смерть) не має бути в майбутньому —
+    // навіть у хвості розкиду років обрізаємо до сьогодні.
+    private DateOnly RandomDate(int year)
+    {
+        var date = new DateOnly(year, _rnd.Next(1, 13), _rnd.Next(1, 28));
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return date > today ? today : date;
+    }
 
     private string Surname() => Surnames[_rnd.Next(Surnames.Length)];
 

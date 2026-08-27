@@ -127,6 +127,30 @@ public class DemoFamilyGeneratorTests
         names.Count.ShouldBeGreaterThanOrEqualTo(10);
     }
 
+    [Theory]
+    [InlineData(4, 40)]
+    [InlineData(5, 120)]
+    [InlineData(8, 2000)]
+    public void No_dates_are_in_the_future(int generations, int maxPersons)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        // Кілька насінин — щоб зловити хвіст випадкового розкиду років (B-02).
+        for (var seed = 1; seed <= 5; seed++)
+        {
+            var result = DemoFamilyGenerator.Generate(
+                Options(seed: seed, generations: generations, maxPersons: maxPersons));
+
+            result.Persons.ShouldAllBe(p => p.BirthDate!.ToComparable()!.Value <= today);
+            result.Persons.Where(p => p.DeathDate is not null)
+                .ShouldAllBe(p => p.DeathDate!.ToComparable()!.Value <= today);
+            result.SpouseLinks.Where(s => s.MarriageDate is not null)
+                .ShouldAllBe(s => s.MarriageDate!.ToComparable()!.Value <= today);
+            result.SpouseLinks.Where(s => s.DivorceDate is not null)
+                .ShouldAllBe(s => s.DivorceDate!.ToComparable()!.Value <= today);
+        }
+    }
+
     [Fact]
     public void Two_generations_still_produce_a_valid_family()
     {
