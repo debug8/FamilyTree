@@ -616,6 +616,9 @@
   <data name="Validation_DeathBeforeBirth" xml:space="preserve">
     <value>Попередження: дата смерті раніша за дату народження.</value>
   </data>
+  <data name="Validation_DivorceBeforeMarriage" xml:space="preserve">
+    <value>Попередження: дата розлучення раніша за дату шлюбу.</value>
+  </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Сьогодні</value>
   </data>

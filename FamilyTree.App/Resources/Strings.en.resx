@@ -616,6 +616,9 @@ There is no way to tell which relationships belong to whom, so the file was not 
   <data name="Validation_DeathBeforeBirth" xml:space="preserve">
     <value>Warning: death date is earlier than birth date.</value>
   </data>
+  <data name="Validation_DivorceBeforeMarriage" xml:space="preserve">
+    <value>Warning: divorce date is earlier than the marriage date.</value>
+  </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Today</value>
   </data>

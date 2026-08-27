@@ -220,6 +220,19 @@ public class RelationshipValidatorTests
         result.Errors.ShouldContain(m => m.Key == ValidationKeys.DuplicateSpouse);
     }
 
+    [Fact]
+    public void Divorce_before_marriage_is_warning()
+    {
+        var a = Make("A");
+        var b = Make("B");
+        var candidate = SpouseLink.Create(a.Id, b.Id, new DateOnly(2000, 1, 1), new DateOnly(1995, 1, 1));
+
+        var result = _validator.ValidateSpouse(candidate, Array.Empty<SpouseLink>());
+
+        result.IsValid.ShouldBeTrue();
+        result.Warnings.ShouldContain(m => m.Key == ValidationKeys.DivorceBeforeMarriage);
+    }
+
     // --- Дати особи -------------------------------------------------------
 
     [Fact]

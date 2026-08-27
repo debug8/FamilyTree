@@ -756,6 +756,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
             person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive);
         if (_dialogs.ShowRelationshipEditor(editor))
         {
+            // B-19: змінені дати проганяємо через валідатор (як AddSpouse), а не пишемо наосліп.
+            // Перевіряємо проти інших зв'язків (сам себе виключаємо, щоб не було хибного дубля).
+            var candidate = SpouseLink.Create(
+                link.Person1Id, link.Person2Id, editor.MarriageDate, editor.DivorceDate, editor.Divorced);
+            var others = _session.Current.SpouseLinks.Where(l => l != link).ToList();
+            if (!Accept(_validator.ValidateSpouse(candidate, others)))
+            {
+                return;
+            }
+
             link.MarriageDate = editor.MarriageDate;
             link.DivorceDate = editor.DivorceDate;
             link.Divorced = editor.Divorced;

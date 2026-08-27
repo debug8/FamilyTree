@@ -24,4 +24,7 @@ public static class ValidationKeys
     public const string ChildBornBeforeParentAdult = "Validation_ChildBornBeforeParentAdult";
     public const string ParentYoungerThanChild = "Validation_ParentYoungerThanChild";
     public const string DeathBeforeBirth = "Validation_DeathBeforeBirth";
+
+    // Дата розлучення раніша за дату шлюбу (B-19).
+    public const string DivorceBeforeMarriage = "Validation_DivorceBeforeMarriage";
 }

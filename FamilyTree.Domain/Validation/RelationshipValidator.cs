@@ -108,12 +108,13 @@ public sealed class RelationshipValidator
         ArgumentNullException.ThrowIfNull(existingLinks);
 
         var errors = new List<ValidationMessage>();
+        var warnings = new List<ValidationMessage>();
 
         // Особа не може бути в шлюбі сама з собою (п.4).
         if (candidate.Person1Id == candidate.Person2Id)
         {
             errors.Add(ValidationMessage.Of(ValidationKeys.SelfSpouse));
-            return new ValidationResult(errors, Array.Empty<ValidationMessage>());
+            return new ValidationResult(errors, warnings);
         }
 
         // Дубль пари (ідентифікатори нормалізовані у SpouseLink) (п.3). Дублем вважаємо
@@ -128,7 +129,17 @@ public sealed class RelationshipValidator
             errors.Add(ValidationMessage.Of(ValidationKeys.DuplicateSpouse));
         }
 
-        return new ValidationResult(errors, Array.Empty<ValidationMessage>());
+        // Дата розлучення раніша за дату шлюбу — м'яке попередження (B-19). Не жорстка помилка:
+        // дати можуть бути неточними (FamilyDate), тож звіряємо за представницькою й лише
+        // попереджаємо. Редагування дат подружжя тепер теж проходить через цю перевірку.
+        if (candidate.MarriageDate?.ToComparable() is { } marriage
+            && candidate.DivorceDate?.ToComparable() is { } divorce
+            && divorce < marriage)
+        {
+            warnings.Add(ValidationMessage.Of(ValidationKeys.DivorceBeforeMarriage));
+        }
+
+        return new ValidationResult(errors, warnings);
     }
 
     /// <summary>
