@@ -25,8 +25,13 @@ namespace FamilyTree.Storage.Serialization;
 /// </list>
 /// Без цього кроку битий файл валив застосунок у <c>ToDictionary(p =&gt; p.Id)</c>
 /// вже ПІСЛЯ того, як документ було встановлено в сесію — з напівзламаним UI.
+/// <para>
+/// Публічний (а не internal) з T-5.2: тим самим механізмом чиститься документ,
+/// зібраний імпортером GEDCOM із чужого файлу — задача та сама, дублювати її
+/// в шарі обміну було б помилкою.
+/// </para>
 /// </summary>
-internal static class DocumentIntegrity
+public static class DocumentIntegrity
 {
     /// <summary>
     /// Перевіряє й за потреби чистить документ на місці.
