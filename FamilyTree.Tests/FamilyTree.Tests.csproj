@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FamilyTree.Domain\FamilyTree.Domain.csproj" />
     <ProjectReference Include="..\FamilyTree.Storage\FamilyTree.Storage.csproj" />
+    <ProjectReference Include="..\FamilyTree.Gedcom\FamilyTree.Gedcom.csproj" />
   </ItemGroup>
 
 </Project>

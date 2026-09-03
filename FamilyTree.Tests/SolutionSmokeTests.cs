@@ -1,4 +1,5 @@
 using FamilyTree.Domain;
+using FamilyTree.Gedcom;
 using FamilyTree.Storage;
 using Shouldly;
 using Xunit;
@@ -7,7 +8,7 @@ namespace FamilyTree.Tests;
 
 /// <summary>
 /// Smoke-тести каркаса (T-0.1): тестовий проєкт бачить Domain і Storage,
-/// збірка й тестовий раннер працюють.
+/// збірка й тестовий раннер працюють. Із T-5.2 сюди додався Gedcom.
 /// </summary>
 public class SolutionSmokeTests
 {
@@ -21,5 +22,11 @@ public class SolutionSmokeTests
     public void Test_project_references_Storage()
     {
         StorageAssemblyMarker.Name.ShouldBe("FamilyTree.Storage");
+    }
+
+    [Fact]
+    public void Test_project_references_Gedcom()
+    {
+        GedcomAssemblyMarker.Name.ShouldBe("FamilyTree.Gedcom");
     }
 }
