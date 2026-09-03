@@ -48,7 +48,7 @@
 FamilyTree.sln
 ├── FamilyTree.Domain        // Сутності, доменні сервіси, алгоритм родства. Без залежностей від UI.
 ├── FamilyTree.Storage       // IFamilyStorage + JsonFamilyStorage: серіалізація, атомарний запис, бекапи.
-├── FamilyTree.Gedcom        // Обмін GEDCOM 5.5.1: читач/писач, мапінг INDI/FAM ↔ модель (T-5.2). Залежить лише від Domain.
+├── FamilyTree.Gedcom        // Обмін GEDCOM 5.5.1: читач/писач, мапінг INDI/FAM ↔ модель (T-5.2). Залежить від Domain і Storage.
 ├── FamilyTree.App           // WPF: Views, ViewModels, конвертери, стилі, ресурси локалізації, DI-контейнер.
 └── FamilyTree.Tests         // xUnit + Shouldly (+ NSubstitute для ViewModel-ів): домен, сховище, локалізація.
 ```
@@ -427,7 +427,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 *Поза межами (свідомо).* Медіа (`OBJE`/`FILE`) — `PhotoPath` не експортується й не імпортується; джерела й репозиторії (`SOUR`/`REPO`/`SUBM`-деталі); події, крім чотирьох вище (`BAPM`, `BURI`, `RESI`, `OCCU`, `EDUC` тощо) — при імпорті пропускаються з лічильником; `ASSO`, `ALIA`; **`DEAT.PLAC`** — у моделі немає поля «місце смерті», тег пропускається (додавання поля — окрема задача, `IDEAS.md`); запис у GEDCOM 7.0; кодування ANSEL; шифровані/архівовані файли. Усе, що поза межами, **ніколи не валить імпорт** — лише збільшує лічильник пропущених тегів у звіті.
 
-*Розміщення коду.* Новий проєкт **`FamilyTree.Gedcom`** (`net10.0`, посилається лише на `FamilyTree.Domain`); на нього посилаються `FamilyTree.App` і `FamilyTree.Tests`. Так шар лишається тестованим (`FamilyTree.Tests` — `net10.0`, а не `-windows`), а `FamilyTree.Storage` не обростає чужим форматом. Наявна чернетка `gedcom/` переїжджає туди: `GedcomDate.cs` і `GedcomDateConverter.cs` — у проєкт, `GedcomDateConverterTests.cs` — у `FamilyTree.Tests/Gedcom/`; папка `gedcom/` видаляється.
+*Розміщення коду.* Новий проєкт **`FamilyTree.Gedcom`** (`net10.0`, посилається на `FamilyTree.Domain` і `FamilyTree.Storage` — обмін і віддає, і приймає `FamilyDocument`); на нього посилаються `FamilyTree.App` і `FamilyTree.Tests`. Так шар лишається тестованим (`FamilyTree.Tests` — `net10.0`, а не `-windows`), а `FamilyTree.Storage` не обростає чужим форматом. Наявна чернетка `gedcom/` переїжджає туди: `GedcomDate.cs` і `GedcomDateConverter.cs` — у проєкт, `GedcomDateConverterTests.cs` — у `FamilyTree.Tests/Gedcom/`; папка `gedcom/` видаляється.
 
 Склад проєкту:
 
@@ -539,8 +539,8 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 *Порядок виконання (порціями, зі зупинкою після кожної).*
 
-1. **Каркас і читання.** Проєкт `FamilyTree.Gedcom`, перенос чернетки, `GedcomLine`/`GedcomNode`/`GedcomReader`/`GedcomWriter`/`GedcomEncodingDetector`. Тести: рівні й вкладення, `CONC`/`CONT`, екранування `@@`, усі кодування з п. 1–5, файл без `TRLR`, файл із зайвими порожніми рядками.
-2. **Експорт.** `GedcomFamilyBuilder` (напрям назовні), `GedcomDateMapper` (назовні), `GedcomExporter`. Тести: виведення `FAM` для крайніх випадків (один батько; бездітне подружжя; неодружені співбатьки; усиновлення; повторний шлюб; обидва батьки `Unknown`; особа без ребер), детермінованість xref, снапшот на `samples/rodyna-kovalenkiv.familytree`.
+1. **Каркас і читання.** Проєкт `FamilyTree.Gedcom`, перенос чернетки, `GedcomLine`/`GedcomNode`/`GedcomReader`/`GedcomEncodingDetector` (`GedcomWriter` — у Частині 2, разом із його споживачем). Тести: рівні й вкладення, `CONC`/`CONT`, екранування `@@`, усі кодування з п. 1–5, файл без `TRLR`, файл із зайвими порожніми рядками.
+2. **Експорт.** `GedcomWriter`, `GedcomFamilyBuilder` (напрям назовні), `GedcomDateMapper` (назовні), `GedcomExporter`. Тести: виведення `FAM` для крайніх випадків (один батько; бездітне подружжя; неодружені співбатьки; усиновлення; повторний шлюб; обидва батьки `Unknown`; особа без ребер; пара з дітьми **і** шлюбом), детермінованість xref, round-trip записаного через `GedcomReader`. Родини-фікстури будуються **кодом** (за зразком `KinshipTestFamily`), а не читанням із `samples/`: тест не має тягтися до файлів поза своїм проєктом, і в самому тесті видно, яку конфігурацію він перевіряє. Перевірка на реальних `samples/*` — у Частині 3, де вона й потрібна.
 3. **Імпорт.** `GedcomImporter`, `GedcomDateMapper` (усередину), прогін через `DocumentIntegrity`, звіт. Тести: round-trip, брудні файли, невідомі теги, `PEDI`.
 4. **UI.** Меню, фільтри, параметр розширення в `AskSavePath`, resx в обидва файли, вікно звіту.
 

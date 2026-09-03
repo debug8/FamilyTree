@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FamilyTree.Domain\FamilyTree.Domain.csproj" />
+    <ProjectReference Include="..\FamilyTree.Storage\FamilyTree.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
