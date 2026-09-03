@@ -157,7 +157,7 @@ public static class GedcomFamilyBuilder
                 HusbandId = key.HusbandId,
                 WifeId = key.WifeId,
                 Role = key.Role,
-                ChildIds = value.Children.OrderBy(Index).ToList(),
+                ChildIds = value.Children.OrderBy(id => Index(id)).ToList(),
                 Marriages = value.Marriages
                     .OrderBy(m => m.MarriageDate?.EffectiveYear ?? int.MaxValue)
                     .ThenBy(m => m.Id)
