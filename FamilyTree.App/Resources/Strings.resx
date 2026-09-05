@@ -310,6 +310,12 @@
   <data name="Menu_Import" xml:space="preserve">
     <value>Імпортувати з файлу…</value>
   </data>
+  <data name="Menu_ImportGedcom" xml:space="preserve">
+    <value>Імпортувати з GEDCOM…</value>
+  </data>
+  <data name="Menu_ExportGedcom" xml:space="preserve">
+    <value>Експортувати в GEDCOM…</value>
+  </data>
   <data name="Menu_Settings" xml:space="preserve">
     <value>Налаштування…</value>
   </data>
@@ -372,6 +378,54 @@
   </data>
   <data name="File_Filter" xml:space="preserve">
     <value>Дерево родини (*.familytree)|*.familytree|Усі файли (*.*)|*.*</value>
+  </data>
+  <data name="File_FilterGedcom" xml:space="preserve">
+    <value>GEDCOM (*.ged)|*.ged|Усі файли (*.*)|*.*</value>
+  </data>
+  <data name="Gedcom_Title" xml:space="preserve">
+    <value>GEDCOM</value>
+  </data>
+  <data name="Gedcom_ExportDone" xml:space="preserve">
+    <value>Експортовано осіб: {0}; родин: {1}.</value>
+  </data>
+  <data name="Gedcom_ImportDone" xml:space="preserve">
+    <value>Імпортовано осіб: {0}; родин: {1}; зв'язків: {2}.</value>
+  </data>
+  <data name="GedcomError_NotGedcom" xml:space="preserve">
+    <value>Файл не схожий на GEDCOM: у ньому немає заголовка HEAD.</value>
+  </data>
+  <data name="GedcomError_AnselUnsupported" xml:space="preserve">
+    <value>Кодування ANSEL ({0}) не підтримується. Перезбережіть файл у програмі-джерелі в UTF-8.</value>
+  </data>
+  <data name="GedcomError_UnsupportedVersion" xml:space="preserve">
+    <value>Непідтримувана версія GEDCOM: {0}. Підтримується 5.5.1.</value>
+  </data>
+  <data name="GedcomError_BadEncoding" xml:space="preserve">
+    <value>Не вдалося прочитати текст файлу. Оголошене кодування: {0}.</value>
+  </data>
+  <data name="GedcomWarn_EncodingFallback" xml:space="preserve">
+    <value>• оголошене кодування {0} не підійшло, прочитано як {1}</value>
+  </data>
+  <data name="GedcomWarn_MalformedLines" xml:space="preserve">
+    <value>• нерозбірливих рядків пропущено: {0}</value>
+  </data>
+  <data name="GedcomWarn_SkippedRecords" xml:space="preserve">
+    <value>• записів пропущено цілком: {0}</value>
+  </data>
+  <data name="GedcomWarn_SkippedTags" xml:space="preserve">
+    <value>• теги поза межами імпорту ({0}): {1}</value>
+  </data>
+  <data name="GedcomWarn_UnnamedPersons" xml:space="preserve">
+    <value>• осіб без імені (проставлено «?»): {0}</value>
+  </data>
+  <data name="GedcomWarn_DeathWithoutDate" xml:space="preserve">
+    <value>• записів про смерть без дати: {0}</value>
+  </data>
+  <data name="GedcomWarn_TextOnlyDates" xml:space="preserve">
+    <value>• дат, збережених текстом (період, інший календар тощо): {0}</value>
+  </data>
+  <data name="GedcomWarn_RejectedLinks" xml:space="preserve">
+    <value>• зв'язків відхилено: {0}</value>
   </data>
   <data name="File_ErrorTitle" xml:space="preserve">
     <value>Помилка файлу</value>

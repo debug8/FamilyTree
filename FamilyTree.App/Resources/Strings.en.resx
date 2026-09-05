@@ -310,6 +310,12 @@ If yes, {0} will be added as a parent of {1}.</value>
   <data name="Menu_Import" xml:space="preserve">
     <value>Import from file…</value>
   </data>
+  <data name="Menu_ImportGedcom" xml:space="preserve">
+    <value>Import from GEDCOM…</value>
+  </data>
+  <data name="Menu_ExportGedcom" xml:space="preserve">
+    <value>Export to GEDCOM…</value>
+  </data>
   <data name="Menu_Settings" xml:space="preserve">
     <value>Settings…</value>
   </data>
@@ -372,6 +378,54 @@ If yes, {0} will be added as a parent of {1}.</value>
   </data>
   <data name="File_Filter" xml:space="preserve">
     <value>Family Tree (*.familytree)|*.familytree|All files (*.*)|*.*</value>
+  </data>
+  <data name="File_FilterGedcom" xml:space="preserve">
+    <value>GEDCOM (*.ged)|*.ged|All files (*.*)|*.*</value>
+  </data>
+  <data name="Gedcom_Title" xml:space="preserve">
+    <value>GEDCOM</value>
+  </data>
+  <data name="Gedcom_ExportDone" xml:space="preserve">
+    <value>Exported {0} person(s) and {1} family(ies).</value>
+  </data>
+  <data name="Gedcom_ImportDone" xml:space="preserve">
+    <value>Imported {0} person(s), {1} family(ies), {2} link(s).</value>
+  </data>
+  <data name="GedcomError_NotGedcom" xml:space="preserve">
+    <value>This file does not look like GEDCOM: it has no HEAD record.</value>
+  </data>
+  <data name="GedcomError_AnselUnsupported" xml:space="preserve">
+    <value>The ANSEL encoding ({0}) is not supported. Re-save the file as UTF-8 in the source program.</value>
+  </data>
+  <data name="GedcomError_UnsupportedVersion" xml:space="preserve">
+    <value>Unsupported GEDCOM version: {0}. Version 5.5.1 is supported.</value>
+  </data>
+  <data name="GedcomError_BadEncoding" xml:space="preserve">
+    <value>The file text could not be decoded. Declared encoding: {0}.</value>
+  </data>
+  <data name="GedcomWarn_EncodingFallback" xml:space="preserve">
+    <value>• declared encoding {0} did not fit; read as {1}</value>
+  </data>
+  <data name="GedcomWarn_MalformedLines" xml:space="preserve">
+    <value>• malformed lines skipped: {0}</value>
+  </data>
+  <data name="GedcomWarn_SkippedRecords" xml:space="preserve">
+    <value>• records skipped entirely: {0}</value>
+  </data>
+  <data name="GedcomWarn_SkippedTags" xml:space="preserve">
+    <value>• tags outside the import profile ({0}): {1}</value>
+  </data>
+  <data name="GedcomWarn_UnnamedPersons" xml:space="preserve">
+    <value>• persons without a name (set to “?”): {0}</value>
+  </data>
+  <data name="GedcomWarn_DeathWithoutDate" xml:space="preserve">
+    <value>• death records without a date: {0}</value>
+  </data>
+  <data name="GedcomWarn_TextOnlyDates" xml:space="preserve">
+    <value>• dates kept as text (period, other calendar, etc.): {0}</value>
+  </data>
+  <data name="GedcomWarn_RejectedLinks" xml:space="preserve">
+    <value>• links rejected: {0}</value>
   </data>
   <data name="File_ErrorTitle" xml:space="preserve">
     <value>File error</value>

@@ -41,6 +41,12 @@ public interface IDialogService
     /// <summary>Діалог відкриття файлу. Повертає шлях або null.</summary>
     string? AskOpenPath(string filter);
 
-    /// <summary>Діалог збереження файлу. Повертає шлях або null.</summary>
-    string? AskSavePath(string filter, string suggestedName);
+    /// <summary>
+    /// Діалог збереження файлу. Повертає шлях або null.
+    /// <paramref name="defaultExtension"/> (з крапкою, напр. <c>".ged"</c>) —
+    /// що дописати, коли користувач увів ім'я без розширення. Раніше воно було
+    /// зашите в <c>DialogService</c> як <c>".familytree"</c>, через що експорт
+    /// GEDCOM отримував би «name.ged.familytree».
+    /// </summary>
+    string? AskSavePath(string filter, string suggestedName, string defaultExtension);
 }

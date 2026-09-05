@@ -12,6 +12,7 @@ using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Seeding;
 using FamilyTree.Domain.Validation;
+using FamilyTree.Gedcom;
 using FamilyTree.Storage;
 
 namespace FamilyTree.App.ViewModels;
@@ -28,6 +29,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // щоб не робити RefreshRelations + перебудову дерева на кожен проміжний запис (B-07).
     private const int SelectionDebounceMs = 120;
     private const int MaxRecentFiles = 8;
+
+    // Розширення власного формату й формату обміну. Обидва потрібні в двох місцях
+    // (ім'я-підказка + DefaultExt діалогу), тож винесені в константи.
+    private const string FamilyExtension = ".familytree";
+    private const string GedcomExtension = ".ged";
 
     private readonly ILocalizationService _localization;
     private readonly IThemeService _theme;
@@ -195,6 +201,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private string FileFilter => _localization.GetString("File_Filter");
 
+    private string GedcomFilter => _localization.GetString("File_FilterGedcom");
+
     private static IReadOnlyList<KinshipNamingStyleOption> NamingStyles { get; } = new[]
     {
         new KinshipNamingStyleOption(KinshipNamingStyle.Standard, "Naming_Standard"),
@@ -315,6 +323,158 @@ public partial class MainViewModel : ObservableObject, IDisposable
             : Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines);
     }
 
+    /// <summary>
+    /// Експорт у GEDCOM 5.5.1 (T-5.2, Частина 4a). Це обмін, а не збереження:
+    /// шлях документа, список недавніх файлів і прапорець змін лишаються як були,
+    /// інакше «експортував — і документ став збереженим» вводило б в оману.
+    /// </summary>
+    [RelayCommand]
+    private async Task ExportGedcom()
+    {
+        if (_dialogs.AskSavePath(GedcomFilter, DocumentName + GedcomExtension, GedcomExtension)
+            is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            // Дерево записів будуємо окремо від запису байтів: так лічильники
+            // INDI/FAM для звіту беруться з готового результату, а не з другого
+            // проходу по документу (де «родина» рахувалася б за іншим правилом).
+            var tree = GedcomExporter.BuildTree(_session.Current, AppInfo.Version);
+            await File.WriteAllBytesAsync(path, GedcomWriter.WriteBytes(tree));
+
+            var done = string.Format(
+                _localization.GetString("Gedcom_ExportDone"),
+                tree.ChildrenOf("INDI").Count(),
+                tree.ChildrenOf("FAM").Count());
+            _dialogs.ShowMessage(done, _localization.GetString("Gedcom_Title"));
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
+        }
+    }
+
+    /// <summary>
+    /// Імпорт GEDCOM (T-5.2, Частина 4b). На відміну від <see cref="Import"/> це не злиття,
+    /// а ЗАМІЩЕННЯ документа (рішення до кодування: чужий файл приносить власні
+    /// ідентифікатори й свою чистку), тож поводимося як «Відкрити».
+    /// </summary>
+    [RelayCommand]
+    private async Task ImportGedcom()
+    {
+        if (!await PromptSaveIfDirtyAsync())
+        {
+            return;
+        }
+
+        if (_dialogs.AskOpenPath(GedcomFilter) is not { } path)
+        {
+            return;
+        }
+
+        FamilyDocument document;
+        GedcomImportReport report;
+        try
+        {
+            var bytes = await File.ReadAllBytesAsync(path);
+            document = GedcomImporter.Import(bytes, out report);
+        }
+        catch (GedcomException ex)
+        {
+            // Власний тип шару обміну: несе ключ + аргументи, як FamilyFileException.
+            _dialogs.ShowMessage(
+                SafeFormat(ex.MessageKey, ex.Arguments), _localization.GetString("File_ErrorTitle"));
+            return;
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
+            return;
+        }
+
+        // Шлях навмисно null: .ged — формат обміну, і «Зберегти» має вести у
+        // «Зберегти як» на .familytree, а не переписувати вихідний файл.
+        _session.SetDocument(document, null);
+
+        // SetDocument скидає IsDirty у false, тож прапорець імпортера доводиться
+        // ставити вручну — інакше нічим не збережений результат виглядав би збереженим.
+        _session.MarkContentChanged();
+
+        var done = string.Format(
+            _localization.GetString("Gedcom_ImportDone"),
+            report.Persons,
+            report.Families,
+            report.ParentChildLinks + report.SpouseLinks);
+        done += GedcomExtras(report);
+        _dialogs.ShowMessage(done, _localization.GetString("Gedcom_Title"));
+    }
+
+    /// <summary>
+    /// Додаткові рядки звіту імпорту GEDCOM — за зразком <see cref="MergeExtras"/>:
+    /// рядок з'являється лише тоді, коли є про що казати, тож чистий імпорт
+    /// не обростає текстом. Замість невикористаного <c>GedcomWarn_RejectedLinks</c>
+    /// показуємо <c>RepairedIssues</c> — імпортер чистить граф через
+    /// <c>DocumentIntegrity</c>, а не через валідатор кожного ребра.
+    /// </summary>
+    private string GedcomExtras(GedcomImportReport report)
+    {
+        if (!report.HasWarnings)
+        {
+            return string.Empty;
+        }
+
+        var lines = new List<string>();
+
+        if (report.EncodingFallbackFrom is { } declared)
+        {
+            lines.Add(SafeFormat(
+                GedcomKeys.EncodingFallback, new object?[] { declared, report.EncodingName }));
+        }
+
+        if (report.MalformedLines > 0)
+        {
+            lines.Add(SafeFormat(GedcomKeys.MalformedLines, new object?[] { report.MalformedLines }));
+        }
+
+        if (report.SkippedRecords > 0)
+        {
+            lines.Add(SafeFormat(GedcomKeys.SkippedRecords, new object?[] { report.SkippedRecords }));
+        }
+
+        if (report.UnnamedPersons > 0)
+        {
+            lines.Add(SafeFormat(GedcomKeys.UnnamedPersons, new object?[] { report.UnnamedPersons }));
+        }
+
+        if (report.DeathsWithoutDate > 0)
+        {
+            lines.Add(SafeFormat(GedcomKeys.DeathWithoutDate, new object?[] { report.DeathsWithoutDate }));
+        }
+
+        if (report.TextOnlyDates > 0)
+        {
+            lines.Add(SafeFormat(GedcomKeys.TextOnlyDates, new object?[] { report.TextOnlyDates }));
+        }
+
+        if (report.SkippedTags.Count > 0)
+        {
+            var tags = string.Join(", ", report.TopSkippedTags().Select(pair => $"{pair.Key} ({pair.Value})"));
+            lines.Add(SafeFormat(GedcomKeys.SkippedTags, new object?[] { report.SkippedTags.Count, tags }));
+        }
+
+        // Полагоджені дефекти графа — тими самими рядками, що й при відкритті
+        // чужого .familytree (ключі FileRepair_*), щоб користувач бачив звичний текст.
+        foreach (var issue in report.RepairedIssues)
+        {
+            lines.Add(SafeFormat(issue.MessageKey, new object?[] { issue.Count }));
+        }
+
+        return Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines);
+    }
+
     [RelayCommand]
     private async Task CreateDemoFamily()
     {
@@ -426,7 +586,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 var path = _session.FilePath;
                 if (string.IsNullOrEmpty(path))
                 {
-                    if (_dialogs.AskSavePath(FileFilter, DocumentName + ".familytree") is not { } chosen)
+                    if (_dialogs.AskSavePath(FileFilter, DocumentName + FamilyExtension, FamilyExtension)
+                        is not { } chosen)
                     {
                         return false;
                     }
@@ -468,8 +629,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private async Task<bool> SaveAsInternalAsync()
     {
-        var suggested = DocumentName + ".familytree";
-        if (_dialogs.AskSavePath(FileFilter, suggested) is not { } path)
+        var suggested = DocumentName + FamilyExtension;
+        if (_dialogs.AskSavePath(FileFilter, suggested, FamilyExtension) is not { } path)
         {
             return false;
         }

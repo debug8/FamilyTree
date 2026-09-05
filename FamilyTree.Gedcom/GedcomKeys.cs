@@ -43,6 +43,15 @@ public static class GedcomKeys
     /// <summary>Запис DEAT без дати — особу позначено як живу. {0} — кількість.</summary>
     public const string DeathWithoutDate = "GedcomWarn_DeathWithoutDate";
 
+    /// <summary>
+    /// Дати, які не лягли в модель і збережені текстом (періоди, INT, роки до н.е.,
+    /// інші календарі). {0} — кількість.
+    /// </summary>
+    public const string TextOnlyDates = "GedcomWarn_TextOnlyDates";
+
+    /// <summary>Записи, пропущені цілком (без xref, дубльований xref). {0} — кількість.</summary>
+    public const string SkippedRecords = "GedcomWarn_SkippedRecords";
+
     /// <summary>Зв'язки, відхилені валідатором (цикл, третій біологічний батько тощо). {0} — кількість.</summary>
     public const string RejectedLinks = "GedcomWarn_RejectedLinks";
 }

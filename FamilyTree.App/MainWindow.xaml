@@ -73,6 +73,8 @@
                 </MenuItem>
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Import}" Command="{Binding ImportCommand}" />
+                <MenuItem Header="{loc:Localize Menu_ImportGedcom}" Command="{Binding ImportGedcomCommand}" />
+                <MenuItem Header="{loc:Localize Menu_ExportGedcom}" Command="{Binding ExportGedcomCommand}" />
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Settings}" Command="{Binding OpenSettingsCommand}" />
                 <Separator />

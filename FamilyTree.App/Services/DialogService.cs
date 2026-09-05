@@ -57,13 +57,13 @@ public sealed class DialogService : IDialogService
         return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
     }
 
-    public string? AskSavePath(string filter, string suggestedName)
+    public string? AskSavePath(string filter, string suggestedName, string defaultExtension)
     {
         var dialog = new SaveFileDialog
         {
             Filter = filter,
             FileName = suggestedName,
-            DefaultExt = ".familytree",
+            DefaultExt = defaultExtension,
             AddExtension = true,
         };
         return dialog.ShowDialog(ActiveWindow) == true ? dialog.FileName : null;
