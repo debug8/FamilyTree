@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using FamilyTree.App.ViewModels;
 
 namespace FamilyTree.App;
@@ -55,10 +56,27 @@ public partial class MainWindow : Window
 
         // Є незбережені зміни — питаємо й, за потреби, зберігаємо перед закриттям.
         e.Cancel = true;
-        if (await vm.PromptSaveIfDirtyAsync())
+
+        if (!await vm.PromptSaveIfDirtyAsync())
         {
-            _forceClose = true;
-            Close();
+            return; // користувач скасував закриття
         }
+
+        _forceClose = true;
+
+        // Close() НЕ можна кликати зсередини Closing: поки обробник не завершився,
+        // вікно вважається таким, що вже закривається, і повторне закриття кидає
+        // InvalidOperationException («Cannot set Visibility to Visible or call Show,
+        // ShowDialog, Close … while a Window is closing»).
+        //
+        // Через `async void` це не теорія. На гілці «Не зберігати» PromptSaveIfDirtyAsync
+        // не має жодної справжньої асинхронної операції (лише модальний MessageBox) і
+        // завершується СИНХРОННО — тож продовження після await виконується прямо в стеку
+        // Closing. На гілці «Зберегти» реальний запис на диск повертає керування пізніше,
+        // і там воно спрацьовувало; звідси й враження, що баг «плаваючий».
+        //
+        // InvokeAsync із фоновим пріоритетом відкладає закриття до моменту, коли поточна
+        // послідовність Closing уже розгорнулася.
+        _ = Dispatcher.InvokeAsync(Close, DispatcherPriority.Background);
     }
 }
