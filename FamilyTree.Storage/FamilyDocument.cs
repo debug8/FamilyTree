@@ -18,7 +18,54 @@ public sealed class FamilyDocument
     public List<SpouseLink> SpouseLinks { get; } = new();
 
     /// <summary>Чи є незбережені зміни (не серіалізується).</summary>
-    public bool IsDirty { get; set; }
+    /// <remarks>
+    /// Змінюється лише через <see cref="MarkChanged"/> / <see cref="MarkSaved"/> /
+    /// <see cref="MarkClean"/>: прапорець мусить рухатися разом із
+    /// <see cref="Revision"/>, інакше повертається B-11.
+    /// </remarks>
+    public bool IsDirty { get; private set; }
+
+    /// <summary>
+    /// Лічильник змін вмісту (не серіалізується). Потрібен саме сховищу: запис
+    /// асинхронний і триває секунди на великому документі в синхронізованій теці,
+    /// а UI-потік у цей час вільний. Знімок для серіалізації робиться на початку, тож
+    /// правка, зроблена під час запису, у файл не потрапляє — і зняти після цього
+    /// «є незбережені зміни» означало б тихо її втратити (B-11).
+    /// </summary>
+    public long Revision { get; private set; }
+
+    /// <summary>
+    /// Позначає документ зміненим. Єдиний спосіб «забруднити» документ —
+    /// пряме <c>IsDirty = true</c> лишило б <see cref="Revision"/> позаду.
+    /// </summary>
+    public void MarkChanged()
+    {
+        Revision++;
+        IsDirty = true;
+    }
+
+    /// <summary>
+    /// Знімає прапорець незбережених змін після успішного запису — але лише якщо
+    /// з моменту знімка (<paramref name="savedRevision"/>) документ не змінювався.
+    /// Повертає <c>true</c>, якщо прапорець знято.
+    /// </summary>
+    public bool MarkSaved(long savedRevision)
+    {
+        if (Revision != savedRevision)
+        {
+            return false;
+        }
+
+        IsDirty = false;
+        return true;
+    }
+
+    /// <summary>
+    /// Безумовно оголошує документ чистим. Для випадків, коли документ у пам'яті
+    /// щойно ЗАМІЩЕНО (відкриття файлу, новий документ): порівнювати ревізії там
+    /// нема з чим.
+    /// </summary>
+    public void MarkClean() => IsDirty = false;
 
     /// <summary>
     /// Дефекти, які сховище полагодило під час завантаження цього документа

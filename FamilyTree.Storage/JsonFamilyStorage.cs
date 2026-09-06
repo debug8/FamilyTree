@@ -227,6 +227,10 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
             ?? throw FamilyFileException.Create(FileErrorKeys.WriteIo, inner: null, path);
 
         var savedAt = DateTime.UtcNow;
+
+        // Ревізію знімаємо разом із DTO — саме її стан і потрапить у файл.
+        // Усе, що користувач змінить після цього рядка, у знімок уже не входить (B-11).
+        var savedRevision = document.Revision;
         var dto = DocumentMapper.ToDto(document, CurrentSchemaVersion);
 
         // UpdatedAt і AppVersion ставимо в DTO, а не в документ: інакше після НЕВДАЛОГО
@@ -297,7 +301,11 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
         // Синхронізуємо документ у пам'яті з тим, що реально записано (лише після успіху).
         document.Meta.UpdatedAt = savedAt;
         document.Meta.AppVersion = _appVersion;
-        document.IsDirty = false;
+
+        // Прапорець знімаємо, лише якщо документ не змінювався від знімка. Інакше
+        // правка, зроблена під час запису, лишається незбереженою — і мусить такою
+        // рахуватися, інакше зірочка зникає, закриття не питає, зміна губиться (B-11).
+        document.MarkSaved(savedRevision);
     }
 
     /// <summary>

@@ -75,7 +75,8 @@ public static class GedcomImporter
             RepairedIssues = repaired,
         };
 
-        document.IsDirty = true;
+        // MarkChanged, а не IsDirty = true: прапорець і ревізія мусять рухатися разом (B-11).
+        document.MarkChanged();
         return document;
     }
 

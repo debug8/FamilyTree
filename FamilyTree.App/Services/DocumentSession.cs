@@ -30,13 +30,17 @@ public sealed class DocumentSession : IDocumentSession
         ArgumentNullException.ThrowIfNull(document);
         Current = document;
         FilePath = filePath;
-        Current.IsDirty = false;
+
+        // Документ ЗАМІЩЕНО (відкриття, імпорт): порівнювати ревізії нема з чим.
+        Current.MarkClean();
         DocumentChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void MarkContentChanged()
     {
-        Current.IsDirty = true;
+        // MarkChanged, а не IsDirty = true: разом із прапорцем має рости ревізія,
+        // за якою сховище розуміє, що правку зробили вже після знімка (B-11).
+        Current.MarkChanged();
         ContentChanged?.Invoke(this, EventArgs.Empty);
     }
 }

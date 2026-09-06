@@ -265,6 +265,59 @@ public sealed class SaveDurabilityTests : IDisposable
         (await storage.LoadAsync(path)).Meta.UpdatedAt.ShouldBe(doc.Meta.UpdatedAt);
     }
 
+    // ---- Прапорець незбережених змін (B-11) -------------------------------
+
+    [Fact]
+    public async Task Change_made_during_save_keeps_the_document_dirty()
+    {
+        // Запис асинхронний і на великому документі в синхронізованій теці триває
+        // секунди, а UI у цей час вільний. Правка, зроблена в цьому вікні, у знімок
+        // не потрапила — але прапорець «є незбережені зміни» знімався все одно:
+        // зірочка з заголовка зникала, закриття не питало, правка гинула.
+        // FaultBeforePromote тут не «ламає» запис, а грає роль користувача, який
+        // редагує документ саме тоді, коли файл ще пишеться.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("dirty-during-save.familytree");
+        var doc = Doc("зберігається");
+        doc.MarkChanged();
+
+        storage.FaultBeforePromote = () =>
+        {
+            doc.Persons.Add(new Person
+            {
+                LastName = "Пізній",
+                FirstName = "Запис",
+                Gender = Gender.Unknown,
+            });
+            doc.MarkChanged();
+        };
+
+        await storage.SaveAsync(doc, path);
+        storage.FaultBeforePromote = null;
+
+        doc.IsDirty.ShouldBeTrue();
+
+        // Сам файл — коректний знімок ДО пізньої правки; це не втрата, а очікувана
+        // семантика: наступне збереження допише решту.
+        (await storage.LoadAsync(path)).Persons.Count.ShouldBe(1);
+        doc.Persons.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Second_save_clears_the_flag_when_nothing_changed_meanwhile()
+    {
+        // Зворотний бік: якщо під час запису ніхто нічого не чіпав, прапорець
+        // мусить зніматися — інакше застосунок питав би про збереження вічно.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("clean-after-save.familytree");
+        var doc = Doc("чистий після запису");
+        doc.MarkChanged();
+
+        await storage.SaveAsync(doc, path);
+
+        doc.IsDirty.ShouldBeFalse();
+    }
+
     // ---- Фолбек заміни файлу (B-10) ---------------------------------------
 
     [Theory]
