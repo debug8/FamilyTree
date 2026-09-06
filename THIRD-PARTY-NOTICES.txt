@@ -1,0 +1,87 @@
+THIRD-PARTY NOTICES / ПОВІДОМЛЕННЯ ПРО КОМПОНЕНТИ СТОРОННІХ АВТОРІВ
+====================================================================
+
+Family Tree
+Copyright (c) 2026 Oleh Kulman (Олег Кульман)
+Ліцензія проєкту: MIT (див. файл LICENSE)
+
+Реліз публікується як самодостатній FamilyTree.exe, тобто дистрибутив містить
+не лише код цього проєкту, а й бінарники наведених нижче компонентів. Їхні
+ліцензії наведені тут, щоб виконати вимогу про збереження повідомлень про
+авторські права під час розповсюдження.
+
+Це довідковий перелік. Повний текст кожної ліцензії — за посиланням на проєкт
+або у пакеті .nupkg відповідної бібліотеки. Перелік треба оновлювати щоразу,
+коли змінюється склад залежностей у FamilyTree.App.csproj.
+
+
+--------------------------------------------------------------------
+ВХОДЯТЬ ДО ДИСТРИБУТИВУ
+--------------------------------------------------------------------
+
+.NET Runtime (net10.0-windows) — вбудований у самодостатній .exe
+    Copyright (c) .NET Foundation and Contributors
+    Ліцензія: MIT
+    https://github.com/dotnet/runtime
+
+CommunityToolkit.Mvvm 8.4.0
+    Copyright (c) .NET Foundation and Contributors
+    Ліцензія: MIT
+    https://github.com/CommunityToolkit/dotnet
+
+Microsoft.Extensions.Hosting 10.0.0
+    Copyright (c) .NET Foundation and Contributors
+    Ліцензія: MIT
+    https://github.com/dotnet/runtime
+
+Serilog 4.2.0
+    Copyright (c) Serilog Contributors
+    Ліцензія: Apache License 2.0
+    https://github.com/serilog/serilog
+
+Serilog.Sinks.File 6.0.0
+    Copyright (c) Serilog Contributors
+    Ліцензія: Apache License 2.0
+    https://github.com/serilog/serilog-sinks-file
+
+
+--------------------------------------------------------------------
+ЛИШЕ ДЛЯ РОЗРОБКИ ТА ТЕСТІВ (не входять до дистрибутиву)
+--------------------------------------------------------------------
+
+xunit 2.9.2, xunit.runner.visualstudio 2.8.2
+    Ліцензія: Apache License 2.0
+    https://github.com/xunit/xunit
+
+Microsoft.NET.Test.Sdk 17.11.1
+    Ліцензія: MIT
+    https://github.com/microsoft/vstest
+
+Shouldly 4.2.1
+    Ліцензія: BSD 3-Clause
+    https://github.com/shouldly/shouldly
+
+NSubstitute 5.3.0
+    Ліцензія: BSD 3-Clause
+    https://github.com/nsubstitute/NSubstitute
+
+Inno Setup 6 — інструмент збірки інсталятора
+    Copyright (c) Jordan Russell / Martijn Laan
+    Власна ліцензія (на кшталт BSD). Не входить до складу застосунку й не
+    впливає на ліцензування того, що ним пакується.
+    https://jrsoftware.org/isinfo.php
+
+
+--------------------------------------------------------------------
+ЗГЕНЕРОВАНИЙ ВМІСТ
+--------------------------------------------------------------------
+
+Іконку застосунку (Resources/app-icon.*) згенеровано Gemini (Google).
+Код проєкту написано у співпраці з Claude (Anthropic).
+
+Умови обох сервісів дозволяють використання результатів, у т.ч. комерційне.
+Водночас у США та ЄС авторське право потребує людського автора, тож на суто
+згенерованих фрагментах правова охорона може бути слабкою або відсутньою.
+В Україні для таких об'єктів передбачено окреме право особливого роду
+(sui generis) — ст. 33 Закону України «Про авторське право і суміжні права»
+№ 2811-IX, строком 25 років.
