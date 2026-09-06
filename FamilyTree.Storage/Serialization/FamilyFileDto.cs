@@ -47,6 +47,12 @@ internal sealed class PersonDto
     public string? BirthPlace { get; set; }
     public FamilyDateDto? DeathDate { get; set; }
     public string? PhotoPath { get; set; }
+
+    // byte[] у System.Text.Json серіалізується як base64-рядок. Поле опційне й у
+    // звичайному файлі відсутнє (DefaultIgnoreCondition = WhenWritingNull), тож
+    // bump версії схеми не потрібен — як свого часу зі SpouseLink.Divorced.
+    public byte[]? PhotoThumbnail { get; set; }
+
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

@@ -199,6 +199,23 @@
   <data name="Photo_ImportFailed" xml:space="preserve">
     <value>Не вдалося додати фото. Перевірте, чи файл на місці й доступний для читання.</value>
   </data>
+  <data name="Menu_SaveCopyWithPhotos" xml:space="preserve">
+    <value>Зберегти копію з фото…</value>
+  </data>
+  <data name="Photos_CopySuffix" xml:space="preserve">
+    <value>(з фото)</value>
+  </data>
+  <data name="Photos_CopyTitle" xml:space="preserve">
+    <value>Копія з фото</value>
+  </data>
+  <data name="Photos_CopySaved" xml:space="preserve">
+    <value>Копію збережено: {0}
+
+У файл вкладено зменшені копії фотографій: {1}. Оригінали лишилися на цьому комп’ютері.</value>
+  </data>
+  <data name="FileRepair_BigThumbnails" xml:space="preserve">
+    <value>Скинуто завеликі вбудовані фото: {0}.</value>
+  </data>
   <data name="Person_Notes" xml:space="preserve">
     <value>Нотатки</value>
   </data>

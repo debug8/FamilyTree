@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using FamilyTree.App.Localization;
 using FamilyTree.Domain;
 using FamilyTree.Storage;
@@ -26,8 +28,15 @@ public sealed class PersonCard
     /// <summary>Родинний зв'язок відносно кореня/вибраної особи (бейдж).</summary>
     public string? RelationBadge { get; init; }
 
-    /// <summary>Абсолютний шлях до фото (поки лише резолвинг — місце під фото).</summary>
+    /// <summary>Абсолютний шлях до фото у теці даних (null — файлу немає).</summary>
     public string? PhotoPath { get; init; }
+
+    /// <summary>
+    /// Готове зображення для показу: файл із теки даних, а якщо його немає —
+    /// мініатюра з документа. Саме через це відкритий на чужій машині файл показує
+    /// людей із обличчями: оригіналів там немає, а мініатюри подорожують разом із ним.
+    /// </summary>
+    public ImageSource? Photo { get; init; }
 
     public string? DetailMaiden { get; init; }
 
@@ -71,6 +80,7 @@ public sealed class PersonCardBuilder
             Years = FormatYears(person),
             RelationBadge = relationBadge,
             PhotoPath = ResolvePhoto(person.PhotoPath),
+            Photo = LoadPhoto(person),
             DetailMaiden = Line("Person_MaidenName", person.MaidenName),
             DetailGender = Line("Person_Gender", GenderText(person.Gender)),
             DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
@@ -175,6 +185,51 @@ public sealed class PersonCardBuilder
     /// «..»-шляхи відкидаються в null (захист у глибину до санітизації у сховищі, B-13),
     /// тож картка ніколи не звертається до зовнішнього чи стороннього ресурсу.
     /// </summary>
+    /// <summary>
+    /// Завантажує зображення картки: спершу оригінал із теки даних, потім вбудовану
+    /// мініатюру. Обидва варіанти декодуються обмеженою шириною й заморожуються —
+    /// картка показується розміром 92×112, тримати в пам'яті 8-мегапіксельний оригінал
+    /// на кожну особу немає сенсу.
+    /// </summary>
+    private static ImageSource? LoadPhoto(Person person)
+    {
+        if (ResolvePhoto(person.PhotoPath) is { } full && File.Exists(full))
+        {
+            if (Decode(image => image.UriSource = new Uri(full)) is { } fromFile)
+            {
+                return fromFile;
+            }
+        }
+
+        return person.PhotoThumbnail is { Length: > 0 } bytes
+            ? Decode(image => image.StreamSource = new MemoryStream(bytes))
+            : null;
+    }
+
+    private static ImageSource? Decode(Action<BitmapImage> setSource)
+    {
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            setSource(image);
+            image.CacheOption = BitmapCacheOption.OnLoad;   // не тримати файл/потік відкритим
+            image.DecodePixelWidth = 220;                   // із запасом на 150% DPI
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or ArgumentException
+            or UriFormatException)
+        {
+            // Биті чи чужі байти зображення не повинні валити показ картки.
+            return null;
+        }
+    }
+
     public static string? ResolvePhoto(string? relativePath)
     {
         if (!PhotoPathPolicy.IsSafeRelativePhotoPath(relativePath))

@@ -45,7 +45,7 @@
                                 <TextBlock Text="{loc:Localize Tree_Card_Photo}" FontSize="11"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Image Source="{Binding PhotoPath}" Stretch="UniformToFill" />
+                                <Image Source="{Binding Photo}" Stretch="UniformToFill" />
                             </Grid>
                         </Border>
 

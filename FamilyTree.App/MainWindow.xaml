@@ -60,6 +60,8 @@
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Save}" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
                 <MenuItem Header="{loc:Localize Menu_SaveAs}" Command="{Binding SaveAsCommand}" />
+                <MenuItem Header="{loc:Localize Menu_SaveCopyWithPhotos}"
+                          Command="{Binding SaveCopyWithPhotosCommand}" />
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Recent}" ItemsSource="{Binding RecentFiles}">
                     <MenuItem.ItemContainerStyle>

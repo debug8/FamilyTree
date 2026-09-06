@@ -110,6 +110,13 @@ public static class DocumentIntegrity
         var badDates = SanitizeDates(document);
         Add(issues, FileErrorKeys.RepairedBadDates, badDates);
 
+        // Вбудовані мініатюри фото: у нашому експорті це ~5 КБ на особу, але чужий
+        // (чи зіпсований) файл може принести мегабайти base64 на кожного — і застосунок
+        // спробує це декодувати. Завелике значення скидаємо: оригінал у теці даних, якщо
+        // він є, усе одно має пріоритет при показі.
+        var bigThumbnails = SanitizeThumbnails(document);
+        Add(issues, FileErrorKeys.RepairedBigThumbnails, bigThumbnails);
+
         return issues;
     }
 
@@ -383,6 +390,33 @@ public static class DocumentIntegrity
             if (!PhotoPathPolicy.IsSafeRelativePhotoPath(person.PhotoPath))
             {
                 person.PhotoPath = null;
+                cleared++;
+            }
+        }
+
+        return cleared;
+    }
+
+    /// <summary>
+    /// Найбільша прийнятна мініатюра. Наш експорт при 100 px дає 4–6 КБ; 256 КБ — це
+    /// із запасом «у сорок разів більше, ніж треба», тобто явно не наша мініатюра.
+    /// </summary>
+    private const int MaxThumbnailBytes = 256 * 1024;
+
+    /// <summary>
+    /// Скидає надто великі вбудовані мініатюри (див. <see cref="MaxThumbnailBytes"/>).
+    /// Самі байти не перевіряємо на «чи це взагалі JPEG» — декодер зображення в UI
+    /// обгорнутий у try/catch, а вгадувати формати тут означало б дублювати кодеки.
+    /// </summary>
+    private static int SanitizeThumbnails(FamilyDocument document)
+    {
+        var cleared = 0;
+
+        foreach (var person in document.Persons)
+        {
+            if (person.PhotoThumbnail is { Length: > MaxThumbnailBytes })
+            {
+                person.PhotoThumbnail = null;
                 cleared++;
             }
         }

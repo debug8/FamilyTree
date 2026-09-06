@@ -34,6 +34,23 @@ public sealed class Person : Entity
     /// <summary>Відносний шлях до фото у папці даних застосунку.</summary>
     public string? PhotoPath { get; set; }
 
+    /// <summary>
+    /// Зменшена копія фото (JPEG, ~100 px по більшій стороні), яка зберігається
+    /// ВСЕРЕДИНІ файлу документа — щоб надісланий родичу `.familytree` показував людей
+    /// із обличчями, а не порожніми рамками.
+    /// <para>
+    /// У звичайному файлі поля немає: його заповнює лише команда «Зберегти копію з фото».
+    /// Причина — розмір: base64 роздуває дані на третину, і мініатюра на 5 КБ дає ~7 000
+    /// символів, тоді як уся решта даних про особу — близько 700 байт. Постійно тримати
+    /// це у файлі означало б втратити читаний, придатний до diff і grep JSON.
+    /// </para>
+    /// <para>
+    /// Оригінал фото лишається у теці даних у повній якості; мініатюра — лише запасний
+    /// варіант для показу, коли файлу поруч немає.
+    /// </para>
+    /// </summary>
+    public byte[]? PhotoThumbnail { get; set; }
+
     /// <summary>Довільні нотатки.</summary>
     public string? Notes { get; set; }
 
@@ -45,6 +62,28 @@ public sealed class Person : Entity
 
     /// <summary>Обчислюване: особа жива, якщо не вказано дату смерті.</summary>
     public bool IsAlive => DeathDate is null;
+
+    /// <summary>
+    /// Копія особи з тим самим <see cref="Entity.Id"/> — для експортних копій документа,
+    /// які не мають зачіпати відкритий у застосунку документ.
+    /// </summary>
+    public Person Copy() => new()
+    {
+        Id = Id,
+        LastName = LastName,
+        FirstName = FirstName,
+        Gender = Gender,
+        MiddleName = MiddleName,
+        MaidenName = MaidenName,
+        BirthDate = BirthDate,
+        BirthPlace = BirthPlace,
+        DeathDate = DeathDate,
+        PhotoPath = PhotoPath,
+        PhotoThumbnail = PhotoThumbnail,
+        Notes = Notes,
+        CreatedAt = CreatedAt,
+        UpdatedAt = UpdatedAt,
+    };
 
     /// <summary>Зручне повне ім'я «Прізвище Ім'я По батькові» (для UI).</summary>
     public string FullName =>

@@ -327,6 +327,75 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// «Зберегти копію з фото» — окремий файл, у який додатково вкладено мініатюри
+    /// фотографій (~100 px, JPEG). Саме він призначений для надсилання родичам: у
+    /// звичайному файлі мініатюр немає, бо base64 роздув би документ у рази й позбавив би
+    /// його головної переваги — бути читаним JSON, придатним до diff і grep.
+    /// <para>
+    /// Як і експорт GEDCOM, це ОБМІН, а не збереження: шлях документа, список недавніх
+    /// файлів і прапорець незбережених змін лишаються як були. Тому й пишемо не сам
+    /// документ, а його копію — інакше <c>SaveAsync</c> проставив би їй час збереження
+    /// й зняв «є незбережені зміни» з того, що користувач ще не зберіг.
+    /// </para>
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveCopyWithPhotos()
+    {
+        var suggested = DocumentName + " " + _localization.GetString("Photos_CopySuffix") + FamilyExtension;
+        if (_dialogs.AskSavePath(FileFilter, suggested, FamilyExtension) is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            var (copy, photos) = BuildCopyWithThumbnails();
+            await _storage.SaveAsync(copy, path);
+
+            _dialogs.ShowMessage(
+                string.Format(
+                    _localization.GetString("Photos_CopySaved"),
+                    Path.GetFileName(path),
+                    photos),
+                _localization.GetString("Photos_CopyTitle"));
+        }
+        catch (Exception ex)
+        {
+            _dialogs.ShowMessage(DescribeFileError(ex), _localization.GetString("File_ErrorTitle"));
+        }
+    }
+
+    /// <summary>
+    /// Копія документа з мініатюрами. Особи копіюються (<c>Person.Copy</c>), бо
+    /// проставляти мініатюри у відкритий документ означало б змінювати те, що зараз
+    /// редагує користувач. Зв'язки переносяться як є: копія живе лише до кінця запису.
+    /// </summary>
+    private (FamilyDocument Copy, int Photos) BuildCopyWithThumbnails()
+    {
+        var document = _session.Current;
+        var copy = FamilyDocument.CreateNew(document.Meta.Title);
+        copy.Meta.CreatedAt = document.Meta.CreatedAt;
+        copy.Meta.UpdatedAt = document.Meta.UpdatedAt;
+
+        var photos = 0;
+        foreach (var person in document.Persons)
+        {
+            var clone = person.Copy();
+            clone.PhotoThumbnail = _photos.CreateThumbnail(person.PhotoPath);
+            if (clone.PhotoThumbnail is not null)
+            {
+                photos++;
+            }
+
+            copy.Persons.Add(clone);
+        }
+
+        copy.ParentChildLinks.AddRange(document.ParentChildLinks);
+        copy.SpouseLinks.AddRange(document.SpouseLinks);
+
+        return (copy, photos);
+    }
+    /// <summary>
     /// Експорт у GEDCOM 5.5.1 (T-5.2, Частина 4a). Це обмін, а не збереження:
     /// шлях документа, список недавніх файлів і прапорець змін лишаються як були,
     /// інакше «експортував — і документ став збереженим» вводило б в оману.

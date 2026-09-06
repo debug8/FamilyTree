@@ -26,4 +26,11 @@ public interface IPhotoStore
 
     /// <summary>Розширення, які приймає <see cref="Import"/> (для фільтра діалогу).</summary>
     IReadOnlyList<string> SupportedExtensions { get; }
+
+    /// <summary>
+    /// Зменшена JPEG-копія фото для вбудовування у файл документа, або
+    /// <see langword="null"/>, якщо фото немає чи файл не вдалося прочитати як зображення.
+    /// </summary>
+    /// <param name="maxSide">Найбільша сторона мініатюри в пікселях.</param>
+    byte[]? CreateThumbnail(string? relativePath, int maxSide = PhotoStore.ThumbnailMaxSide);
 }

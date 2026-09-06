@@ -92,4 +92,7 @@ public static class FileErrorKeys
 
     /// <summary>Скинуто структурно некоректні неточні дати. {0} — кількість.</summary>
     public const string RepairedBadDates = "FileRepair_BadDates";
+
+    /// <summary>Скинуто завеликі вбудовані мініатюри фото. {0} — кількість.</summary>
+    public const string RepairedBigThumbnails = "FileRepair_BigThumbnails";
 }

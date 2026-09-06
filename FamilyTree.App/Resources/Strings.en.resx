@@ -199,6 +199,23 @@
   <data name="Photo_ImportFailed" xml:space="preserve">
     <value>Could not add the photo. Check that the file is still there and readable.</value>
   </data>
+  <data name="Menu_SaveCopyWithPhotos" xml:space="preserve">
+    <value>Save a copy with photos…</value>
+  </data>
+  <data name="Photos_CopySuffix" xml:space="preserve">
+    <value>(with photos)</value>
+  </data>
+  <data name="Photos_CopyTitle" xml:space="preserve">
+    <value>Copy with photos</value>
+  </data>
+  <data name="Photos_CopySaved" xml:space="preserve">
+    <value>Copy saved: {0}
+
+Embedded photo thumbnails: {1}. The originals stayed on this computer.</value>
+  </data>
+  <data name="FileRepair_BigThumbnails" xml:space="preserve">
+    <value>Oversized embedded photos were dropped: {0}.</value>
+  </data>
   <data name="Person_Notes" xml:space="preserve">
     <value>Notes</value>
   </data>
