@@ -60,8 +60,6 @@
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Save}" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
                 <MenuItem Header="{loc:Localize Menu_SaveAs}" Command="{Binding SaveAsCommand}" />
-                <MenuItem Header="{loc:Localize Menu_SaveCopyWithPhotos}"
-                          Command="{Binding SaveCopyWithPhotosCommand}" />
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Recent}" ItemsSource="{Binding RecentFiles}">
                     <MenuItem.ItemContainerStyle>
@@ -194,7 +192,29 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding HasSelectedPerson, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel Margin="24">
-                    <TextBlock Text="{Binding SelectedPerson.FullName}" Style="{StaticResource PersonNameTextStyle}" Margin="0,0,0,16" />
+                    <!-- Ім'я з фото праворуч. Без фото блок згортається повністю (без заглушки),
+                         тож вигляд вкладки для осіб без фото не змінюється.
+                         Фото описане першим, хоч і стоїть праворуч: у DockPanel вільний простір
+                         заповнює саме ОСТАННІЙ елемент, тож ім'я мусить іти після фото. -->
+                    <DockPanel Margin="0,0,0,16">
+                        <Border DockPanel.Dock="Right" Width="84" Height="84" Padding="2" Margin="14,0,0,0"
+                                CornerRadius="6" VerticalAlignment="Top"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Visibility="{Binding HasSelectedPersonPhoto, Converter={StaticResource BoolToVisibility}}">
+                            <Border.ToolTip>
+                                <!-- Оригінал (декодований не ширшим за 500 px) -->
+                                <ToolTip Padding="4" HasDropShadow="True">
+                                    <Image Source="{Binding SelectedPersonPhotoLarge}"
+                                           MaxWidth="500" MaxHeight="500" Stretch="Uniform" />
+                                </ToolTip>
+                            </Border.ToolTip>
+                            <Image Source="{Binding SelectedPersonPhoto}" Stretch="UniformToFill" />
+                        </Border>
+
+                        <TextBlock Text="{Binding SelectedPerson.FullName}"
+                                   Style="{StaticResource PersonNameTextStyle}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </DockPanel>
 
                     <!-- Батьки -->
                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">

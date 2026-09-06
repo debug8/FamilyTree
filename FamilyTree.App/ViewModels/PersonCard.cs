@@ -1,8 +1,7 @@
 using System.Globalization;
-using System.IO;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using FamilyTree.App.Localization;
+using FamilyTree.App.Services;
 using FamilyTree.Domain;
 using FamilyTree.Storage;
 
@@ -17,6 +16,13 @@ namespace FamilyTree.App.ViewModels;
 /// </summary>
 public sealed class PersonCard
 {
+    /// <summary>
+    /// Ширина декодування фото для картки: сама картка показує 92×112, запас — на 150% DPI.
+    /// Не <c>private</c> навмисно: значення читає складальник <see cref="PersonCardBuilder"/>
+    /// (окремий клас у цьому ж файлі), а живе воно тут, бо описує саме цю картку.
+    /// </summary>
+    internal const int CardPhotoWidth = 220;
+
     /// <summary>Особа, до якої належить картка (для команд і вибору).</summary>
     public required Person Person { get; init; }
 
@@ -80,7 +86,7 @@ public sealed class PersonCardBuilder
             Years = FormatYears(person),
             RelationBadge = relationBadge,
             PhotoPath = ResolvePhoto(person.PhotoPath),
-            Photo = LoadPhoto(person),
+            Photo = PersonPhoto.Load(person, PersonCard.CardPhotoWidth),
             DetailMaiden = Line("Person_MaidenName", person.MaidenName),
             DetailGender = Line("Person_Gender", GenderText(person.Gender)),
             DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
@@ -180,65 +186,9 @@ public sealed class PersonCardBuilder
     }
 
     /// <summary>
-    /// Абсолютний шлях до фото у теці даних (поки лише резолвинг; місце під фото).
-    /// Приймає ЛИШЕ безпечний відносний шлях усередині теки даних; абсолютні/UNC/URL і
-    /// «..»-шляхи відкидаються в null (захист у глибину до санітизації у сховищі, B-13),
-    /// тож картка ніколи не звертається до зовнішнього чи стороннього ресурсу.
+    /// Абсолютний шлях до фото у теці даних. Саме правило живе в
+    /// <see cref="PersonPhoto.Resolve"/> — тут лише делегат, щоб наявні виклики
+    /// (і зовнішній код) не змінювалися.
     /// </summary>
-    /// <summary>
-    /// Завантажує зображення картки: спершу оригінал із теки даних, потім вбудовану
-    /// мініатюру. Обидва варіанти декодуються обмеженою шириною й заморожуються —
-    /// картка показується розміром 92×112, тримати в пам'яті 8-мегапіксельний оригінал
-    /// на кожну особу немає сенсу.
-    /// </summary>
-    private static ImageSource? LoadPhoto(Person person)
-    {
-        if (ResolvePhoto(person.PhotoPath) is { } full && File.Exists(full))
-        {
-            if (Decode(image => image.UriSource = new Uri(full)) is { } fromFile)
-            {
-                return fromFile;
-            }
-        }
-
-        return person.PhotoThumbnail is { Length: > 0 } bytes
-            ? Decode(image => image.StreamSource = new MemoryStream(bytes))
-            : null;
-    }
-
-    private static ImageSource? Decode(Action<BitmapImage> setSource)
-    {
-        try
-        {
-            var image = new BitmapImage();
-            image.BeginInit();
-            setSource(image);
-            image.CacheOption = BitmapCacheOption.OnLoad;   // не тримати файл/потік відкритим
-            image.DecodePixelWidth = 220;                   // із запасом на 150% DPI
-            image.EndInit();
-            image.Freeze();
-            return image;
-        }
-        catch (Exception ex) when (ex is IOException
-            or UnauthorizedAccessException
-            or NotSupportedException
-            or ArgumentException
-            or UriFormatException)
-        {
-            // Биті чи чужі байти зображення не повинні валити показ картки.
-            return null;
-        }
-    }
-
-    public static string? ResolvePhoto(string? relativePath)
-    {
-        if (!PhotoPathPolicy.IsSafeRelativePhotoPath(relativePath))
-        {
-            return null;
-        }
-
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "FamilyTree", relativePath!);
-    }
+    public static string? ResolvePhoto(string? relativePath) => PersonPhoto.Resolve(relativePath);
 }

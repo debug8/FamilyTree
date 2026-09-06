@@ -5,6 +5,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FamilyTree.App.Localization;
+using System.Windows.Media;
 using FamilyTree.App.Services;
 using FamilyTree.App.Settings;
 using FamilyTree.App.Theming;
@@ -34,6 +35,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // (ім'я-підказка + DefaultExt діалогу), тож винесені в константи.
     private const string FamilyExtension = ".familytree";
     private const string GedcomExtension = ".ged";
+
+    // Фото на вкладці «Особа»: показується ~84 px, декодуємо з запасом на 150% DPI.
+    private const int TabPhotoWidth = 200;
+
+    // Підказка показує оригінал, але не більший за 500 px: фото зі смартфона на 4000 px
+    // не має ні сенсу на екрані, ні права займати сотні мегабайт у пам'яті.
+    private const int TooltipPhotoWidth = 500;
 
     private readonly ILocalizationService _localization;
     private readonly IThemeService _theme;
@@ -97,6 +105,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(HasSelectedPerson))]
     [NotifyPropertyChangedFor(nameof(NoSelection))]
     private Person? _selectedPerson;
+
+    // Фото вибраної особи для вкладки «Особа». Два розміри: маленьке поруч з іменем
+    // і більше — у підказці при наведенні. Декодуються один раз на вибір особи, а не
+    // на кожне читання властивості прив'язкою.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedPersonPhoto))]
+    private ImageSource? _selectedPersonPhoto;
+
+    [ObservableProperty]
+    private ImageSource? _selectedPersonPhotoLarge;
 
     public MainViewModel(
         ILocalizationService localization,
@@ -1251,9 +1269,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// і гасити через це побудоване дерево — гірше, ніж лишити його на місці.
     /// Видалену особу дерево відкине саме (у <c>Rebuild</c> є перевірка graph.Contains).
     /// </summary>
+    /// <summary>Чи показувати фото на вкладці «Особа» (без фото блок згортається).</summary>
+    public bool HasSelectedPersonPhoto => SelectedPersonPhoto is not null;
+
+    /// <summary>
+    /// Перечитує фото вибраної особи. Викликається на КОЖНЕ застосування вибору, а не
+    /// лише на зміну особи: після редагування RefreshPersons() повертає той самий
+    /// екземпляр, і прив'язка сама б нічого не оновила — Entity порівнюється за Id,
+    /// тож присвоєння тієї ж особи не піднімає PropertyChanged.
+    /// </summary>
+    private void RefreshSelectedPhoto()
+    {
+        SelectedPersonPhoto = SelectedPerson is { } person
+            ? PersonPhoto.Load(person, TabPhotoWidth)
+            : null;
+
+        SelectedPersonPhotoLarge = SelectedPerson is { } forTooltip
+            ? PersonPhoto.Load(forTooltip, TooltipPhotoWidth)
+            : null;
+    }
+
     private void ApplySelection(Person? value)
     {
         RefreshRelations();
+        RefreshSelectedPhoto();
 
         if (value is not null)
         {

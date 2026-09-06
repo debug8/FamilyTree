@@ -27,7 +27,7 @@ public sealed class PhotoStore : IPhotoStore
 
     /// <param name="dataRoot">
     /// Тека даних застосунку. За замовчуванням — <c>%AppData%\FamilyTree</c>, той самий
-    /// корінь, від якого рахує шлях <c>PersonCard.ResolvePhoto</c> при показі картки.
+    /// корінь, від якого рахує шлях <c>PersonPhoto.Resolve</c> при показі картки.
     /// Параметр існує заради тестів і портативних збірок.
     /// </param>
     public PhotoStore(string? dataRoot = null) =>
