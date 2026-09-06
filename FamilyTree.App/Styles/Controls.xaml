@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:settings="clr-namespace:FamilyTree.App.Settings">
 
     <!-- Базові стилі елементів керування. Кольори-пензлі беруться через
          DynamicResource з активної теми (Theme.Brand / Theme.Light / Theme.Dark),
@@ -14,9 +15,32 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
+    <!--
+      Розмір шрифта імені особи на вкладці «Особа». Значення тут — лише запасне
+      (для дизайнера й на випадок, якщо ресурс не встигли підмінити): на старті
+      App.OnStartup кладе в цей ключ число з налаштувань, тому стиль читає його через
+      DynamicResource. Саме число НЕ дублюємо — беремо константу з AppSettings, яка
+      водночас є значенням властивості за замовчуванням.
+      Окремо від HeadingTextStyle навмисно: той самий заголовковий стиль носить ще й
+      вітальний напис «виберіть особу», і збільшувати треба не його.
+    -->
+    <x:Static x:Key="PersonNameFontSize" Member="settings:AppSettings.DefaultPersonNameFontSize" />
+
+    <Style x:Key="PersonNameTextStyle" TargetType="TextBlock" BasedOn="{StaticResource HeadingTextStyle}">
+        <Setter Property="FontSize" Value="{DynamicResource PersonNameFontSize}" />
+    </Style>
+
     <Style x:Key="SecondaryTextStyle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+
+    <!-- Роздільник між секціями («Батьки» / «Діти» / «Подружжя» на вкладці «Особа») -->
+    <Style x:Key="SectionSeparatorStyle" TargetType="Border">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Margin" Value="0,2,0,14" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
 
     <!-- Первинна кнопка -->
@@ -358,6 +382,26 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!--
+      Кут між горизонтальною й вертикальною смугами прокрутки. Типовий шаблон
+      ScrollViewer заливає його прямокутником із системного ключа
+      SystemColors.ControlBrushKey — це світло-сірий колір Windows, який до наших
+      тем стосунку не має, тож на темній темі в кутку лишалася світла плямка.
+      Смуги прокрутки в нас прозорі (стиль ScrollBar вище), тож і кут робимо
+      прозорим: крізь нього видно ту саму поверхню, що й під смугами.
+
+      Ключ перевизначено В МЕЖАХ стилю ScrollViewer, а не глобально: той самий
+      SystemColors.ControlBrushKey читають типові шаблони інших контролів, і
+      глобальна підміна зачепила б їх заразом. Сеттерів у стилі навмисно немає —
+      він існує лише заради цього ресурсу, тож поведінка ScrollViewer-ів
+      (зокрема тих, що всередині чужих шаблонів) не змінюється.
+    -->
+    <Style TargetType="ScrollViewer">
+        <Style.Resources>
+            <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />
+        </Style.Resources>
     </Style>
 
     <!-- Комбобокс: базові відступи/шрифт поверх тематизованого шаблону -->

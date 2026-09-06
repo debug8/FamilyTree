@@ -124,6 +124,14 @@ public partial class App : Application
         // 4b. Застосувати збережену глибину дерева за замовчуванням.
         _host.Services.GetRequiredService<TreeViewModel>().Depth = settings.Current.DefaultTreeDepth;
 
+        // 4c. Розмір шрифта імені особи — з налаштувань у ресурс, який читає
+        //     PersonNameTextStyle. Запис прямо в Application.Resources перекриває
+        //     значення зі злитого Controls.xaml (прямі ключі мають перевагу над
+        //     MergedDictionaries), а DynamicResource у стилі підхоплює його вживу.
+        //     Екрана налаштувань для цього поля ще немає — правиться в settings.json.
+        Resources[PersonNameFontSizeKey] =
+            AppSettings.ClampPersonNameFontSize(settings.Current.PersonNameFontSize);
+
         // 5. Показати головне вікно (із синхронізацією теми системного заголовка).
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         Theming.TitleBarThemer.Track(mainWindow, theme);
@@ -153,6 +161,9 @@ public partial class App : Application
         AppLog.Shutdown();
         base.OnExit(e);
     }
+
+    /// <summary>Ключ ресурсу з розміром шрифта імені особи (див. Styles/Controls.xaml).</summary>
+    private const string PersonNameFontSizeKey = "PersonNameFontSize";
 
     /// <summary>
     /// B-05: синхронний запит про збереження при завершенні сеансу Windows. Якщо користувач

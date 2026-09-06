@@ -192,7 +192,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding HasSelectedPerson, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel Margin="24">
-                    <TextBlock Text="{Binding SelectedPerson.FullName}" Style="{StaticResource HeadingTextStyle}" Margin="0,0,0,16" />
+                    <TextBlock Text="{Binding SelectedPerson.FullName}" Style="{StaticResource PersonNameTextStyle}" Margin="0,0,0,16" />
 
                     <!-- Батьки -->
                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
@@ -228,6 +228,8 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <Border Style="{StaticResource SectionSeparatorStyle}" />
+
                     <!-- Діти -->
                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
                         <TextBlock Text="{loc:Localize Rel_Children}" FontWeight="SemiBold"
@@ -259,6 +261,8 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <Border Style="{StaticResource SectionSeparatorStyle}" />
 
                     <!-- Подружжя -->
                     <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
