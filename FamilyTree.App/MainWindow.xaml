@@ -192,12 +192,27 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding HasSelectedPerson, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel Margin="24">
-                    <!-- Ім'я з фото праворуч. Без фото блок згортається повністю (без заглушки),
+                    <!-- Ім'я з фото поруч. Без фото блок згортається повністю (без заглушки),
                          тож вигляд вкладки для осіб без фото не змінюється.
-                         Фото описане першим, хоч і стоїть праворуч: у DockPanel вільний простір
-                         заповнює саме ОСТАННІЙ елемент, тож ім'я мусить іти після фото. -->
-                    <DockPanel Margin="0,0,0,16">
-                        <Border DockPanel.Dock="Right" Width="100" Height="100" Padding="2" Margin="0,-10,0,-66"
+
+                         Місце під фото резервує ПРАВИЙ Margin ІМЕНІ (120), а не саме фото.
+                         Так треба тому, що DockPanel міряє дітей у порядку оголошення й кожному
+                         дає «ширина панелі мінус уже витрачене»: ім'я йде першим, тож без цього
+                         резерву воно міряється на всю ширину, і при звуженні вікна перенос
+                         спрацьовує запізно — текст «не бачить» фото й лізе під нього.
+
+                         Фото від'ємними полями повертається в цей резерв. Три числа зв'язані:
+                           зазор до тексту   = 120 - 80 = 40
+                           внесок у ширину   = 100 - 80 - 20 = 0  (фото не розширює панель)
+                           нижній -66        — фото звисає поверх секції «Батьки»,
+                                               тож рядок заввишки як ім'я, а не як фото.
+                         Міняєте Width фото або зазор — перераховуйте всі три. -->
+                    <DockPanel Margin="0,0,0,16" LastChildFill="False">
+
+                        <TextBlock Text="{Binding SelectedPerson.FullName}" DockPanel.Dock="Left" Margin="0,0,120,0"
+                                   Style="{StaticResource PersonNameTextStyle}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                        <Border DockPanel.Dock="Left" Width="100" Height="100" Padding="2" Margin="-80,0,-20,-66"
                                 CornerRadius="6" VerticalAlignment="Top"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                 Visibility="{Binding HasSelectedPersonPhoto, Converter={StaticResource BoolToVisibility}}">
@@ -211,9 +226,7 @@
                             <Image Source="{Binding SelectedPersonPhoto}" Stretch="UniformToFill" />
                         </Border>
 
-                        <TextBlock Text="{Binding SelectedPerson.FullName}"
-                                   Style="{StaticResource PersonNameTextStyle}"
-                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                        
                     </DockPanel>
 
                     <!-- Батьки -->
