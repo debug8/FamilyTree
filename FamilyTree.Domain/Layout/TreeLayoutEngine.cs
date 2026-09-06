@@ -19,7 +19,14 @@ public sealed class TreeLayoutEngine
     private const double LeafGap = 1.0;   // проміжок (у колонках) між сусідніми піддеревами
     private const double MinColGap = 1.0; // мінімальна відстань між вузлами одного рівня
 
-    public TreeLayout Build(FamilyGraph graph, Guid rootId, TreeMode mode, int maxDepth = 0)
+    /// <param name="include">
+    /// Дозволений набір осіб для <see cref="TreeMode.RelativesOnly"/>: вузли поза ним
+    /// не розкладаються (а отже й ребра до них не малюються — див. <c>Finalize</c>).
+    /// Для решти режимів ігнорується; <c>null</c> у режимі «Лише родичі» означає
+    /// «обмежень немає» й дає поведінку «Усі».
+    /// </param>
+    public TreeLayout Build(
+        FamilyGraph graph, Guid rootId, TreeMode mode, int maxDepth = 0, IReadOnlySet<Guid>? include = null)
     {
         ArgumentNullException.ThrowIfNull(graph);
         if (!graph.Contains(rootId))
@@ -32,7 +39,8 @@ public sealed class TreeLayoutEngine
         {
             TreeMode.Ancestors => BuildTree(graph, rootId, depthLimit, ancestors: true),
             TreeMode.Descendants => BuildTree(graph, rootId, depthLimit, ancestors: false),
-            _ => BuildFull(graph, rootId, depthLimit),
+            TreeMode.RelativesOnly => BuildFull(graph, rootId, depthLimit, include),
+            _ => BuildFull(graph, rootId, depthLimit, include: null),
         };
 
         ResolveOverlaps(positions);
@@ -218,7 +226,8 @@ public sealed class TreeLayoutEngine
 
     // ---- Повний режим: рядкове пакування за поколіннями --------------------
 
-    private static Dictionary<Guid, (double Col, int Depth)> BuildFull(FamilyGraph graph, Guid rootId, int depthLimit)
+    private static Dictionary<Guid, (double Col, int Depth)> BuildFull(
+        FamilyGraph graph, Guid rootId, int depthLimit, IReadOnlySet<Guid>? include)
     {
         // Покоління через BFS: батько −1, дитина +1, подружжя 0.
         var generation = new Dictionary<Guid, int> { [rootId] = 0 };
@@ -234,6 +243,13 @@ public sealed class TreeLayoutEngine
             void Visit(Guid id, int g)
             {
                 if (Math.Abs(g) > depthLimit || generation.ContainsKey(id))
+                {
+                    return;
+                }
+
+                // Особа поза фільтром не лише не показується — через неї не йде й обхід:
+                // інакше «Лише родичі» так само дотяглося б до рідні сторонніх людей.
+                if (include is not null && !include.Contains(id))
                 {
                     return;
                 }

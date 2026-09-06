@@ -21,6 +21,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     {
         new TreeModeOption(TreeMode.Ancestors, "Tree_Mode_Ancestors"),
         new TreeModeOption(TreeMode.Descendants, "Tree_Mode_Descendants"),
+        new TreeModeOption(TreeMode.RelativesOnly, "Tree_Mode_RelativesOnly"),
         new TreeModeOption(TreeMode.FullRelatives, "Tree_Mode_Full"),
     };
 
@@ -28,6 +29,10 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     private readonly TreeLayoutEngine _engine;
     private readonly ILocalizationService _localization;
     private readonly KinshipCalculator _kinship;
+
+    // Відбір родичів для режиму «Лише родичі». Тримає той самий калькулятор, що й бейджі,
+    // тож критерій входження в дерево збігається з назвою, яку користувач бачить на вузлі.
+    private readonly RelativeFilter _relatives;
 
     // Складання картки-тултіпа спільне з вкладкою «Особа» (див. PersonCardBuilder).
     private readonly PersonCardBuilder _cards;
@@ -70,6 +75,10 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     private readonly Dictionary<Guid, string> _badges = new();
     private Guid? _badgeRootId;
 
+    // Набір осіб для режиму «Лише родичі»: рахується за тим самим коренем і тим самим
+    // документом, що й бейджі, тож скидається разом із ними.
+    private HashSet<Guid>? _relativeIds;
+
     // Чи показано вкладку «Дерево». Коли ні — важку перебудову відкладаємо (B-07): гортання
     // списку осіб і зміни вмісту не мають будувати невидиме дерево. За замовчуванням false:
     // на старті активна вкладка «Особа», тож перше побудування відбувається при відкритті вкладки.
@@ -82,6 +91,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         _engine = engine;
         _localization = localization;
         _kinship = kinship;
+        _relatives = new RelativeFilter(kinship);
         _cards = new PersonCardBuilder(localization);
 
         // Іменовані обробники (а не лямбди) — щоб від них можна було відписатися в Dispose.
@@ -137,6 +147,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     {
         _badges.Clear();
         _badgeRootId = null;
+        _relativeIds = null;
     }
 
     /// <summary>Доступні режими дерева (локалізовані назви оновлюються при зміні мови).</summary>
@@ -286,13 +297,14 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         {
             // Інший корінь — усі назви родства інші, кеш не переносимо.
             _badges.Clear();
+            _relativeIds = null;
             _badgeRootId = rootId;
         }
 
         _doc = doc;
         _graph = graph;
         _persons = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
-        _layout = _engine.Build(graph, rootId, Mode, Depth);
+        _layout = _engine.Build(graph, rootId, Mode, Depth, RelativeIds(graph, rootId));
 
         Render();
     }
@@ -455,6 +467,23 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
         CanvasWidth = layout.Width;
         CanvasHeight = layout.Height;
+    }
+
+    /// <summary>
+    /// Набір осіб для режиму «Лише родичі» (для решти режимів — null, двигун його ігнорує).
+    /// Рахується один раз на корінь: це прохід ядром спорідненості по всьому документу,
+    /// тобто найдорожча операція побудови.
+    /// </summary>
+    private IReadOnlySet<Guid>? RelativeIds(FamilyGraph graph, Guid rootId)
+    {
+        if (Mode != TreeMode.RelativesOnly)
+        {
+            return null;
+        }
+
+        // TODO: коли склад фільтра з'явиться в налаштуваннях — брати опції звідти
+        //       (RelativeFilterOptions уже має потрібні прапорці).
+        return _relativeIds ??= _relatives.Select(graph, rootId, RelativeFilterOptions.Default);
     }
 
     /// <summary>

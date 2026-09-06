@@ -605,8 +605,11 @@ The app would not be able to open such a file, so nothing was written and the ex
   <data name="Tree_Mode_Descendants" xml:space="preserve">
     <value>Descendants</value>
   </data>
+  <data name="Tree_Mode_RelativesOnly" xml:space="preserve">
+    <value>Relatives only</value>
+  </data>
   <data name="Tree_Mode_Full" xml:space="preserve">
-    <value>All relatives</value>
+    <value>All</value>
   </data>
   <data name="Tree_You" xml:space="preserve">
     <value>me</value>
