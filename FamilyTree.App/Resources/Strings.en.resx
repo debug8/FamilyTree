@@ -181,6 +181,24 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Death date</value>
   </data>
+  <data name="Person_Photo" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="Photo_Choose" xml:space="preserve">
+    <value>Choose photo…</value>
+  </data>
+  <data name="Photo_Remove" xml:space="preserve">
+    <value>Remove photo</value>
+  </data>
+  <data name="Photo_None" xml:space="preserve">
+    <value>No photo</value>
+  </data>
+  <data name="Photo_Filter" xml:space="preserve">
+    <value>Images|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp|All files|*.*</value>
+  </data>
+  <data name="Photo_ImportFailed" xml:space="preserve">
+    <value>Could not add the photo. Check that the file is still there and readable.</value>
+  </data>
   <data name="Person_Notes" xml:space="preserve">
     <value>Notes</value>
   </data>

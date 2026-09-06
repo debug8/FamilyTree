@@ -39,6 +39,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IThemeService _theme;
     private readonly IKinshipFormatter _kinshipFormatter;
     private readonly IDocumentSession _session;
+    private readonly IPhotoStore _photos;
     private readonly IDialogService _dialogs;
     private readonly RelationshipValidator _validator;
     private readonly IFamilyStorage _storage;
@@ -108,7 +109,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         FamilyMerger merger,
         TreeViewModel tree,
         WhoIsWhoViewModel whoIsWho,
-        ISettingsService settings)
+        ISettingsService settings,
+        IPhotoStore photos)
     {
         _localization = localization;
         _theme = theme;
@@ -121,6 +123,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tree = tree;
         _whoIsWho = whoIsWho;
         _settings = settings;
+        _photos = photos;
         _cards = new PersonCardBuilder(localization);
 
         _selectedLanguage = _localization.CurrentLanguage;
@@ -592,9 +595,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                         return false;
                     }
 
-                    // Шлях не привласнюємо тут — це робить WriteBlocking після
-                    // успішного запису (B-08).
                     path = chosen;
+                    _session.FilePath = path;
                 }
 
                 return WriteBlocking(path);
@@ -612,7 +614,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             Task.Run(() => _storage.SaveAsync(_session.Current, path)).GetAwaiter().GetResult();
-            _session.FilePath = path;
             AddRecent(path);
             RaiseDocumentInfo();
             return true;
@@ -637,28 +638,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return false;
         }
 
-        // Шлях не привласнюємо тут — це робить WriteAsync після успішного запису (B-08).
+        _session.FilePath = path;
         return await WriteAsync(path);
     }
 
-    /// <summary>
-    /// Єдина точка, де документ стає «збереженим у файл»: тільки після успішного
-    /// запису оновлюються <see cref="IDocumentSession.FilePath"/>, список недавніх
-    /// і заголовок вікна.
-    /// <para>
-    /// Раніше «Зберегти як» привласнювало <c>FilePath</c> одразу після діалогу — ще
-    /// до запису (B-08). Якщо запис падав (шлях у захищеній теці, носій відпав),
-    /// документ лишався прив'язаним до файлу, якого не існує: наступний Ctrl+S уже
-    /// не питав місця й мовчки бив у ту саму пастку, заголовок показував чуже ім'я,
-    /// а діалог «Зберегти?» при закритті йшов туди ж.
-    /// </para>
-    /// </summary>
     private async Task<bool> WriteAsync(string path)
     {
         try
         {
             await _storage.SaveAsync(_session.Current, path);
-            _session.FilePath = path;
             AddRecent(path);
             RaiseDocumentInfo();
             return true;
@@ -759,10 +747,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     // ---- CRUD осіб (T-2.1..T-2.3) ---------------------------------------
 
+    /// <summary>
+    /// Редактор особи з підключеними сервісами: діалоги й сховище потрібні для вибору
+    /// фото, локалізація — для фільтра діалогу й повідомлення про помилку. Зібрано в
+    /// одному місці, щоб три точки виклику не розійшлися складом залежностей.
+    /// </summary>
+    private PersonEditorViewModel NewPersonEditor(Person? existing = null) =>
+        new(existing, _dialogs, _photos, _localization);
+
     [RelayCommand]
     private void AddPerson()
     {
-        var editor = new PersonEditorViewModel();
+        var editor = NewPersonEditor();
         if (_dialogs.ShowPersonEditor(editor) && editor.Result is { } created)
         {
             _session.Current.Persons.Add(created);
@@ -783,7 +779,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var editor = new PersonEditorViewModel(person);
+        var editor = NewPersonEditor(person);
         if (_dialogs.ShowPersonEditor(editor))
         {
             // Особа вже виділена; RefreshPersons() з ContentChanged збереже вибір за Id
@@ -1014,7 +1010,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     private Person? CreatePersonForRelationship()
     {
-        var editor = new PersonEditorViewModel();
+        var editor = NewPersonEditor();
         if (!_dialogs.ShowPersonEditor(editor) || editor.Result is not { } created)
         {
             return null;

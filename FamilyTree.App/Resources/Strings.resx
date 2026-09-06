@@ -181,6 +181,24 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Дата смерті</value>
   </data>
+  <data name="Person_Photo" xml:space="preserve">
+    <value>Фото</value>
+  </data>
+  <data name="Photo_Choose" xml:space="preserve">
+    <value>Вибрати фото…</value>
+  </data>
+  <data name="Photo_Remove" xml:space="preserve">
+    <value>Прибрати фото</value>
+  </data>
+  <data name="Photo_None" xml:space="preserve">
+    <value>Фото немає</value>
+  </data>
+  <data name="Photo_Filter" xml:space="preserve">
+    <value>Зображення|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp|Усі файли|*.*</value>
+  </data>
+  <data name="Photo_ImportFailed" xml:space="preserve">
+    <value>Не вдалося додати фото. Перевірте, чи файл на місці й доступний для читання.</value>
+  </data>
   <data name="Person_Notes" xml:space="preserve">
     <value>Нотатки</value>
   </data>

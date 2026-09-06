@@ -66,6 +66,33 @@
                     <controls:FamilyDateEditor Value="{Binding DeathDate}" />
                 </GroupBox>
 
+                <TextBlock Text="{loc:Localize Person_Photo}" Style="{StaticResource FieldLabel}" />
+                <StackPanel Orientation="Horizontal">
+                    <!-- Рамка-заглушка тримає розмір, коли фото ще немає -->
+                    <Border Width="92" Height="112" CornerRadius="6"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="{loc:Localize Photo_None}" FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       TextWrapping="Wrap" TextAlignment="Center" Margin="6"
+                                       Visibility="{Binding HasNoPhoto, Converter={StaticResource BoolToVisibility}}" />
+                            <Image Source="{Binding PhotoPreview}" Stretch="UniformToFill"
+                                   Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVisibility}}" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Button Content="{loc:Localize Photo_Choose}" MinWidth="120" Padding="10,4"
+                                Command="{Binding PickPhotoCommand}" IsEnabled="{Binding CanPickPhoto}" />
+                        <Button Content="{loc:Localize Photo_Remove}" MinWidth="120" Padding="10,4" Margin="0,6,0,0"
+                                Command="{Binding RemovePhotoCommand}" IsEnabled="{Binding HasPhoto}" />
+                        <TextBlock Text="{Binding PhotoError}" Foreground="{DynamicResource ErrorBrush}"
+                                   FontSize="12" TextWrapping="Wrap" MaxWidth="220" Margin="0,6,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
                 <TextBlock Text="{loc:Localize Person_Notes}" Style="{StaticResource FieldLabel}" />
                 <TextBox Style="{StaticResource InputTextBoxStyle}"
                          AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"

@@ -57,6 +57,7 @@ public partial class App : Application
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IPhotoStore, PhotoStore>();
 
         // Сховище документа. Передаємо реальну версію збірки, щоб вона проставлялася
         // в metadata кожного збереженого файлу (B-65) — Storage навмисно не знає про WPF.
