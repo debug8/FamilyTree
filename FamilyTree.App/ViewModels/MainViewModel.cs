@@ -592,8 +592,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                         return false;
                     }
 
+                    // Шлях не привласнюємо тут — це робить WriteBlocking після
+                    // успішного запису (B-08).
                     path = chosen;
-                    _session.FilePath = path;
                 }
 
                 return WriteBlocking(path);
@@ -611,6 +612,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             Task.Run(() => _storage.SaveAsync(_session.Current, path)).GetAwaiter().GetResult();
+            _session.FilePath = path;
             AddRecent(path);
             RaiseDocumentInfo();
             return true;
@@ -635,15 +637,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return false;
         }
 
-        _session.FilePath = path;
+        // Шлях не привласнюємо тут — це робить WriteAsync після успішного запису (B-08).
         return await WriteAsync(path);
     }
 
+    /// <summary>
+    /// Єдина точка, де документ стає «збереженим у файл»: тільки після успішного
+    /// запису оновлюються <see cref="IDocumentSession.FilePath"/>, список недавніх
+    /// і заголовок вікна.
+    /// <para>
+    /// Раніше «Зберегти як» привласнювало <c>FilePath</c> одразу після діалогу — ще
+    /// до запису (B-08). Якщо запис падав (шлях у захищеній теці, носій відпав),
+    /// документ лишався прив'язаним до файлу, якого не існує: наступний Ctrl+S уже
+    /// не питав місця й мовчки бив у ту саму пастку, заголовок показував чуже ім'я,
+    /// а діалог «Зберегти?» при закритті йшов туди ж.
+    /// </para>
+    /// </summary>
     private async Task<bool> WriteAsync(string path)
     {
         try
         {
             await _storage.SaveAsync(_session.Current, path);
+            _session.FilePath = path;
             AddRecent(path);
             RaiseDocumentInfo();
             return true;
