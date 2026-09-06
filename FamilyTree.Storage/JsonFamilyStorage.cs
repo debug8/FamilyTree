@@ -215,7 +215,7 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 
         var fullPath = Path.GetFullPath(path);
         var directory = Path.GetDirectoryName(fullPath)
-            ?? throw FamilyFileException.Create(FileErrorKeys.Io, inner: null, path);
+            ?? throw FamilyFileException.Create(FileErrorKeys.WriteIo, inner: null, path);
 
         var savedAt = DateTime.UtcNow;
         var dto = DocumentMapper.ToDto(document, CurrentSchemaVersion);
@@ -258,6 +258,27 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
                 TryDelete(tempPath);
                 throw;
             }
+        }
+        // Шлях ЗАПИСУ мапить винятки так само ретельно, як ReadTextAsync мапить шлях
+        // читання (B-09). Без цього DescribeFileError у застосунку падав у ex.Message,
+        // і в українському UI показувався системний англійський текст із розкритим
+        // іменем temp-файлу: "There is not enough space on the disk. : '…9f3c….tmp'".
+        // Аргумент — ЦІЛЬОВИЙ файл: temp є деталлю реалізації й користувачу ні про що
+        // не говорить. Перехоплення стоїть НАЗОВНІ від внутрішнього catch, тож temp
+        // прибирається до того, як виняток стане доменним.
+        //
+        // Свідомо НЕ перехоплюємо: OperationCanceledException (скасування — не помилка
+        // файлу) і FamilyFileException (уже доменна: прийде звідси ж або з Promote) —
+        // жодна з них не є ні IOException, ні UnauthorizedAccessException.
+        catch (UnauthorizedAccessException ex)
+        {
+            throw FamilyFileException.Create(FileErrorKeys.AccessDenied, ex, fullPath);
+        }
+        catch (IOException ex)
+        {
+            // Сюди ж потрапляють нащадки: DirectoryNotFound (тека зникла між
+            // CreateDirectory і записом), PathTooLong, DriveNotFound.
+            throw FamilyFileException.Create(FileErrorKeys.WriteIo, ex, fullPath);
         }
         finally
         {

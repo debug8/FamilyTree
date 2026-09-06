@@ -103,7 +103,14 @@ public sealed class JsonFamilyStorageTests : IDisposable
 
         var before = doc.Meta.UpdatedAt;
 
-        await Should.ThrowAsync<IOException>(async () => await storage.SaveAsync(doc, path));
+        // Після B-09 шлях запису мапить IOException у доменну помилку з ключем
+        // локалізації (інакше UI показував системний англійський текст). Сам збій
+        // зберігається як InnerException — діагностика в лог не втрачається.
+        var failure = await Should.ThrowAsync<FamilyFileException>(
+            async () => await storage.SaveAsync(doc, path));
+
+        failure.MessageKey.ShouldBe(FileErrorKeys.WriteIo);
+        failure.InnerException.ShouldBeOfType<IOException>().Message.ShouldBe("симульований збій");
 
         // Наявний файл недоторканий, після себе не лишилося жодного temp
         // (ім'я temp тепер унікальне, тому перевіряємо за маскою).

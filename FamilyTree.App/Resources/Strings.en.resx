@@ -472,6 +472,12 @@ Without identifiers there is no way to tell which relationships belong to whom, 
 
 There is no way to tell which relationships belong to whom, so the file was not opened.</value>
   </data>
+  <data name="FileError_WriteIo" xml:space="preserve">
+    <value>Could not save the file:
+{0}
+
+The disk may be full, the file may be locked by another program, or the drive may be unavailable.</value>
+  </data>
   <data name="FileRepair_Title" xml:space="preserve">
     <value>File opened with repairs</value>
   </data>

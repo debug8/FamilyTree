@@ -472,6 +472,12 @@
 
 Неможливо визначити, кому належать родинні зв'язки, тому файл не відкрито.</value>
   </data>
+  <data name="FileError_WriteIo" xml:space="preserve">
+    <value>Не вдалося зберегти файл:
+{0}
+
+Можливо, на диску бракує місця, файл заблокований іншою програмою або носій недоступний.</value>
+  </data>
   <data name="FileRepair_Title" xml:space="preserve">
     <value>Файл відкрито з виправленнями</value>
   </data>

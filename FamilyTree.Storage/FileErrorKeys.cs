@@ -13,10 +13,14 @@ public static class FileErrorKeys
     /// <summary>Файл не знайдено. {0} — шлях.</summary>
     public const string NotFound = "FileError_NotFound";
 
-    /// <summary>Немає прав на читання/запис. {0} — шлях.</summary>
+    /// <summary>
+    /// Немає прав на читання/запис. {0} — шлях.
+    /// Спільний для обох напрямків: формулювання нейтральне («немає доступу до файлу»),
+    /// тож на шляху збереження додаткового ключа не потрібно.
+    /// </summary>
     public const string AccessDenied = "FileError_AccessDenied";
 
-    /// <summary>Помилка вводу-виводу (файл заблокований, мережа тощо). {0} — шлях.</summary>
+    /// <summary>Помилка вводу-виводу при ЧИТАННІ (файл заблокований, мережа тощо). {0} — шлях.</summary>
     public const string Io = "FileError_Io";
 
     /// <summary>Вміст не є коректним JSON. {0} — деталі парсера.</summary>
@@ -36,6 +40,19 @@ public static class FileErrorKeys
 
     /// <summary>Кілька осіб з однаковим ідентифікатором. {0} — кількість, {1} — приклад Id.</summary>
     public const string DuplicatePersonId = "FileError_DuplicatePersonId";
+
+    // ---- Помилки запису (документ зберегти не вдалося) ------------------
+
+    /// <summary>
+    /// Помилка вводу-виводу при ЗБЕРЕЖЕННІ: на диску немає місця, файл заблокований
+    /// іншою програмою, мережевий носій відпав. {0} — шлях цільового файлу.
+    /// <para>
+    /// Окремий ключ від <see cref="Io"/> навмисно: той текст каже «не вдалося прочитати
+    /// файл» і на шляху збереження вводив би в оману. Для відмови в правах
+    /// перевикористовується <see cref="AccessDenied"/>.
+    /// </para>
+    /// </summary>
+    public const string WriteIo = "FileError_WriteIo";
 
     // ---- Полагоджені дефекти (файл відкривається з попередженням) -------
 

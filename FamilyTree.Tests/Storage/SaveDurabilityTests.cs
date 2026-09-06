@@ -256,4 +256,81 @@ public sealed class SaveDurabilityTests : IDisposable
         // У файлі — той самий час, що й у документі.
         (await storage.LoadAsync(path)).Meta.UpdatedAt.ShouldBe(doc.Meta.UpdatedAt);
     }
+
+    // ---- Помилки запису (B-09) --------------------------------------------
+    //
+    // Збій моделюється через FaultBeforePromote: він спрацьовує вже після запису
+    // temp, тобто рівно там, де в реальності падають File.Replace/File.Move.
+    // Так тест не залежить від прав, вільного місця й файлової системи агента.
+
+    [Fact]
+    public async Task Write_io_failure_becomes_a_localizable_error()
+    {
+        // Диск заповнений / мережевий носій відпав. Раніше IOException летів «як є»,
+        // і застосунок показував системний англійський текст замість перекладеного.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("iofail.familytree");
+        storage.FaultBeforePromote =
+            () => throw new IOException("There is not enough space on the disk.");
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(
+            () => storage.SaveAsync(Doc("не збережеться"), path));
+
+        ex.MessageKey.ShouldBe(FileErrorKeys.WriteIo);
+
+        // Користувачу показуємо цільовий файл, а не внутрішній temp.
+        ex.Arguments.Count.ShouldBe(1);
+        ex.Arguments[0].ShouldBe(Path.GetFullPath(path));
+        ex.Message.ShouldNotContain(".tmp");
+
+        // Temp прибрано, цільового файлу не з'явилося.
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+        File.Exists(path).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Write_access_denied_becomes_a_localizable_error()
+    {
+        // Файл read-only, тека без прав, блокування антивірусом.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("denied.familytree");
+        storage.FaultBeforePromote =
+            () => throw new UnauthorizedAccessException("Access to the path is denied.");
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(
+            () => storage.SaveAsync(Doc("не збережеться"), path));
+
+        ex.MessageKey.ShouldBe(FileErrorKeys.AccessDenied);
+        ex.Arguments[0].ShouldBe(Path.GetFullPath(path));
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Cancellation_is_not_disguised_as_a_file_error()
+    {
+        // Скасування — не помилка файлу: діалог із «не вдалося зберегти» тут був би
+        // неправдою, тож OperationCanceledException має пройти наскрізь.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("cancelled.familytree");
+        storage.FaultBeforePromote = () => throw new OperationCanceledException();
+
+        await Should.ThrowAsync<OperationCanceledException>(
+            () => storage.SaveAsync(Doc("скасовано"), path));
+    }
+
+    [Fact]
+    public async Task Domain_error_from_deeper_is_not_wrapped_twice()
+    {
+        // Ключ і аргументи, поставлені нижче за стеком, мусять дійти до UI без змін
+        // (важливо для B-10, де Promote почне кидати власну FamilyFileException).
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("domain.familytree");
+        var original = FamilyFileException.Create(FileErrorKeys.AccessDenied, inner: null, "з глибини");
+        storage.FaultBeforePromote = () => throw original;
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(
+            () => storage.SaveAsync(Doc("не збережеться"), path));
+
+        ex.ShouldBeSameAs(original);
+    }
 }
