@@ -226,6 +226,11 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
         var directory = Path.GetDirectoryName(fullPath)
             ?? throw FamilyFileException.Create(FileErrorKeys.WriteIo, inner: null, path);
 
+        // Гейт перед будь-яким записом (B-12): не створюємо файл, який самі ж
+        // відмовимося відкрити. Стоїть до temp, до бекапів і до ротації — інакше
+        // невдале збереження ще й зсувало б резервні копії на крок уперед.
+        DocumentIntegrity.EnsureWritable(document);
+
         var savedAt = DateTime.UtcNow;
 
         // Ревізію знімаємо разом із DTO — саме її стан і потрапить у файл.

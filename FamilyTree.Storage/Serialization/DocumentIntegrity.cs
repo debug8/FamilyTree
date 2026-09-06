@@ -34,6 +34,29 @@ namespace FamilyTree.Storage.Serialization;
 public static class DocumentIntegrity
 {
     /// <summary>
+    /// Перевірка інваріантів ПЕРЕД записом (B-12). Читання має жорсткий гейт
+    /// (<see cref="Verify"/> відмовляє на порожніх і неунікальних Id осіб), а запис
+    /// не мав жодного — тож будь-який шлях, що створив дублікат Id у пам'яті,
+    /// збереженням перетворювався на файл, який застосунок сам відмовиться відкрити,
+    /// і назад дороги вже не було.
+    /// <para>
+    /// Свідомо перевіряє РІВНО те, від чого відмовляється завантаження, і нічого
+    /// понад те: решта дефектів на читанні мовчки лагодиться, тож блокувати через них
+    /// збереження означало б не дати користувачу зберегти роботу через дрібницю.
+    /// Викликати ДО будь-якого запису на диск.
+    /// </para>
+    /// </summary>
+    public static void EnsureWritable(FamilyDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        CheckPersonIds(
+            document.Persons,
+            FileErrorKeys.WriteEmptyPersonId,
+            FileErrorKeys.WriteDuplicatePersonId);
+    }
+
+    /// <summary>
     /// Перевіряє й за потреби чистить документ на місці.
     /// Кидає <see cref="FamilyFileException"/> на неоднозначних дефектах.
     /// </summary>
@@ -100,12 +123,20 @@ public static class DocumentIntegrity
 
     // ---- Відмова: Id осіб мусять бути присутні й унікальні ---------------
 
-    private static void EnsureUsablePersonIds(List<Person> persons)
+    private static void EnsureUsablePersonIds(List<Person> persons) =>
+        CheckPersonIds(persons, FileErrorKeys.EmptyPersonId, FileErrorKeys.DuplicatePersonId);
+
+    /// <summary>
+    /// Спільна перевірка для читання і запису — різняться лише ключі повідомлень
+    /// (на читанні «файл не відкрито», на записі «запис скасовано»). Одна реалізація
+    /// на два напрямки гарантує, що записати можна рівно те, що потім відкриється.
+    /// </summary>
+    private static void CheckPersonIds(List<Person> persons, string emptyKey, string duplicateKey)
     {
         var empty = persons.Count(p => p.Id == Guid.Empty);
         if (empty > 0)
         {
-            throw FamilyFileException.Create(FileErrorKeys.EmptyPersonId, inner: null, empty);
+            throw FamilyFileException.Create(emptyKey, inner: null, empty);
         }
 
         var firstDuplicate = persons
@@ -116,7 +147,7 @@ public static class DocumentIntegrity
         {
             var affected = persons.Count - persons.Select(p => p.Id).Distinct().Count();
             throw FamilyFileException.Create(
-                FileErrorKeys.DuplicatePersonId,
+                duplicateKey,
                 inner: null,
                 affected,
                 firstDuplicate.Key);

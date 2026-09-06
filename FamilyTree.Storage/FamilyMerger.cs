@@ -31,9 +31,24 @@ public sealed record PersonFieldFill(
 /// <summary>
 /// План злиття: що саме буде додано (обчислюється без зміни документа, щоб показати
 /// звіт і дати підтвердити). Застосовується через <see cref="FamilyMerger.Apply"/>.
+/// <para>
+/// План ОДНОРАЗОВИЙ і прив'язаний до конкретного стану конкретного документа: він
+/// містить готові екземпляри осіб і посилання на осіб цілі. Застосувати його вдруге
+/// означає покласти ті самі об'єкти в документ ще раз — тобто зробити дублікати
+/// <c>Person.Id</c>, а з ними й файл, який застосунок відмовиться відкрити (B-12).
+/// </para>
 /// </summary>
 public sealed class MergePlan
 {
+    /// <summary>Документ, для якого обчислено план (перевірка в <see cref="FamilyMerger.Apply"/>).</summary>
+    internal FamilyDocument? Target { get; set; }
+
+    /// <summary>Ревізія цілі на момент обчислення плану.</summary>
+    internal long TargetRevision { get; set; }
+
+    /// <summary>Коли план застосовано; <c>null</c> — ще ні. Повторне застосування заборонене.</summary>
+    public DateTime? AppliedAt { get; internal set; }
+
     public List<Person> PersonsToAdd { get; } = new();
 
     public List<ParentChildLink> ParentLinksToAdd { get; } = new();
@@ -79,7 +94,7 @@ public sealed class FamilyMerger
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(source);
 
-        var plan = new MergePlan();
+        var plan = new MergePlan { Target = target, TargetRevision = target.Revision };
 
         // Мапи наявних/доданих осіб: за Id і за ключем ідентичності (ПІБ+дата народження).
         var personById = new Dictionary<Guid, Person>();
@@ -219,10 +234,16 @@ public sealed class FamilyMerger
     }
 
     /// <summary>Застосовує план до документа й повертає підсумок.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// План уже застосовано, обчислений для іншого документа, або документ змінився
+    /// після обчислення плану (B-12).
+    /// </exception>
     public MergeReport Apply(FamilyDocument target, MergePlan plan)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(plan);
+
+        EnsurePlanIsFresh(target, plan);
 
         target.Persons.AddRange(plan.PersonsToAdd);
         target.ParentChildLinks.AddRange(plan.ParentLinksToAdd);
@@ -239,7 +260,43 @@ public sealed class FamilyMerger
             if (fill.PhotoPath is { } photo) fill.Target.PhotoPath = photo;
         }
 
+        plan.AppliedAt = DateTime.UtcNow;
         return plan.ToReport();
+    }
+
+    /// <summary>
+    /// Тричі перевіряє, що план ще можна застосувати (B-12). Раніше три
+    /// <c>AddRange</c> виконувалися без жодної перевірки: повторний <c>Apply</c>
+    /// клав ті самі екземпляри осіб удруге — і документ отримував дублікати Id,
+    /// тобто ставав таким, що вже не збережеться (а після B-12 — і не збережеться,
+    /// і не відкриється). У поточному UI між <c>Plan</c> і <c>Apply</c> стоїть модальний
+    /// діалог, тож не стріляло; інваріант від цього захищеним не був.
+    /// <para>
+    /// <see cref="InvalidOperationException"/>, а не <see cref="FamilyFileException"/>:
+    /// це помилка коду, а не файлу, і показувати її користувачу як проблему з документом
+    /// було б неправдою.
+    /// </para>
+    /// </summary>
+    private static void EnsurePlanIsFresh(FamilyDocument target, MergePlan plan)
+    {
+        if (plan.AppliedAt is { } appliedAt)
+        {
+            throw new InvalidOperationException(
+                $"План злиття вже застосовано ({appliedAt:O}). Обчисліть новий через Plan().");
+        }
+
+        if (!ReferenceEquals(plan.Target, target))
+        {
+            throw new InvalidOperationException(
+                "План злиття обчислено для іншого документа. Обчисліть новий через Plan().");
+        }
+
+        if (plan.TargetRevision != target.Revision)
+        {
+            throw new InvalidOperationException(
+                $"Документ змінився після обчислення плану (ревізія {plan.TargetRevision} → " +
+                $"{target.Revision}). Обчисліть новий через Plan().");
+        }
     }
 
     /// <summary>Обчислити план і одразу застосувати (зручно для тестів).</summary>

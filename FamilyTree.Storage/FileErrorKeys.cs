@@ -54,6 +54,19 @@ public static class FileErrorKeys
     /// </summary>
     public const string WriteIo = "FileError_WriteIo";
 
+    /// <summary>
+    /// Запис скасовано: у документі є особи без ідентифікатора. {0} — кількість.
+    /// Дзеркало <see cref="EmptyPersonId"/> для шляху запису (B-12): текст того ключа
+    /// каже «файл не відкрито», а тут файл ще й не починали писати.
+    /// </summary>
+    public const string WriteEmptyPersonId = "FileError_WriteEmptyPersonId";
+
+    /// <summary>
+    /// Запис скасовано: неунікальні ідентифікатори осіб. {0} — кількість, {1} — приклад Id.
+    /// Дзеркало <see cref="DuplicatePersonId"/> для шляху запису (B-12).
+    /// </summary>
+    public const string WriteDuplicatePersonId = "FileError_WriteDuplicatePersonId";
+
     // ---- Полагоджені дефекти (файл відкривається з попередженням) -------
 
     /// <summary>Відкинуто зв'язки на неіснуючих осіб. {0} — кількість.</summary>

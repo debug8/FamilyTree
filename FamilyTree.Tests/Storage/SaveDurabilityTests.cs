@@ -318,6 +318,85 @@ public sealed class SaveDurabilityTests : IDisposable
         doc.IsDirty.ShouldBeFalse();
     }
 
+    // ---- Гейт цілісності на записі (B-12) ---------------------------------
+
+    [Fact]
+    public async Task Save_refuses_a_document_with_duplicate_person_ids()
+    {
+        // Читання завжди відмовлялося від дублікатів Id, а запис — ні, тож документ
+        // із дублікатом перетворювався збереженням на назавжди невідкриваний файл.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("duplicate-ids.familytree");
+        var doc = Doc("з дублікатом");
+        var sharedId = doc.Persons[0].Id;
+        doc.Persons.Add(new Person
+        {
+            Id = sharedId,
+            LastName = "Двійник",
+            FirstName = "Той самий Id",
+            Gender = Gender.Unknown,
+        });
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(() => storage.SaveAsync(doc, path));
+
+        ex.MessageKey.ShouldBe(FileErrorKeys.WriteDuplicatePersonId);
+
+        // Нічого не записано: ні файлу, ні temp, ні зсуву резервних копій.
+        File.Exists(path).ShouldBeFalse();
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+        Directory.Exists(BackupsDir).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Save_refuses_a_document_with_an_empty_person_id()
+    {
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("empty-id.familytree");
+        var doc = Doc("без Id");
+        doc.Persons.Add(new Person
+        {
+            Id = Guid.Empty,
+            LastName = "Безідентифікаційний",
+            FirstName = "Запис",
+            Gender = Gender.Unknown,
+        });
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(() => storage.SaveAsync(doc, path));
+
+        ex.MessageKey.ShouldBe(FileErrorKeys.WriteEmptyPersonId);
+        File.Exists(path).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Refused_save_leaves_the_previous_file_and_its_backups_intact()
+    {
+        // Найдорожчий сценарій: файл уже є, і невдала спроба не має ні зіпсувати його,
+        // ні прокрутити слоти резервних копій (інакше «відкотитися» стало б нікуди).
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("intact.familytree");
+
+        await storage.SaveAsync(Doc("версія 1"), path);
+        await storage.SaveAsync(Doc("версія 2"), path);
+        var originalContent = await File.ReadAllTextAsync(path);
+        var backupContent = await File.ReadAllTextAsync(Path.Combine(BackupsDir, "intact.familytree.1.bak"));
+
+        var broken = Doc("зламана");
+        broken.Persons.Add(new Person
+        {
+            Id = broken.Persons[0].Id,
+            LastName = "Двійник",
+            FirstName = "Той самий Id",
+            Gender = Gender.Unknown,
+        });
+
+        await Should.ThrowAsync<FamilyFileException>(() => storage.SaveAsync(broken, path));
+
+        (await File.ReadAllTextAsync(path)).ShouldBe(originalContent);
+        (await File.ReadAllTextAsync(Path.Combine(BackupsDir, "intact.familytree.1.bak")))
+            .ShouldBe(backupContent);
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+    }
+
     // ---- Фолбек заміни файлу (B-10) ---------------------------------------
 
     [Theory]

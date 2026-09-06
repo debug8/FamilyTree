@@ -478,6 +478,16 @@ There is no way to tell which relationships belong to whom, so the file was not 
 
 The disk may be full, the file may be locked by another program, or the drive may be unavailable.</value>
   </data>
+  <data name="FileError_WriteEmptyPersonId" xml:space="preserve">
+    <value>Cannot save: {0} person record(s) have no identifier.
+
+The app would not be able to open such a file, so nothing was written and the existing file is unchanged.</value>
+  </data>
+  <data name="FileError_WriteDuplicatePersonId" xml:space="preserve">
+    <value>Cannot save: {0} person record(s) share non-unique identifiers (e.g. {1}).
+
+The app would not be able to open such a file, so nothing was written and the existing file is unchanged.</value>
+  </data>
   <data name="FileRepair_Title" xml:space="preserve">
     <value>File opened with repairs</value>
   </data>

@@ -237,4 +237,51 @@ public class FamilyMergerTests
         target.ParentChildLinks.ShouldHaveSingleItem();
         target.ParentChildLinks[0].ParentId.ShouldNotBe(existing.Id);
     }
+
+    // ---- План одноразовий і прив'язаний до стану цілі (B-12) --------------
+
+    [Fact]
+    public void Applying_the_same_plan_twice_is_refused()
+    {
+        // Повторний Apply клав ті самі екземпляри осіб у документ удруге — тобто
+        // створював дублікати Person.Id, з якими файл уже не відкривався.
+        var source = DocOf(Make("Коваленко", "Іван", 1950), Make("Коваленко", "Петро", 1980));
+        var target = FamilyDocument.CreateNew("mine");
+        var plan = _merger.Plan(target, source);
+
+        _merger.Apply(target, plan);
+        plan.AppliedAt.ShouldNotBeNull();
+
+        Should.Throw<InvalidOperationException>(() => _merger.Apply(target, plan));
+        target.Persons.Count.ShouldBe(2);
+        target.Persons.Select(p => p.Id).Distinct().Count().ShouldBe(2);
+    }
+
+    [Fact]
+    public void Plan_is_refused_when_the_target_changed_after_planning()
+    {
+        // Між Plan і Apply документ могли відредагувати: план рахувався для іншого
+        // стану, і його дедуплікація вже нічого не гарантує.
+        var source = DocOf(Make("Коваленко", "Іван", 1950));
+        var target = FamilyDocument.CreateNew("mine");
+        var plan = _merger.Plan(target, source);
+
+        target.MarkChanged();
+
+        Should.Throw<InvalidOperationException>(() => _merger.Apply(target, plan));
+        target.Persons.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Plan_is_refused_for_another_document()
+    {
+        var source = DocOf(Make("Коваленко", "Іван", 1950));
+        var target = FamilyDocument.CreateNew("mine");
+        var plan = _merger.Plan(target, source);
+
+        var other = FamilyDocument.CreateNew("чужий");
+
+        Should.Throw<InvalidOperationException>(() => _merger.Apply(other, plan));
+        other.Persons.ShouldBeEmpty();
+    }
 }
