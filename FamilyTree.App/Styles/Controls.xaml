@@ -367,13 +367,57 @@
         <Setter Property="MinWidth" Value="140" />
     </Style>
 
-    <!-- Групбокс поля-дати: заголовок як хедер, тематизована рамка/текст -->
+    <!--
+      Групбокс поля-дати: заголовок як хедер, тематизована рамка/текст.
+
+      Власний шаблон замість типового (Aero2) — інакше на темній темі навколо блоку
+      світиться ореол. У типовому шаблоні GroupBox поверх тематизованої рамки лежить
+      ДРУГА, з жорстко зашитим `BorderBrush="White"` — імітація об'ємної фаски з часів
+      Aero. На світлому тлі вона зливається й непомітна, на темному читається як
+      яскравий контур. Перекрити її з теми неможливо: там не TemplateBinding і не
+      ресурс, а константа в самому шаблоні.
+
+      Заголовок винесено НАД рамкою, а не в розрив лінії зверху. Типовий шаблон робить
+      той розрив маскою (`BorderGapMaskConverter` із PresentationFramework.Aero2) або
+      непрозорою підкладкою під текстом — обидва способи прив'язані до кольору
+      батьківського тла й ламаються, щойно блок покласти на іншу поверхню. Так рамка
+      однакова в усіх трьох темах і не залежить від того, де стоїть.
+    -->
     <Style x:Key="FieldGroupBox" TargetType="GroupBox">
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="10,8" />
         <Setter Property="Margin" Value="0,10,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GroupBox">
+                    <Grid SnapsToDevicePixels="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <ContentPresenter ContentSource="Header"
+                                          Margin="2,0,0,4"
+                                          RecognizesAccessKey="True"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+
+                        <Border Grid.Row="1"
+                                CornerRadius="4"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>
