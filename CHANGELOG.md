@@ -11,8 +11,9 @@
 
 ## 0.9.6 — у розробці
 
-Версію в `FamilyTree.App.csproj` та `installer/FamilyTree.iss` ще НЕ піднято (там 0.9.5) — зробити
-це разом із комітом.
+Версію піднято до 0.9.6 у `FamilyTree.App.csproj` (`Version`, `AssemblyVersion`, `FileVersion`,
+`InformationalVersion`) та в `installer/FamilyTree.iss` (`#define AppVersion`) — обидва місця мусять
+збігатися, інакше `installer/build-installer.ps1` зупиняє збірку.
 
 ### Пачка «шлях запису»: B-09 → B-10 → B-08 → B-11 → B-12
 
