@@ -65,6 +65,15 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     /// </summary>
     internal Action? FaultBeforePromote { get; set; }
 
+    /// <summary>
+    /// Тестовий гачок: викликається замість <see cref="File.Replace(string, string, string?)"/>.
+    /// Моделює середовища, де ReplaceFile не працює (FAT32/exFAT, частина SMB-шар,
+    /// синхронізовані теки), хоча звичайне перейменування з перезаписом там проходить, —
+    /// відтворити це файловою системою агента неможливо, а саме заради цього
+    /// в <see cref="Promote"/> існує фолбек.
+    /// </summary>
+    internal Action? FaultOnReplace { get; set; }
+
     /// <param name="appVersion">
     /// Версія застосунку, яку записувати в metadata файлу. Порожнє/пробіли зводяться до
     /// <see cref="UnknownVersion"/>. За замовчуванням — <see cref="UnknownVersion"/>, щоб
@@ -320,7 +329,7 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     }
 
     /// <summary>Замінює цільовий файл підготованим тимчасовим.</summary>
-    private static void Promote(string tempPath, string fullPath)
+    private void Promote(string tempPath, string fullPath)
     {
         if (!File.Exists(fullPath))
         {
@@ -337,14 +346,29 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 
         try
         {
+            FaultOnReplace?.Invoke();
             File.Replace(tempPath, fullPath, destinationBackupFileName: null);
         }
-        catch (Exception ex) when (ex is IOException or PlatformNotSupportedException)
+        catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
+            or PlatformNotSupportedException)
         {
             // ReplaceFile не універсальний: падає на FAT32/exFAT-флешках, частині
             // SMB-шар і в деяких синхронізованих теках. Фолбеку не було, тож
             // збереження в такі місця не працювало ніколи — хоч звичайне
             // перейменування з перезаписом там проходить.
+            //
+            // UnauthorizedAccessException додано в B-10: Win32 ReplaceFile для цілі
+            // з атрибутом ReadOnly, зі знятими правами чи під блокуванням антивірусом
+            // повертає ERROR_ACCESS_DENIED, а це .NET мапить у UAE, НЕ в IOException.
+            // Тобто саме той клас відмов, заради якого фолбек і писався, пролітав
+            // повз фільтр — і на флешці чи SMB-шарі збереження падало там, де просте
+            // перейменування спрацювало б.
+            //
+            // Атрибут ReadOnly свідомо НЕ знімаємо: користувач поставив його навмисно,
+            // і тихо обходити захист гірше, ніж чесно відмовити. Якщо перейменування
+            // теж не проходить, виняток летить далі й стає локалізованим
+            // повідомленням у SaveAsync (B-09).
             File.Move(tempPath, fullPath, overwrite: true);
         }
     }

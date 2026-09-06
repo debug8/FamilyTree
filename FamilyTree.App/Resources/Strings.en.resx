@@ -438,7 +438,7 @@ If yes, {0} will be added as a parent of {1}.</value>
     <value>Cannot access the file:
 {0}
 
-Check the permissions, or whether the file is open in another program.</value>
+Check the permissions, whether the file is marked read-only, and whether it is open in another program.</value>
   </data>
   <data name="FileError_Io" xml:space="preserve">
     <value>Could not read the file:

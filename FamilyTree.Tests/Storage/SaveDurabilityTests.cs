@@ -28,6 +28,14 @@ public sealed class SaveDurabilityTests : IDisposable
     {
         try
         {
+            // Знімаємо ReadOnly перед видаленням: тест B-10 навмисно ставить цей
+            // атрибут, а File.Copy переносить його ще й на резервну копію —
+            // інакше Directory.Delete лишав би теку в %TEMP% назавжди.
+            foreach (var file in Directory.GetFiles(_dir, "*", SearchOption.AllDirectories))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+            }
+
             Directory.Delete(_dir, recursive: true);
         }
         catch
@@ -255,6 +263,69 @@ public sealed class SaveDurabilityTests : IDisposable
 
         // У файлі — той самий час, що й у документі.
         (await storage.LoadAsync(path)).Meta.UpdatedAt.ShouldBe(doc.Meta.UpdatedAt);
+    }
+
+    // ---- Фолбек заміни файлу (B-10) ---------------------------------------
+
+    [Theory]
+    [InlineData("io")]          // FAT32/exFAT-флешка, частина SMB-шар
+    [InlineData("access")]      // ERROR_ACCESS_DENIED від ReplaceFile — саме B-10
+    [InlineData("platform")]    // ReplaceFile не підтримується платформою
+    public async Task Replace_failure_falls_back_to_rename(string kind)
+    {
+        // Кожна з цих відмов означає «ReplaceFile тут не працює», а не «зберегти
+        // не можна»: звичайне перейменування з перезаписом проходить. До B-10
+        // фільтр не містив UnauthorizedAccessException, тож варіант "access"
+        // пролітав повз фолбек і збереження падало на рівному місці.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor($"fallback-{kind}.familytree");
+
+        await storage.SaveAsync(Doc("попередня"), path);
+
+        Exception fault = kind switch
+        {
+            "io" => new IOException("ReplaceFile недоступний на цій ФС"),
+            "access" => new UnauthorizedAccessException("Access to the path is denied."),
+            _ => new PlatformNotSupportedException("ReplaceFile не підтримується"),
+        };
+
+        storage.FaultOnReplace = () => throw fault;
+
+        await storage.SaveAsync(Doc("нова"), path);
+        storage.FaultOnReplace = null;
+
+        (await storage.LoadAsync(path)).Meta.Title.ShouldBe("нова");
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Read_only_target_is_refused_with_a_localizable_error()
+    {
+        // Свідоме рішення B-10: атрибут ReadOnly не знімаємо — користувач поставив
+        // його навмисно. Фолбек спробує перейменування, воно теж відмовить, і замість
+        // сирого системного тексту користувач отримає локалізовану помилку.
+        if (!OperatingSystem.IsWindows())
+        {
+            return; // ReadOnly як заборону запису гарантує лише Windows
+        }
+
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("readonly.familytree");
+
+        await storage.SaveAsync(Doc("недоторкана"), path);
+        var originalContent = await File.ReadAllTextAsync(path);
+        File.SetAttributes(path, FileAttributes.ReadOnly);
+
+        var ex = await Should.ThrowAsync<FamilyFileException>(
+            () => storage.SaveAsync(Doc("нова"), path));
+
+        ex.MessageKey.ShouldBe(FileErrorKeys.AccessDenied);
+        ex.Arguments[0].ShouldBe(Path.GetFullPath(path));
+
+        // Файл лишився тим самим, temp прибрано.
+        File.SetAttributes(path, FileAttributes.Normal);
+        (await File.ReadAllTextAsync(path)).ShouldBe(originalContent);
+        Directory.GetFiles(_dir, "*.tmp").ShouldBeEmpty();
     }
 
     // ---- Помилки запису (B-09) --------------------------------------------
