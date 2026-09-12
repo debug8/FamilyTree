@@ -70,16 +70,43 @@ public sealed class GedcomNode
         return node.Value;
     }
 
-    /// <summary>Усі теги піддерева (з повторами) — для підрахунку пропущених тегів у звіті.</summary>
-    public IEnumerable<string> DescendantTags()
+    /// <summary>
+    /// Шляхи тегів піддерева (з повторами), яких профіль <b>не</b> знає, — для підрахунку
+    /// пропущених тегів у звіті. Шлях кваліфікований і рахується від цього вузла:
+    /// «BAPM», «DEAT.PLAC», «RESI.ADDR.CITY».
+    /// </summary>
+    /// <param name="known">
+    /// Чи належить шлях профілю. У вузол, який профіль не знає, обхід НЕ спускається:
+    /// його підтеги — частина того самого пропущеного запису, і окремими рядками звіту
+    /// вони лише засмічували б список («EDUC», а не «EDUC» + «EDUC.DATE» + «EDUC.PLAC»).
+    /// </param>
+    /// <remarks>
+    /// Шлях, а не голе ім'я тега: раніше споживач звіряв із плоским списком самі імена,
+    /// і <c>DEAT.PLAC</c> та <c>DEAT.NOTE</c> вважалися спожитими лише тому, що «PLAC»
+    /// і «NOTE» зустрічаються під <c>BIRT</c> та <c>INDI</c>. Дані зникали, а звіт мовчав.
+    /// </remarks>
+    public IEnumerable<string> UnknownDescendantPaths(Func<string, bool> known)
     {
-        foreach (var child in _children)
-        {
-            yield return child.Tag;
+        ArgumentNullException.ThrowIfNull(known);
 
-            foreach (var tag in child.DescendantTags())
+        return Walk(this, prefix: null, known);
+
+        static IEnumerable<string> Walk(GedcomNode node, string? prefix, Func<string, bool> known)
+        {
+            foreach (var child in node.Children)
             {
-                yield return tag;
+                var path = prefix is null ? child.Tag : prefix + "." + child.Tag;
+
+                if (!known(path))
+                {
+                    yield return path;
+                    continue;
+                }
+
+                foreach (var deeper in Walk(child, path, known))
+                {
+                    yield return deeper;
+                }
             }
         }
     }

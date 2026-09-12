@@ -26,17 +26,47 @@ namespace FamilyTree.Gedcom;
 /// </summary>
 public static class GedcomImporter
 {
-    /// <summary>Теги, які профіль споживає; решта потрапляє у звіт як пропущені.</summary>
+    /// <summary>
+    /// Теги, які профіль споживає, — <b>кваліфікованими шляхами</b> від запису
+    /// (<c>INDI</c> або <c>FAM</c>). Решта потрапляє у звіт як пропущені.
+    /// </summary>
+    /// <remarks>
+    /// Шляхи, а не голі імена тегів: той самий <c>PLAC</c> під <c>BIRT</c> читається,
+    /// а під <c>DEAT</c> — ні, і плоский список цього не розрізняв. Через це
+    /// <c>DEAT.PLAC</c> і <c>DEAT.NOTE</c> мовчки вважалися спожитими: дані губилися,
+    /// а звіт про це не казав. Кожен рядок тут мусить відповідати місцю в коді, яке
+    /// цей тег справді читає — інакше повертається та сама мовчазна втрата.
+    /// </remarks>
     private static readonly HashSet<string> ConsumedTags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "NAME", "GIVN", "SURN", "_MARNM", "TYPE", "SEX",
-        "BIRT", "DEAT", "DATE", "PLAC", "TIME", "NOTE",
-        "FAMC", "FAMS", "PEDI", "_UID", "CHAN",
-        "HUSB", "WIFE", "CHIL", "MARR", "DIV", "_FREL", "_MREL",
+        // Ім'я. TYPE — для запасного шляху «окремий NAME з TYPE married».
+        "NAME", "NAME.GIVN", "NAME.SURN", "NAME._MARNM", "NAME.TYPE",
 
-        // Життєві факти (PersonFact) і структурована адреса, з якої RESI бере місце,
-        // коли PLAC відсутній — у чужих файлах це звичайна річ.
-        "OCCU", "RESI", "ADDR", "ADR1", "CITY", "STAE", "POST", "CTRY",
+        "SEX",
+
+        // Народження й смерть. DEAT.PLAC у моделі місця не має (див. IDEAS.md,
+        // «Місця подій»), тож свідомо НЕ тут: хай звіт про нього чесно повідомляє.
+        "BIRT", "BIRT.DATE", "BIRT.PLAC",
+        "DEAT", "DEAT.DATE",
+
+        // Життєві факти (PersonFact). ADDR — звідки RESI/OCCU беруть місце, коли
+        // PLAC відсутній; у чужих файлах це звичайна річ. NOTE читається лише під
+        // RESI: у професії пояснення нікуди покласти.
+        "OCCU", "OCCU.DATE", "OCCU.PLAC", "OCCU.ADDR",
+        "OCCU.ADDR.ADR1", "OCCU.ADDR.CITY", "OCCU.ADDR.STAE", "OCCU.ADDR.POST", "OCCU.ADDR.CTRY",
+        "RESI", "RESI.DATE", "RESI.PLAC", "RESI.NOTE", "RESI.ADDR",
+        "RESI.ADDR.ADR1", "RESI.ADDR.CITY", "RESI.ADDR.STAE", "RESI.ADDR.POST", "RESI.ADDR.CTRY",
+
+        "NOTE",
+        "FAMC", "FAMC.PEDI", "FAMS",
+        "CHAN", "CHAN.DATE", "CHAN.DATE.TIME",
+        "_UID",
+
+        // FAM. _FREL/_MREL — єдине, що задає роль окремо для батька й матері.
+        "HUSB", "WIFE",
+        "CHIL", "CHIL._FREL", "CHIL._MREL",
+        "MARR", "MARR.DATE",
+        "DIV", "DIV.DATE",
     };
 
     /// <summary>Складові <c>ADDR</c> у порядку, у якому вони склеюються в один рядок місця.</summary>
@@ -567,14 +597,9 @@ public static class GedcomImporter
 
         foreach (var record in file.Records("INDI").Concat(file.Records("FAM")))
         {
-            foreach (var tag in record.DescendantTags())
+            foreach (var path in record.UnknownDescendantPaths(ConsumedTags.Contains))
             {
-                if (ConsumedTags.Contains(tag))
-                {
-                    continue;
-                }
-
-                skipped[tag] = skipped.GetValueOrDefault(tag) + 1;
+                skipped[path] = skipped.GetValueOrDefault(path) + 1;
             }
         }
 

@@ -449,6 +449,8 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 *Поза межами (свідомо).* Медіа (`OBJE`/`FILE`) — `PhotoPath` не експортується й не імпортується; джерела й репозиторії (`SOUR`/`REPO`/`SUBM`-деталі); події та атрибути, крім перелічених вище (`BAPM`, `BURI`, `EDUC`, `RELI`, `TITL`, `CAUS` тощо) — при імпорті пропускаються з лічильником; `ASSO`, `ALIA`; **`DEAT.PLAC`** — у моделі немає поля «місце смерті», тег пропускається (додавання поля — окрема задача, `IDEAS.md`); запис у GEDCOM 7.0; кодування ANSEL; шифровані/архівовані файли. Усе, що поза межами, **ніколи не валить імпорт** — лише збільшує лічильник пропущених тегів у звіті.
 
+Список спожитого ведеться **кваліфікованими шляхами** від запису (`BIRT.PLAC`, `DEAT.DATE`, `CHIL._FREL`), а не голими іменами тегів: той самий `PLAC` під `BIRT` читається, а під `DEAT` — ні, і плоский список цього не розрізняв би. У тег поза профілем підрахунок не спускається — втрачено один запис (`EDUC`), а не три теги (`EDUC` + `EDUC.DATE` + `EDUC.PLAC`).
+
 *Розміщення коду.* Новий проєкт **`FamilyTree.Gedcom`** (`net10.0`, посилається на `FamilyTree.Domain` і `FamilyTree.Storage` — обмін і віддає, і приймає `FamilyDocument`); на нього посилаються `FamilyTree.App` і `FamilyTree.Tests`. Так шар лишається тестованим (`FamilyTree.Tests` — `net10.0`, а не `-windows`), а `FamilyTree.Storage` не обростає чужим форматом. Наявна чернетка `gedcom/` переїжджає туди: `GedcomDate.cs` і `GedcomDateConverter.cs` — у проєкт, `GedcomDateConverterTests.cs` — у `FamilyTree.Tests/Gedcom/`; папка `gedcom/` видаляється.
 
 Склад проєкту:
@@ -456,7 +458,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 | Тип | Відповідальність |
 |-----|------------------|
 | `GedcomLine` (record: `Level`, `Xref`, `Tag`, `Value`) | Один розібраний рядок |
-| `GedcomNode` | Вузол дерева записів (`Tag`, `Value`, `Children`) — результат складання рівнів |
+| `GedcomNode` | Вузол дерева записів (`Tag`, `Value`, `Children`) — результат складання рівнів; `UnknownDescendantPaths` віддає шляхи тегів поза профілем для звіту |
 | `GedcomEncodingDetector` | Визначення кодування потоку (див. нижче) |
 | `GedcomReader` | Байти → дерево `GedcomNode`; склеювання `CONC`/`CONT`, розгортання `@@` |
 | `GedcomWriter` | Дерево → текст: рівні, обрізання рядків на `CONC`, екранування `@` |
@@ -549,7 +551,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 *Санітарія і звіт.* Зібраний `FamilyDocument` **обов'язково** проганяється через наявний `DocumentIntegrity` — той самий, що чистить JSON-файли (висячі й самозв'язки, дублі, цикли, зайві біологічні батьки, структурно биті дати, небезпечні шляхи). Його `DocumentIssue` лягають у звіт поряд із власними лічильниками імпорту.
 
-`GedcomImportReport`: `Persons`, `Families`, `ParentChildLinks`, `SpouseLinks`, `UnnamedPersons`, `SkippedTags` (`IReadOnlyDictionary<string,int>`, в UI показуються 5 найчастіших), `SkippedRecords`, `EncodingFallback` (фактичне кодування або `null`), `RepairedIssues` (`IReadOnlyList<DocumentIssue>`).
+`GedcomImportReport`: `Persons`, `Families`, `ParentChildLinks`, `SpouseLinks`, `UnnamedPersons`, `SkippedTags` (`IReadOnlyDictionary<string,int>` — **кваліфікований шлях** тега від запису (`DEAT.PLAC`, `RESI.ADDR.CITY`) → кількість; в UI показуються 5 найчастіших), `SkippedRecords`, `EncodingFallback` (фактичне кодування або `null`), `RepairedIssues` (`IReadOnlyList<DocumentIssue>`).
 
 Ключі `GedcomKeys` (за зразком `FileErrorKeys` — шар не знає про resx, віддає ключ + аргументи):
 

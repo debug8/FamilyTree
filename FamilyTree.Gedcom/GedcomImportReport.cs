@@ -41,7 +41,12 @@ public sealed class GedcomImportReport
     /// <summary>Рядки, які не вдалося розібрати.</summary>
     public required int MalformedLines { get; init; }
 
-    /// <summary>Теги поза профілем: тег → скільки разів трапився.</summary>
+    /// <summary>
+    /// Теги поза профілем: <b>кваліфікований шлях</b> від запису → скільки разів трапився
+    /// (<c>«BAPM»</c>, <c>«DEAT.PLAC»</c>, <c>«RESI.ADDR.CITY»</c>). Шлях, а не голе ім'я
+    /// тега: той самий <c>PLAC</c> під <c>BIRT</c> читається, а під <c>DEAT</c> — ні.
+    /// Підтеги пропущеного тега окремо не рахуються — втрачено один запис, а не три теги.
+    /// </summary>
     public required IReadOnlyDictionary<string, int> SkippedTags { get; init; }
 
     /// <summary>Фактично застосоване кодування.</summary>

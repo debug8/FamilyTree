@@ -235,6 +235,84 @@ public sealed class GedcomImporterTests
     }
 
     [Fact]
+    public void Subtags_the_profile_does_not_read_are_reported_with_their_path()
+    {
+        // Регресія: список спожитих тегів був плоским, тож «PLAC» і «NOTE» з-під BIRT
+        // та INDI закривали собою DEAT.PLAC і DEAT.NOTE — дані зникали, а звіт мовчав.
+        var doc = Import(
+            "0 @I1@ INDI\n" +
+            "1 NAME Іван /Коваленко/\n" +
+            "1 DEAT\n" +
+            "2 DATE 1939\n" +
+            "2 PLAC Полтава\n" +
+            "2 NOTE помер у 40 років\n" +
+            "3 CONT Причина смерті: запалення легень\n",
+            out var report);
+
+        doc.Persons.ShouldHaveSingleItem().DeathDate.ShouldNotBeNull();
+
+        report.SkippedTags.Keys.ShouldContain("DEAT.PLAC");
+        report.SkippedTags.Keys.ShouldContain("DEAT.NOTE");
+
+        // Сам DEAT і його дата читаються, тож у пропущених їм місця немає.
+        report.SkippedTags.Keys.ShouldNotContain("DEAT");
+        report.SkippedTags.Keys.ShouldNotContain("DEAT.DATE");
+    }
+
+    [Fact]
+    public void Same_tag_under_a_consumed_parent_is_not_reported()
+    {
+        // Зворотний бік тієї самої монети: BIRT.PLAC читається, і шлях мусить це бачити.
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 BIRT\n2 DATE 1900\n2 PLAC Полтава\n1 NOTE коваль\n",
+            out var report);
+
+        doc.Persons.ShouldHaveSingleItem().BirthPlace.ShouldBe("Полтава");
+        report.SkippedTags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Subtags_of_an_unknown_tag_are_not_listed_separately()
+    {
+        // У незнайомий тег обхід не спускається: втрачено один запис BAPM, а не три
+        // окремі теги. Інакше п'ятірка найчастіших у звіті заповнювалася б сміттям.
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 BAPM\n2 DATE 1900\n2 PLAC Полтава\n2 AGE 1y\n",
+            out var report);
+
+        doc.Persons.ShouldHaveSingleItem();
+
+        report.SkippedTags.ShouldHaveSingleItem().Key.ShouldBe("BAPM");
+        report.SkippedTags["BAPM"].ShouldBe(1);
+    }
+
+    [Fact]
+    public void Skipped_tags_are_counted_per_occurrence()
+    {
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Перший /Тест/\n1 DEAT\n2 PLAC Полтава\n" +
+            "0 @I2@ INDI\n1 NAME Другий /Тест/\n1 DEAT\n2 PLAC Київ\n",
+            out var report);
+
+        doc.Persons.Count.ShouldBe(2);
+        report.SkippedTags["DEAT.PLAC"].ShouldBe(2);
+    }
+
+    [Fact]
+    public void Family_subtags_outside_the_profile_are_reported_too()
+    {
+        // Записи FAM скануються нарівні з INDI, і шлях рахується від самого FAM.
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 SEX M\n" +
+            "0 @I2@ INDI\n1 NAME Марія /Коваленко/\n1 SEX F\n" +
+            "0 @F1@ FAM\n1 HUSB @I1@\n1 WIFE @I2@\n1 MARR\n2 DATE 1950\n2 PLAC Полтава\n",
+            out var report);
+
+        doc.SpouseLinks.ShouldHaveSingleItem();
+        report.SkippedTags.Keys.ShouldContain("MARR.PLAC");
+    }
+
+    [Fact]
     public void Reads_all_occupations_and_residences_in_file_order()
     {
         var doc = Import(
