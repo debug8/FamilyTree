@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using FamilyTree.Domain;
 
@@ -24,6 +25,14 @@ internal sealed class FamilyFileDto
     public List<ParentChildLinkDto?>? ParentChildLinks { get; set; } = new();
 
     public List<SpouseLinkDto?>? SpouseLinks { get; set; } = new();
+
+    /// <summary>
+    /// Цілі секції файлу, яких ця збірка не знає (напр. майбутній довідник місць).
+    /// Без цього стара збірка, відкривши новіший файл, стерла б їх при збереженні.
+    /// Див. <see cref="DocumentExtras"/>.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 internal sealed class MetaDto
@@ -33,6 +42,10 @@ internal sealed class MetaDto
     public DateTime UpdatedAt { get; set; }
     // Без ініціалізатора: версію проставляє лише той, хто пише (B-65). null = у файлі секції нема.
     public string? AppVersion { get; set; }
+
+    /// <summary>Незнайомі поля секції <c>meta</c> — див. <see cref="DocumentExtras"/>.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 internal sealed class PersonDto
@@ -72,6 +85,10 @@ internal sealed class PersonDto
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>Незнайомі поля особи — див. <see cref="DocumentExtras"/>.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 /// <summary>
@@ -99,6 +116,10 @@ internal sealed class ParentChildLinkDto
     public Guid ParentId { get; set; }
     public Guid ChildId { get; set; }
     public ParentRole ParentRole { get; set; }
+
+    /// <summary>Незнайомі поля зв'язку — див. <see cref="DocumentExtras"/>.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 internal sealed class SpouseLinkDto
@@ -114,6 +135,10 @@ internal sealed class SpouseLinkDto
     // й не засмічувати diff), а відсутнє поле в старих файлах читається як false — сумісно.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Divorced { get; set; }
+
+    /// <summary>Незнайомі поля зв'язку — див. <see cref="DocumentExtras"/>.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 /// <summary>

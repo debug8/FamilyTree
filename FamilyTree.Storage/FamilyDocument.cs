@@ -75,6 +75,22 @@ public sealed class FamilyDocument
     /// </summary>
     public IReadOnlyList<DocumentIssue> RepairedIssues { get; set; } = Array.Empty<DocumentIssue>();
 
+    /// <summary>
+    /// Поля файлу, яких ця збірка не знає (не серіалізується сама по собі — мапер везе її
+    /// вміст через DTO при наступному записі). Порожньо для нових документів і для файлів,
+    /// записаних цією ж збіркою. Причини й ціна рішення — у <see cref="DocumentExtras"/>.
+    /// </summary>
+    /// <remarks>
+    /// <c>internal</c>: це подробиця формату зберігання, а не частина документа для UI.
+    /// <para>
+    /// <b>Злиття.</b> <see cref="FamilyMerger"/> змінює документ-ЦІЛЬ, тож незнайомі поля
+    /// цілі переживають злиття, а поля документа-джерела втрачаються. Це свідомо: саме ціль
+    /// переживе наступне збереження, а везти транзит разом з особами, яким злиття видало
+    /// НОВІ Id (<c>Clone(person, newId: true)</c>), означало б класти чужі поля під чужий Id.
+    /// </para>
+    /// </remarks>
+    internal DocumentExtras Extras { get; set; } = new();
+
     /// <summary>Створює новий порожній документ із заголовком.</summary>
     public static FamilyDocument CreateNew(string title)
     {

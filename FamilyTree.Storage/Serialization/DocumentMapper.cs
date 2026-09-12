@@ -5,22 +5,39 @@ namespace FamilyTree.Storage.Serialization;
 /// <summary>
 /// Двобічний мапінг між DTO формату файлу та доменним <see cref="FamilyDocument"/>.
 /// </summary>
+/// <remarks>
+/// Крім відомих полів мапер везе в обидва боки <see cref="DocumentExtras"/> — незнайомі поля
+/// файлу, які інакше зникали б при першому ж збереженні старішою збіркою. Зіставлення з
+/// сутностями — за <c>Id</c>; словники живуть у документі, бо домену вони не стосуються.
+/// </remarks>
 internal static class DocumentMapper
 {
-    public static FamilyFileDto ToDto(FamilyDocument document, int schemaVersion) => new()
+    public static FamilyFileDto ToDto(FamilyDocument document, int schemaVersion)
     {
-        SchemaVersion = schemaVersion,
-        Meta = new MetaDto
+        ArgumentNullException.ThrowIfNull(document);
+
+        var extras = document.Extras;
+
+        return new FamilyFileDto
         {
-            Title = document.Meta.Title,
-            CreatedAt = document.Meta.CreatedAt,
-            UpdatedAt = document.Meta.UpdatedAt,
-            AppVersion = document.Meta.AppVersion,
-        },
-        Persons = document.Persons.Select(ToDto).ToList(),
-        ParentChildLinks = document.ParentChildLinks.Select(ToDto).ToList(),
-        SpouseLinks = document.SpouseLinks.Select(ToDto).ToList(),
-    };
+            SchemaVersion = schemaVersion,
+            Meta = new MetaDto
+            {
+                Title = document.Meta.Title,
+                CreatedAt = document.Meta.CreatedAt,
+                UpdatedAt = document.Meta.UpdatedAt,
+                AppVersion = document.Meta.AppVersion,
+                Extra = extras.Meta,
+            },
+
+            // Пошук за Id сутності, яка в документі СПРАВДІ є: записи видалених осіб і
+            // зв'язків лишаються у словнику, але у файл не потрапляють (див. DocumentExtras).
+            Persons = document.Persons.Select(p => ToDto(p, extras)).ToList(),
+            ParentChildLinks = document.ParentChildLinks.Select(l => ToDto(l, extras)).ToList(),
+            SpouseLinks = document.SpouseLinks.Select(l => ToDto(l, extras)).ToList(),
+            Extra = extras.Root,
+        };
+    }
 
     public static FamilyDocument ToDomain(FamilyFileDto dto)
     {
@@ -45,27 +62,49 @@ internal static class DocumentMapper
             },
         };
 
+        var extras = document.Extras;
+        extras.Root = dto.Extra;
+        extras.Meta = meta.Extra;
+
         // OfType<T>() відкидає null-елементи масивів (напр. "persons": [null, {...}])
         // і водночас звужує тип для аналізу nullable.
+        //
+        // Цикл замість Select: незнайомі поля треба класти під Id ГОТОВОЇ сутності.
+        // Для зв'язків це не те саме, що Id у файлі — порожній Id мапер замінює на новий.
         if (dto.Persons is { } persons)
         {
-            document.Persons.AddRange(persons.OfType<PersonDto>().Select(ToDomain));
+            foreach (var personDto in persons.OfType<PersonDto>())
+            {
+                var person = ToDomain(personDto);
+                document.Persons.Add(person);
+                DocumentExtras.Remember(extras.Persons, person.Id, personDto.Extra);
+            }
         }
 
         if (dto.ParentChildLinks is { } parentChildLinks)
         {
-            document.ParentChildLinks.AddRange(parentChildLinks.OfType<ParentChildLinkDto>().Select(ToDomain));
+            foreach (var linkDto in parentChildLinks.OfType<ParentChildLinkDto>())
+            {
+                var link = ToDomain(linkDto);
+                document.ParentChildLinks.Add(link);
+                DocumentExtras.Remember(extras.ParentChildLinks, link.Id, linkDto.Extra);
+            }
         }
 
         if (dto.SpouseLinks is { } spouseLinks)
         {
-            document.SpouseLinks.AddRange(spouseLinks.OfType<SpouseLinkDto>().Select(ToDomain));
+            foreach (var linkDto in spouseLinks.OfType<SpouseLinkDto>())
+            {
+                var link = ToDomain(linkDto);
+                document.SpouseLinks.Add(link);
+                DocumentExtras.Remember(extras.SpouseLinks, link.Id, linkDto.Extra);
+            }
         }
 
         return document;
     }
 
-    private static PersonDto ToDto(Person p) => new()
+    private static PersonDto ToDto(Person p, DocumentExtras extras) => new()
     {
         Id = p.Id,
         LastName = p.LastName,
@@ -86,6 +125,7 @@ internal static class DocumentMapper
         Facts = ToDto(p.Facts),
         CreatedAt = p.CreatedAt,
         UpdatedAt = p.UpdatedAt,
+        Extra = DocumentExtras.Lookup(extras.Persons, p.Id),
     };
 
     private static Person ToDomain(PersonDto d) => new()
@@ -206,12 +246,13 @@ internal static class DocumentMapper
         return (PersonFactKind.Other, string.IsNullOrWhiteSpace(kind) ? null : kind);
     }
 
-    private static ParentChildLinkDto ToDto(ParentChildLink l) => new()
+    private static ParentChildLinkDto ToDto(ParentChildLink l, DocumentExtras extras) => new()
     {
         Id = l.Id,
         ParentId = l.ParentId,
         ChildId = l.ChildId,
         ParentRole = l.ParentRole,
+        Extra = DocumentExtras.Lookup(extras.ParentChildLinks, l.Id),
     };
 
     // Порожній Id зв'язку (поле "id" відсутнє у файлі) замінюємо на новий: Entity.Equals
@@ -233,7 +274,7 @@ internal static class DocumentMapper
             ParentRole = d.ParentRole,
         };
 
-    private static SpouseLinkDto ToDto(SpouseLink l) => new()
+    private static SpouseLinkDto ToDto(SpouseLink l, DocumentExtras extras) => new()
     {
         Id = l.Id,
         Person1Id = l.Person1Id,
@@ -242,6 +283,7 @@ internal static class DocumentMapper
         MarriagePlace = l.MarriagePlace,
         DivorceDate = ToDto(l.DivorceDate),
         Divorced = l.Divorced,
+        Extra = DocumentExtras.Lookup(extras.SpouseLinks, l.Id),
     };
 
     // Порядок Id (Person1Id ≤ Person2Id) нормалізує DocumentIntegrity після мапінгу:
