@@ -96,7 +96,13 @@ public sealed class PersonCardBuilder
             DetailMaiden = Line("Person_MaidenName", person.MaidenName),
             DetailGender = Line("Person_Gender", GenderText(person.Gender)),
             DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
-            DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDate(person.DeathDate)),
+            // Особа, позначена померлою без дати, мусить показати хоч «дата невідома»:
+            // Line() віддає null на порожнє значення, і рядок просто зникав би.
+            DetailDeath = person.IsAlive
+                ? null
+                : Line("Person_DeathDate", FormatDate(person.DeathDate) is { Length: > 0 } date
+                    ? date
+                    : _localization.GetString("Person_DateUnknown")),
             DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
             DetailChildren = Line("Tree_Card_Children", childrenCount.ToString(CultureInfo.CurrentCulture)),
             DetailFacts = FormatFacts(person) is { Length: > 0 } facts ? facts : null,
@@ -180,15 +186,21 @@ public sealed class PersonCardBuilder
     public static string? FormatPatronymic(Person person) =>
         string.IsNullOrWhiteSpace(person.MiddleName) ? null : person.MiddleName;
 
-    /// <summary>Роки життя для підпису вузла: «1980–2021», «1980», «–2021» або порожньо.</summary>
+    /// <summary>
+    /// Роки життя для підпису вузла: «1980–2021», «1980», «–2021» або порожньо.
+    /// Відкритий кінець «1980–» означає «помер, рік невідомий» (<see cref="Person.Deceased"/>) —
+    /// інакше така особа виглядала б у дереві точно як жива.
+    /// </summary>
     public static string FormatYears(Person person)
     {
+        ArgumentNullException.ThrowIfNull(person);
+
         var birth = person.BirthDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
         var death = person.DeathDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
         return (birth, death) switch
         {
             (null, null) => string.Empty,
-            (not null, null) => birth!,
+            (not null, null) => person.IsAlive ? birth! : $"{birth}–",
             (null, not null) => $"–{death}",
             _ => $"{birth}–{death}",
         };

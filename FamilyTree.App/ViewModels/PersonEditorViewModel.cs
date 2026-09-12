@@ -97,7 +97,11 @@ public partial class PersonEditorViewModel : ObservableValidator
             _birthDate = existing.BirthDate;
             _birthPlace = existing.BirthPlace;
             _deathDate = existing.DeathDate;
-            _isAlive = existing.DeathDate is null;
+
+            // Через IsAlive, а не DeathDate is null: інакше особа, позначена померлою
+            // без дати, поверталася б у діалог із галочкою «Живий» — і наступне
+            // збереження мовчки стерло б цей стан.
+            _isAlive = existing.IsAlive;
             _notes = existing.Notes;
             _photoPath = existing.PhotoPath;
 
@@ -235,6 +239,10 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.BirthDate = BirthDate;
         person.BirthPlace = Normalize(BirthPlace);
         person.DeathDate = IsAlive ? null : DeathDate;
+
+        // Знята галочка без дати — це стан «помер, дата невідома», і саме його
+        // тримає прапорець. Без нього збереження мовчки «оживляло» б особу.
+        person.Deceased = !IsAlive;
         person.Notes = Normalize(Notes);
         person.PhotoPath = CommitPhoto();
 

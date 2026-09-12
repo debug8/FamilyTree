@@ -46,6 +46,13 @@ internal sealed class PersonDto
     public FamilyDateDto? BirthDate { get; set; }
     public string? BirthPlace { get; set; }
     public FamilyDateDto? DeathDate { get; set; }
+
+    // Померла, дата невідома. WhenWritingDefault — точно як SpouseLinkDto.Divorced:
+    // false у файл не пишемо (щоб не роздувати й не засмічувати diff), а відсутнє
+    // поле в старих файлах читається як false, тобто «жива». Тож bump схеми не потрібен.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Deceased { get; set; }
+
     public string? PhotoPath { get; set; }
 
     // byte[] у System.Text.Json серіалізується як base64-рядок. Поле опційне й у

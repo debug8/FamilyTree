@@ -53,6 +53,9 @@ public sealed class GedcomRoundTripTests
         var singleMother = doc.Add("Гриценко", "Ніна", Gender.Female);
         var herChild = doc.Add("Гриценко", "Влас", Gender.Male);
 
+        // Помер, дата невідома («1 DEAT Y») — окремий стан, який тримає Person.Deceased.
+        doc.Add("Безвісний", "Степан", Gender.Male, deceased: true);
+
         doc.Add(
             "Самітник", "Богдан", Gender.Unknown,
             birth: FamilyDate.Exact(new DatePoint { Year = 1700, Month = 2, Day = 29, Calendar = DateCalendar.Julian }));
@@ -149,6 +152,8 @@ public sealed class GedcomRoundTripTests
             actual.BirthDate.ShouldBe(expected.BirthDate);
             actual.BirthPlace.ShouldBe(expected.BirthPlace);
             actual.DeathDate.ShouldBe(expected.DeathDate);
+            actual.Deceased.ShouldBe(expected.Deceased);
+            actual.IsAlive.ShouldBe(expected.IsAlive);
             actual.Notes.ShouldBe(expected.Notes);
         }
 

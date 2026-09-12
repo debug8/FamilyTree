@@ -118,8 +118,11 @@ public static class GedcomImporter
         var birth = ReadDate(indi.Path("BIRT", "DATE"), counters);
         var death = ReadDate(indi.Path("DEAT", "DATE"), counters);
 
-        // Стан «помер, дата невідома» модель не тримає: IsAlive виводиться з DeathDate.
-        if (death is null && indi.Child("DEAT") is not null)
+        // Будь-який DEAT — «1 DEAT Y», порожній тег, або з самими підтегами — означає
+        // смерть. Дата може бути невідома; цей стан тримає Person.Deceased.
+        var deceased = indi.Child("DEAT") is not null;
+
+        if (death is null && deceased)
         {
             counters.DeathsWithoutDate++;
         }
@@ -142,6 +145,7 @@ public static class GedcomImporter
             BirthDate = birth,
             BirthPlace = Clean(indi.Path("BIRT", "PLAC")),
             DeathDate = death,
+            Deceased = deceased,
             Notes = Clean(indi.ChildValue("NOTE")),
             Facts = ReadFacts(indi, counters),
             CreatedAt = changed,

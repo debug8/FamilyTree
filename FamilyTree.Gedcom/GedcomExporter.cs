@@ -120,6 +120,12 @@ public static class GedcomExporter
         {
             indi.Add(death);
         }
+        else if (person.Deceased)
+        {
+            // Стан «помер, дата невідома» (Person.Deceased). «Y» означає
+            // «подія була, подробиць немає» — так само, як у MARR/DIV нижче.
+            indi.Add(new GedcomNode("DEAT", value: "Y"));
+        }
 
         // Життєві факти — після подій народження/смерті й до посилань на родини,
         // у порядку, у якому їх тримає особа.

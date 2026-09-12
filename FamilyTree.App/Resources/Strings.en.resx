@@ -181,6 +181,9 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Death date</value>
   </data>
+  <data name="Person_DateUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
   <data name="Person_Photo" xml:space="preserve">
     <value>Photo</value>
   </data>

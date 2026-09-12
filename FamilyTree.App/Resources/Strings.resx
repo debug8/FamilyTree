@@ -181,6 +181,9 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Дата смерті</value>
   </data>
+  <data name="Person_DateUnknown" xml:space="preserve">
+    <value>невідома</value>
+  </data>
   <data name="Person_Photo" xml:space="preserve">
     <value>Фото</value>
   </data>

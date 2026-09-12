@@ -31,6 +31,39 @@ public class PersonTests
     }
 
     [Fact]
+    public void IsAlive_is_false_when_marked_deceased_without_a_date()
+    {
+        // Стан «помер, дата невідома»: у файлі GEDCOM це «1 DEAT» без DATE,
+        // у діалозі — знята галочка «Живий» без указаної дати.
+        var person = NewPerson();
+        person.Deceased = true;
+
+        person.DeathDate.ShouldBeNull();
+        person.IsAlive.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Death_date_alone_still_means_deceased_for_old_files()
+    {
+        // У старих файлах поля Deceased немає, тож воно читається як false, а смерть
+        // виражена лише датою. IsAlive мусить це витримувати.
+        var person = NewPerson();
+        person.DeathDate = new DateOnly(1861, 3, 10);
+        person.Deceased = false;
+
+        person.IsAlive.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Copy_preserves_deceased_flag()
+    {
+        var person = NewPerson();
+        person.Deceased = true;
+
+        person.Copy().Deceased.ShouldBeTrue();
+    }
+
+    [Fact]
     public void FullName_combines_available_parts_and_skips_missing_middle()
     {
         var person = NewPerson();

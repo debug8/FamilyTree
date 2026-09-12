@@ -445,7 +445,10 @@ public static class DocumentIntegrity
 
             if (Invalid(person.DeathDate))
             {
+                // Дата пішла, але сам факт смерті лишається відомим: без прапорця
+                // особа мовчки «ожила» б після чистки чужого файлу.
                 person.DeathDate = null;
+                person.Deceased = true;
                 cleared++;
             }
 

@@ -28,8 +28,23 @@ public sealed class Person : Entity
     /// <summary>Місце народження.</summary>
     public string? BirthPlace { get; set; }
 
-    /// <summary>Дата смерті (null — особа вважається живою; неточна — <see cref="FamilyDate"/>, T-5.2a).</summary>
+    /// <summary>Дата смерті (null — дата невідома або особа жива; див. <see cref="Deceased"/>).</summary>
     public FamilyDate? DeathDate { get; set; }
+
+    /// <summary>
+    /// Явна позначка, що особа померла, навіть коли дата смерті невідома
+    /// (у діалозі знято галочку «Живий», але дату не вказано; у GEDCOM — <c>1 DEAT</c>
+    /// без <c>DATE</c>). Без цього прапорця «життя» трималося лише на
+    /// <see cref="DeathDate"/>, тож стан «помер, дата невідома» неможливо було
+    /// зберегти — особа мовчки лишалася живою.
+    /// <para>
+    /// Прапорець позитивний («помер»), а не «живий», навмисне: <c>bool</c> за
+    /// замовчуванням <c>false</c>, тож відсутнє поле у старих файлах читається як
+    /// «живий» — правильна поведінка без міграції. Те саме рішення, що й у
+    /// <see cref="SpouseLink.Divorced"/>.
+    /// </para>
+    /// </summary>
+    public bool Deceased { get; set; }
 
     /// <summary>Відносний шлях до фото у папці даних застосунку.</summary>
     public string? PhotoPath { get; set; }
@@ -71,8 +86,13 @@ public sealed class Person : Entity
     /// <summary>Час останнього оновлення запису (аудит).</summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Обчислюване: особа жива, якщо не вказано дату смерті.</summary>
-    public bool IsAlive => DeathDate is null;
+    /// <summary>
+    /// Обчислюване: особа жива, якщо немає дати смерті І її не позначено померлою.
+    /// Перевірка <c>DeathDate is null</c> лишена першою для зворотної сумісності зі
+    /// старими файлами, де смерть виражалася лише датою (поля <see cref="Deceased"/>
+    /// там немає → false).
+    /// </summary>
+    public bool IsAlive => DeathDate is null && !Deceased;
 
     /// <summary>
     /// Копія особи з тим самим <see cref="Entity.Id"/> — для експортних копій документа,
@@ -89,6 +109,7 @@ public sealed class Person : Entity
         BirthDate = BirthDate,
         BirthPlace = BirthPlace,
         DeathDate = DeathDate,
+        Deceased = Deceased,
         PhotoPath = PhotoPath,
         PhotoThumbnail = PhotoThumbnail,
         Notes = Notes,

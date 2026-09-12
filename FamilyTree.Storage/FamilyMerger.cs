@@ -20,6 +20,11 @@ public sealed record MergeReport(
 /// Кожне поле не-null лише тоді, коли його треба проставити (ціль порожня, джерело має значення).
 /// Застосовується у <see cref="FamilyMerger.Apply"/>, щоб <c>Plan</c> не мутував документ.
 /// </summary>
+/// <param name="Deceased">
+/// <see langword="true"/>, коли джерело знає про смерть, а ціль вважає особу живою.
+/// Конфліктом бути не може: «померла» — це завжди більше знання, ніж «жива»,
+/// і воно не суперечить наявній у цілі даті.
+/// </param>
 /// <param name="Facts">
 /// Життєві факти джерела, яких ще немає в цілі. На відміну від решти полів, факти
 /// не конфліктують: список за задумом тримає кілька записів, тож «інша професія»
@@ -29,6 +34,7 @@ public sealed record MergeReport(
 public sealed record PersonFieldFill(
     Person Target,
     FamilyDate? DeathDate = null,
+    bool Deceased = false,
     string? BirthPlace = null,
     string? MaidenName = null,
     string? Notes = null,
@@ -261,6 +267,7 @@ public sealed class FamilyMerger
         foreach (var fill in plan.PersonUpdates)
         {
             if (fill.DeathDate is { } death) fill.Target.DeathDate = death;
+            if (fill.Deceased) fill.Target.Deceased = true;
             if (fill.BirthPlace is { } birthPlace) fill.Target.BirthPlace = birthPlace;
             if (fill.MaidenName is { } maiden) fill.Target.MaidenName = maiden;
             if (fill.Notes is { } notes) fill.Target.Notes = notes;
@@ -374,6 +381,16 @@ public sealed class FamilyMerger
             localConflicts++;
         }
 
+        // Прапорець смерті лише доповнює: «померла» — це завжди більше знання, ніж
+        // «жива», і суперечити даті в цілі не може (IsAlive їх кон'юнктує). Тому
+        // false→true це доповнення, а зворотного напрямку не буває.
+        var deceased = false;
+        if (!target.Deceased && source.Deceased)
+        {
+            deceased = true;
+            any = true;
+        }
+
         var birthPlace = ResolveText(target.BirthPlace, source.BirthPlace, ref any, ref localConflicts);
         var maiden = ResolveText(target.MaidenName, source.MaidenName, ref any, ref localConflicts);
         var notes = ResolveText(target.Notes, source.Notes, ref any, ref localConflicts);
@@ -398,7 +415,7 @@ public sealed class FamilyMerger
         if (any)
         {
             plan.PersonUpdates.Add(new PersonFieldFill(
-                target, death, birthPlace, maiden, notes, photo, newFacts));
+                target, death, deceased, birthPlace, maiden, notes, photo, newFacts));
         }
     }
 
@@ -437,6 +454,7 @@ public sealed class FamilyMerger
         BirthDate = p.BirthDate,
         BirthPlace = p.BirthPlace,
         DeathDate = p.DeathDate,
+        Deceased = p.Deceased,
         PhotoPath = p.PhotoPath,
         Notes = p.Notes,
 

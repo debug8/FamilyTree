@@ -90,6 +90,21 @@ public sealed class GedcomExporterTests
     }
 
     [Fact]
+    public void Deceased_without_a_date_is_written_as_DEAT_Y()
+    {
+        // Стан «помер, дата невідома»: подія мусить дійти до файлу, інакше
+        // стороння програма побачить особу живою. «Y» — той самий маркер, що й у MARR/DIV.
+        var doc = new GedcomTestDocument();
+        doc.Add("Коваленко", "Іван", Gender.Male, deceased: true);
+
+        var indi = Individual(Export(doc), "I1");
+
+        indi.Child("DEAT").ShouldNotBeNull();
+        indi.Child("DEAT")!.Value.ShouldBe("Y");
+        indi.Path("DEAT", "DATE").ShouldBeNull();
+    }
+
+    [Fact]
     public void Living_person_has_no_death_record()
     {
         var doc = new GedcomTestDocument();

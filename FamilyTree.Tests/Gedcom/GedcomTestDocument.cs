@@ -26,6 +26,7 @@ internal sealed class GedcomTestDocument
         string? maidenName = null,
         FamilyDate? birth = null,
         FamilyDate? death = null,
+        bool deceased = false,
         string? birthPlace = null,
         string? notes = null)
     {
@@ -39,6 +40,7 @@ internal sealed class GedcomTestDocument
             Gender = gender,
             BirthDate = birth,
             DeathDate = death,
+            Deceased = deceased || death is not null,
             BirthPlace = birthPlace,
             Notes = notes,
             UpdatedAt = new DateTime(2026, 9, 3, 10, 20, 30, DateTimeKind.Utc),

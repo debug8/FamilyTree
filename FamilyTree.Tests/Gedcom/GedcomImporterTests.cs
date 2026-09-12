@@ -78,13 +78,46 @@ public sealed class GedcomImporterTests
     }
 
     [Fact]
-    public void Death_without_a_date_is_counted_but_person_stays_alive()
+    public void Death_without_a_date_marks_person_deceased()
     {
-        // Стан «помер, дата невідома» модель не тримає — це чесно повідомляється у звіті.
+        // «1 DEAT» без DATE — стан «помер, дата невідома»; його тримає Person.Deceased.
         var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 DEAT\n", out var report);
 
-        doc.Persons.Single().IsAlive.ShouldBeTrue();
+        var person = doc.Persons.Single();
+
+        person.Deceased.ShouldBeTrue();
+        person.DeathDate.ShouldBeNull();
+        person.IsAlive.ShouldBeFalse();
         report.DeathsWithoutDate.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Death_marker_Y_marks_person_deceased()
+    {
+        // «1 DEAT Y» — та сама подія, лише записана явним маркером.
+        var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 DEAT Y\n");
+
+        doc.Persons.Single().IsAlive.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Death_with_a_date_also_sets_the_flag()
+    {
+        var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 DEAT\n2 DATE 1939\n", out var report);
+
+        var person = doc.Persons.Single();
+
+        person.Deceased.ShouldBeTrue();
+        person.DeathDate.ShouldNotBeNull();
+        report.DeathsWithoutDate.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Person_without_death_record_stays_alive()
+    {
+        var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 BIRT\n2 DATE 1990\n");
+
+        doc.Persons.Single().IsAlive.ShouldBeTrue();
     }
 
     [Fact]

@@ -102,8 +102,9 @@ FamilyTree.sln
 | `Gender` | enum `Gender { Male, Female, Unknown }` | так | Потрібен для назв родства (дядько/тітка) |
 | `BirthDate` | FamilyDate? | ні | Може бути невідома. З формату v2 — `FamilyDate` (точна/часткова/приблизна/діапазон/фраза), див. T-5.2a |
 | `BirthPlace` | string(200) | ні | |
-| `DeathDate` | FamilyDate? | ні | Див. T-5.2a |
-| `IsAlive` | bool (обчислюване) | — | `DeathDate == null` |
+| `DeathDate` | FamilyDate? | ні | Див. T-5.2a. `null` — дата невідома АБО особа жива; розрізняє `Deceased` |
+| `Deceased` | bool | ні | Явна позначка «помер», коли дата невідома (GEDCOM `1 DEAT` без `DATE`). Прапорець позитивний навмисне: `false` за замовчуванням = «живий», тож старі файли без поля читаються правильно. Та сама конструкція, що й `SpouseLink.Divorced`. `false` у файл не пишеться |
+| `IsAlive` | bool (обчислюване) | — | `DeathDate == null && !Deceased` |
 | `PhotoPath` | string? | ні | Копія фото в папці даних застосунку |
 | `Notes` | string? | ні | Довільні нотатки |
 | `Facts` | List\<PersonFact\> | ні | Життєві факти: професія, проживання. Порядок значущий — його задає джерело. Порожній список у файл не пишеться |
@@ -349,7 +350,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 ### Етап 1. Домен і збереження даних
 **T-1.1. Доменні сутності.**
 Реалізувати `Person`, `ParentChildLink`, `SpouseLink`, enum-и (розділи 3.1–3.2) у `FamilyTree.Domain`. Без зовнішніх залежностей.
-*Критерії:* unit-тести на обчислюване `IsAlive`, рівність за Id.
+*Критерії:* unit-тести на обчислюване `IsAlive` (зокрема стан «помер, дата невідома» через `Deceased`), рівність за Id.
 
 **T-1.2. FamilyGraph.**
 Клас, що будується зі списків осіб і зв'язків та дає O(1)-навігацію: `GetParents(id)`, `GetChildren(id)`, `GetSpouses(id)`, `GetSiblings(id)`, `GetConnectedComponent(id)`.
@@ -488,7 +489,8 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 | `Gender` | `SEX` | `M` / `F` / `U` | `M`→Male, `F`→Female, решта → Unknown |
 | `BirthDate` | `BIRT.DATE` | див. дати | див. дати |
 | `BirthPlace` | `BIRT.PLAC` | як є | як є |
-| `DeathDate` | `DEAT.DATE` | тег `DEAT` пишеться лише коли дата є | `DEAT` без `DATE` → дата лишається `null` (стан «помер, дата невідома» модель не тримає), лічильник у звіті |
+| `DeathDate` | `DEAT.DATE` | `DEAT` з `DATE`, коли дата є | як є |
+| `Deceased` | `DEAT` (наявність тега) | `1 DEAT Y`, коли особа позначена померлою, а дати немає | будь-який `DEAT` (`Y`, порожній, з підтегами) → `Deceased = true`; `DEAT` без `DATE` додатково рахується у звіті |
 | `Facts` (Occupation) | `OCCU` (+`DATE`, `PLAC`) | `Value` — значенням тега, як велить 5.5.1 | значення тега → `Value`, підтеги → `Date`/`Place` |
 | `Facts` (Residence) | `RESI` (+`DATE`, `PLAC`, `ADDR`, `NOTE`) | значення тега не пишеться (у 5.5.1 `RESI` — подія без значення): `Place` → `PLAC`, `Value` → `NOTE`. Якщо `Place` порожнє, у `PLAC` іде `Value` — краще нормалізувати, ніж загубити | місце: `PLAC` → `ADDR` (власне значення або склейка `ADR1`/`CITY`/`STAE`/`POST`/`CTRY`) → значення тега. Останнє суперечить стандарту, але так пише чимало програм. `NOTE` → `Value` |
 | `Facts` (Other) | — | не пишеться: власного тега в 5.5.1 немає | — |
@@ -522,6 +524,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 - Для кожного `CHIL`: `ParentChildLink` від `HUSB` і від `WIFE`. Роль береться з `PEDI` у **дитячому** `INDI.FAMC` (`birth`/`sealing` → `Biological`, `adopted` → `Adoptive`, `foster` → `Step`); якщо є `FAM.CHIL._FREL`/`_MREL` — вони мають пріоритет, бо задають роль окремо для батька й матері. Немає нічого → `Biological`.
 - `SpouseLink` створюється **лише** якщо в `FAM` є `MARR` або `DIV`. `FAM` без них — це просто спільні батьки, не подружжя.
 - `DIV` з `DATE` → `DivorceDate`; `DIV Y` (без дати) → `Divorced = true`.
+- Будь-який `DEAT` → `Deceased = true`; `DEAT` з `DATE` додатково дає `DeathDate`. Зворотно: `1 DEAT Y`, коли прапорець є, а дати немає.
 - Кілька пар `MARR`/`DIV` в одному `FAM` → кілька `SpouseLink` тієї самої пари; ті, що дадуть перекриття періодів, відкине `RelationshipValidator` з лічильником у звіті.
 - `HUSB`/`WIFE` трактуються як «батько 1 / батько 2» без перевірки статі — файли з одностатевими парами трапляються попри стандарт.
 
@@ -570,7 +573,7 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 *Критерії.*
 
-- **Round-trip (автотест).** Для кожного `samples/*.familytree` експорт → імпорт дає документ, ідентичний вихідному за складом осіб (ПІБ з по батькові, дівоче, стать, чотири дати, місце народження, нотатки), ребер (з `ParentRole`) і подружжів (з датами та `Divorced`). Порівняння за `_UID`, тому зіставлення осіб точне.
+- **Round-trip (автотест).** Для кожного `samples/*.familytree` експорт → імпорт дає документ, ідентичний вихідному за складом осіб (ПІБ з по батькові, дівоче, стать, чотири дати, місце народження, нотатки, `Deceased`), ребер (з `ParentRole`) і подружжів (з датами та `Divorced`). Порівняння за `_UID`, тому зіставлення осіб точне.
 - **Детермінованість.** Два експорти того самого документа дають побайтово однаковий файл.
 - **Сумісність назовні (ручна).** Експортований файл відкривається без помилок у **Gramps** і показує дерево з правильними поколіннями, іменами й датами.
 - **Сумісність усередину.** Щонайменше один реальний сторонній `.ged` у `samples/gedcom/` імпортується в несуперечливий документ: `DocumentIntegrity` не повідомляє про критичні дефекти, дерево будується, «Хто кому» рахує родство.

@@ -191,6 +191,41 @@ public class FamilyMergerTests
     }
 
     [Fact]
+    public void Deceased_flag_from_source_fills_a_target_considered_alive()
+    {
+        // «Померла» — завжди більше знання, ніж «жива», тож прапорець доповнює й не конфліктує.
+        var existing = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        var target = DocOf(existing);
+
+        var enriched = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        enriched.Deceased = true;                 // джерело знає про смерть, але не знає дати
+        var source = DocOf(enriched);
+
+        var report = _merger.Merge(target, source);
+
+        report.UpdatedPersons.ShouldBe(1);
+        report.Conflicts.ShouldBe(0);
+        existing.Deceased.ShouldBeTrue();
+        existing.DeathDate.ShouldBeNull();
+        existing.IsAlive.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Deceased_target_is_not_revived_by_a_source_that_thinks_person_is_alive()
+    {
+        var existing = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        existing.Deceased = true;
+        var target = DocOf(existing);
+
+        var source = DocOf(Make("Шевченко", "Ольга", 1990, Gender.Female));
+
+        var report = _merger.Merge(target, source);
+
+        report.Conflicts.ShouldBe(0);
+        existing.Deceased.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Conflicting_nonempty_field_keeps_target_value_and_is_counted()
     {
         var existing = Make("Мороз", "Іван", 1970);

@@ -24,7 +24,10 @@ public sealed class PersonYearsConverter : IValueConverter
         return (birth, death) switch
         {
             (null, null) => string.Empty,
-            (not null, null) => birth!,
+
+            // Відкритий кінець «1980–»: помер, рік невідомий (Person.Deceased).
+            (not null, null) => person.IsAlive ? birth! : $"{birth}–",
+
             (null, not null) => $"–{death}",
             _ => $"{birth}–{death}",
         };

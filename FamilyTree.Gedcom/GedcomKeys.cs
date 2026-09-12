@@ -40,7 +40,10 @@ public static class GedcomKeys
     /// <summary>Особи без імені отримали «?». {0} — кількість.</summary>
     public const string UnnamedPersons = "GedcomWarn_UnnamedPersons";
 
-    /// <summary>Запис DEAT без дати — особу позначено як живу. {0} — кількість.</summary>
+    /// <summary>
+    /// Запис DEAT без дати. Особа позначається померлою (<c>Person.Deceased</c>),
+    /// але дата лишається невідомою. {0} — кількість.
+    /// </summary>
     public const string DeathWithoutDate = "GedcomWarn_DeathWithoutDate";
 
     /// <summary>

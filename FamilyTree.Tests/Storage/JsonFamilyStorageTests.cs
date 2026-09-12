@@ -212,4 +212,61 @@ public sealed class JsonFamilyStorageTests : IDisposable
         link.DivorceDate.ShouldBeNull();
         link.IsActive.ShouldBeFalse();
     }
+
+    [Fact]
+    public async Task Deceased_without_date_survives_roundtrip()
+    {
+        // Особу позначено померлою без дати смерті — стан має зберегтися у файлі.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("deceased.familytree");
+
+        var doc = FamilyDocument.CreateNew("Тест");
+        doc.Persons.Add(new Person
+        {
+            LastName = "Безвісний",
+            FirstName = "Степан",
+            Gender = Gender.Male,
+            Deceased = true,
+        });
+
+        await storage.SaveAsync(doc, path);
+        var loaded = await storage.LoadAsync(path);
+
+        var person = loaded.Persons.ShouldHaveSingleItem();
+        person.Deceased.ShouldBeTrue();
+        person.DeathDate.ShouldBeNull();
+        person.IsAlive.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Living_person_does_not_write_the_deceased_field()
+    {
+        // WhenWritingDefault: false у файл не потрапляє, інакше кожна жива особа
+        // тягла б зайвий рядок у людиночитний JSON (як зі SpouseLink.Divorced).
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("alive.familytree");
+
+        var doc = FamilyDocument.CreateNew("Тест");
+        doc.Persons.Add(new Person { LastName = "А", FirstName = "А", Gender = Gender.Male });
+
+        await storage.SaveAsync(doc, path);
+
+        (await File.ReadAllTextAsync(path)).ShouldNotContain("deceased");
+    }
+
+    [Fact]
+    public async Task Old_file_without_the_field_reads_as_alive()
+    {
+        // Сумісність: у файлах до цієї зміни поля немає, і особа мусить лишитися живою.
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("legacy.familytree");
+
+        var doc = FamilyDocument.CreateNew("Тест");
+        doc.Persons.Add(new Person { LastName = "А", FirstName = "А", Gender = Gender.Male });
+        await storage.SaveAsync(doc, path);
+
+        var loaded = await storage.LoadAsync(path);
+
+        loaded.Persons.ShouldHaveSingleItem().IsAlive.ShouldBeTrue();
+    }
 }
