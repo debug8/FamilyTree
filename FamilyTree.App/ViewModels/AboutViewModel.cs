@@ -22,4 +22,17 @@ public sealed class AboutViewModel
 
     /// <summary>Назва ліцензії. Не читається зі збірки — фіксована для застосунку.</summary>
     public string License => "MIT";
+
+    /// <summary>
+    /// Сторінка проєкту. Як і <see cref="License"/>, зі збірки не читається: атрибута з
+    /// URL там немає, а тягнути його через окремий <c>AssemblyMetadata</c> заради одного
+    /// рядка не варто. Змінюється разом із репозиторієм — тут і в <c>README.md</c>.
+    /// </summary>
+    public string ProjectUrl => "https://github.com/debug8/FamilyTree";
+
+    /// <summary>
+    /// Останній випуск. Саме <c>/releases/latest</c>, а не конкретний тег: GitHub сам
+    /// перекидає на найновіший, тож посилання не доведеться правити з кожним випуском.
+    /// </summary>
+    public string LatestReleaseUrl => ProjectUrl + "/releases/latest";
 }

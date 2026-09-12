@@ -405,6 +405,12 @@ If yes, {0} will be added as a parent of {1}.</value>
   <data name="About_License" xml:space="preserve">
     <value>License</value>
   </data>
+  <data name="About_Project" xml:space="preserve">
+    <value>Project on GitHub</value>
+  </data>
+  <data name="About_LatestRelease" xml:space="preserve">
+    <value>Download the latest version</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Exit</value>
   </data>

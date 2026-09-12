@@ -43,6 +43,23 @@
         <TextBlock Text="{Binding Copyright}" Style="{StaticResource SecondaryTextStyle}"
                    Visibility="{Binding Copyright, Converter={StaticResource NullToCollapsedConverter}}" />
 
+        <!-- Посилання на проєкт. Самі URL — константи в AboutViewModel; відкриває їх
+             системний браузер у Link_RequestNavigate. Тултіп показує повну адресу:
+             якщо браузер не запуститься, її принаймні видно. -->
+        <TextBlock Margin="0,12,0,3" FontSize="12">
+            <Hyperlink NavigateUri="{Binding ProjectUrl}" Style="{StaticResource LinkStyle}"
+                       ToolTip="{Binding ProjectUrl}" RequestNavigate="Link_RequestNavigate">
+                <Run Text="{loc:Localize About_Project}" />
+            </Hyperlink>
+        </TextBlock>
+
+        <TextBlock FontSize="12">
+            <Hyperlink NavigateUri="{Binding LatestReleaseUrl}" Style="{StaticResource LinkStyle}"
+                       ToolTip="{Binding LatestReleaseUrl}" RequestNavigate="Link_RequestNavigate">
+                <Run Text="{loc:Localize About_LatestRelease}" />
+            </Hyperlink>
+        </TextBlock>
+
         <Button Content="{loc:Localize Common_Close}" MinWidth="90" HorizontalAlignment="Right"
                 Margin="0,20,0,0" Style="{StaticResource PrimaryButtonStyle}"
                 IsCancel="True" Click="Close_Click" />

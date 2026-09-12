@@ -35,6 +35,19 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
 
+    <!-- Зовнішнє гіперпосилання (вікно «Про програму»). Підкреслення лишаємо типове:
+         саме воно, а не колір, робить посилання впізнаваним для тих, хто не розрізняє
+         відтінки. Колір — PrimaryBrush, який у фірмовій темі є ГРАДІЄНТОМ, тож стиль
+         не очікує SolidColorBrush (див. HANDOFF, «Ключові домовленості»). -->
+    <Style x:Key="LinkStyle" TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryHoverBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Роздільник між секціями («Батьки» / «Діти» / «Подружжя» на вкладці «Особа») -->
     <Style x:Key="SectionSeparatorStyle" TargetType="Border">
         <Setter Property="Height" Value="1" />

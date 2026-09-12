@@ -405,6 +405,12 @@
   <data name="About_License" xml:space="preserve">
     <value>Ліцензія</value>
   </data>
+  <data name="About_Project" xml:space="preserve">
+    <value>Проєкт на GitHub</value>
+  </data>
+  <data name="About_LatestRelease" xml:space="preserve">
+    <value>Завантажити останню версію</value>
+  </data>
   <data name="Menu_Exit" xml:space="preserve">
     <value>Вихід</value>
   </data>
