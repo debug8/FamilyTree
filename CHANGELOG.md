@@ -9,11 +9,15 @@
 
 ---
 
-## 0.9.6 — у розробці
+## 0.9.7 — у розробці
 
-Версію піднято до 0.9.6 у `FamilyTree.App.csproj` (`Version`, `AssemblyVersion`, `FileVersion`,
+Версію піднято до 0.9.7 у `FamilyTree.App.csproj` (`Version`, `AssemblyVersion`, `FileVersion`,
 `InformationalVersion`) та в `installer/FamilyTree.iss` (`#define AppVersion`) — обидва місця мусять
 збігатися, інакше `installer/build-installer.ps1` зупиняє збірку.
+
+Три зміни одного напрямку: модель нарешті тримає те, що GEDCOM про подію каже, а звіт про імпорт
+перестав приховувати решту. Порядок був не випадковий — кожна наступна спиралася на попередню, і
+саме виправлений звіт (друга) визначив склад полів третьої.
 
 ### Місця й нотатки подій: `DEAT.PLAC`, `DEAT.NOTE`, `BIRT.NOTE`, `MARR.PLAC`
 
@@ -131,6 +135,12 @@
 
 **Навіщо це зараз:** передумова до `DEAT.PLAC`/`DEAT.CAUS`/`DEAT.NOTE` («Місця подій» в `IDEAS.md`).
 Ті поля потребують стану «помер без дати», а він — ні їх, ні чогось іще.
+
+## 0.9.6
+
+Версію піднято до 0.9.6 у `FamilyTree.App.csproj` (`Version`, `AssemblyVersion`, `FileVersion`,
+`InformationalVersion`) та в `installer/FamilyTree.iss` (`#define AppVersion`) — обидва місця мусять
+збігатися, інакше `installer/build-installer.ps1` зупиняє збірку.
 
 ### Життєві факти особи: професія й проживання (`OCCU`/`RESI`)
 

@@ -15,10 +15,10 @@
     <AssemblyName>FamilyTree</AssemblyName>
     <RootNamespace>FamilyTree.App</RootNamespace>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <Version>0.9.6</Version>
-    <AssemblyVersion>0.9.6.0</AssemblyVersion>
-    <FileVersion>0.9.6.0</FileVersion>
-    <InformationalVersion>0.9.6</InformationalVersion>
+    <Version>0.9.7</Version>
+    <AssemblyVersion>0.9.7.0</AssemblyVersion>
+    <FileVersion>0.9.7.0</FileVersion>
+    <InformationalVersion>0.9.7</InformationalVersion>
     <Product>Family Tree</Product>
     <Description>Family Tree — застосунок для побудови й перегляду родинного дерева (передрелізна версія).</Description>
     <!-- Єдине джерело даних про автора: звідси їх читають властивості .exe,
