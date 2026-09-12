@@ -79,6 +79,7 @@ internal static class DocumentMapper
         PhotoPath = p.PhotoPath,
         PhotoThumbnail = p.PhotoThumbnail,
         Notes = p.Notes,
+        Facts = ToDto(p.Facts),
         CreatedAt = p.CreatedAt,
         UpdatedAt = p.UpdatedAt,
     };
@@ -97,9 +98,105 @@ internal static class DocumentMapper
         PhotoPath = d.PhotoPath,
         PhotoThumbnail = d.PhotoThumbnail,
         Notes = d.Notes,
+        Facts = ToDomain(d.Facts),
         CreatedAt = d.CreatedAt,
         UpdatedAt = d.UpdatedAt,
     };
+
+    // ---- Життєві факти: PersonFact ↔ PersonFactDto (OCCU/RESI) --------------
+
+    private const string FactKindOccupation = "occupation";
+    private const string FactKindResidence = "residence";
+
+    /// <summary>Запасна назва виду, коли факт має <c>Other</c> без збереженого <c>Label</c>.</summary>
+    private const string FactKindOther = "other";
+
+    private static List<PersonFactDto?>? ToDto(List<PersonFact> facts)
+    {
+        // null, а не порожній список: "facts": [] у кожній особі без фактів — це
+        // зайвий рядок у файлі, який позиціонується як людиночитний (пор. PhotoThumbnail).
+        if (facts.Count == 0)
+        {
+            return null;
+        }
+
+        var list = new List<PersonFactDto?>(facts.Count);
+
+        foreach (var fact in facts)
+        {
+            list.Add(new PersonFactDto
+            {
+                Kind = KindToString(fact),
+                Value = fact.Value,
+                Date = ToDto(fact.Date),
+                Place = fact.Place,
+            });
+        }
+
+        return list;
+    }
+
+    private static List<PersonFact> ToDomain(List<PersonFactDto?>? dtos)
+    {
+        var facts = new List<PersonFact>();
+
+        if (dtos is null)
+        {
+            return facts;
+        }
+
+        // OfType<T>() відкидає null-елементи масиву — так само, як для осіб і зв'язків.
+        foreach (var dto in dtos.OfType<PersonFactDto>())
+        {
+            var (kind, label) = ParseKind(dto.Kind);
+
+            var fact = new PersonFact
+            {
+                Kind = kind,
+                Label = label,
+                Value = dto.Value,
+                Date = ToDomain(dto.Date),
+                Place = dto.Place,
+            };
+
+            // Запис без виду, місця й дати не несе інформації: у чужому чи ручному
+            // файлі це шум, у нашому — не з'являється. Мовчки пропускаємо: втрачати
+            // тут нічого, тож і повідомляти користувачу нема про що.
+            if (!fact.IsEmpty)
+            {
+                facts.Add(fact);
+            }
+        }
+
+        return facts;
+    }
+
+    private static string KindToString(PersonFact fact) => fact.Kind switch
+    {
+        PersonFactKind.Occupation => FactKindOccupation,
+        PersonFactKind.Residence => FactKindResidence,
+
+        // Label тримає оригінальну назву виду з файлу новішої збірки — повертаємо
+        // її незміненою, щоб round-trip нічого не загубив.
+        _ => string.IsNullOrWhiteSpace(fact.Label) ? FactKindOther : fact.Label,
+    };
+
+    private static (PersonFactKind Kind, string? Label) ParseKind(string? raw)
+    {
+        var kind = raw?.Trim();
+
+        if (string.Equals(kind, FactKindOccupation, StringComparison.OrdinalIgnoreCase))
+        {
+            return (PersonFactKind.Occupation, null);
+        }
+
+        if (string.Equals(kind, FactKindResidence, StringComparison.OrdinalIgnoreCase))
+        {
+            return (PersonFactKind.Residence, null);
+        }
+
+        return (PersonFactKind.Other, string.IsNullOrWhiteSpace(kind) ? null : kind);
+    }
 
     private static ParentChildLinkDto ToDto(ParentChildLink l) => new()
     {

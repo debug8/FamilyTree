@@ -121,6 +121,16 @@ public static class GedcomExporter
             indi.Add(death);
         }
 
+        // Життєві факти — після подій народження/смерті й до посилань на родини,
+        // у порядку, у якому їх тримає особа.
+        foreach (var fact in person.Facts)
+        {
+            if (BuildFact(fact) is { } node)
+            {
+                indi.Add(node);
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(person.Notes))
         {
             indi.Add(new GedcomNode("NOTE", value: person.Notes));
@@ -236,6 +246,84 @@ public static class GedcomExporter
 
         return fam;
     }
+
+    /// <summary>
+    /// Життєвий факт у тег 5.5.1. Дзеркало <c>GedcomImporter.ReadFacts</c>, і розподіл
+    /// полів той самий: професія йде значенням тега (<c>1 OCCU Коваль</c>), а проживання
+    /// значення не має — місце лягає в <c>PLAC</c>, пояснення в <c>NOTE</c>.
+    /// </summary>
+    /// <remarks>
+    /// Проживання, у якого заповнене лише <see cref="PersonFact.Value"/> (для нього це
+    /// нетипово — місце має бути в <see cref="PersonFact.Place"/>), пишеться як
+    /// <c>PLAC</c>: краще нормалізувати, ніж мовчки загубити.
+    /// <para>
+    /// <see cref="PersonFactKind.Other"/> відповідника в профілі не має й у файл не йде.
+    /// З'явитися такий факт може лише в документі, збереженому новішою збіркою.
+    /// </para>
+    /// </remarks>
+    private static GedcomNode? BuildFact(PersonFact fact)
+    {
+        var tag = fact.Kind switch
+        {
+            PersonFactKind.Occupation => "OCCU",
+            PersonFactKind.Residence => "RESI",
+            _ => null,
+        };
+
+        if (tag is null)
+        {
+            return null;
+        }
+
+        var value = Trimmed(fact.Value);
+        var place = Trimmed(fact.Place);
+        var date = GedcomDateMapper.ToGedcom(fact.Date);
+
+        string? note = null;
+
+        if (fact.Kind == PersonFactKind.Residence)
+        {
+            // Значення тега RESI стандарт не передбачає, тож усе, що є, розкладаємо
+            // по підтегах: місце — у PLAC, решта — у NOTE.
+            if (place is null)
+            {
+                place = value;
+            }
+            else
+            {
+                note = value;
+            }
+
+            value = null;
+        }
+
+        if (value is null && place is null && date is null && note is null)
+        {
+            return null;
+        }
+
+        var node = new GedcomNode(tag, value: value);
+
+        if (date is not null)
+        {
+            node.Add(new GedcomNode("DATE", value: date));
+        }
+
+        if (place is not null)
+        {
+            node.Add(new GedcomNode("PLAC", value: place));
+        }
+
+        if (note is not null)
+        {
+            node.Add(new GedcomNode("NOTE", value: note));
+        }
+
+        return node;
+    }
+
+    private static string? Trimmed(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static GedcomNode? BuildEvent(string tag, string? date, string? place)
     {

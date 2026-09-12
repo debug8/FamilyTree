@@ -428,6 +428,8 @@ public static class DocumentIntegrity
     /// Скидає структурно некоректні неточні дати (T-5.2a) у <see langword="null"/>: напр.
     /// діапазон без меж, приблизна без кваліфікатора, порожня фраза, точка без року — таке
     /// може прийти з ручного чи чужого v2-файлу. Перевірка — <see cref="FamilyDate.IsStructurallyValid"/>.
+    /// Охоплює дати народження й смерті, шлюбу й розлучення, а також дати життєвих
+    /// фактів (<see cref="PersonFact.Date"/>).
     /// </summary>
     private static int SanitizeDates(FamilyDocument document)
     {
@@ -445,6 +447,18 @@ public static class DocumentIntegrity
             {
                 person.DeathDate = null;
                 cleared++;
+            }
+
+            // Дати життєвих фактів (OCCU/RESI) — той самий FamilyDate, тож той самий ризик.
+            // PersonFact — record, тож «скинути дату» означає замінити елемент списку,
+            // а не присвоїти властивість.
+            for (var i = 0; i < person.Facts.Count; i++)
+            {
+                if (Invalid(person.Facts[i].Date))
+                {
+                    person.Facts[i] = person.Facts[i] with { Date = null };
+                    cleared++;
+                }
             }
         }
 

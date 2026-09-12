@@ -13,11 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Windows-1251/1252: у .NET Core однобайтові кодові сторінки живуть у цьому пакеті. -->
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Побудова дерева (GedcomNode.Add, сетер Value) навмисно internal: ззовні
          збирати записи нема потреби. Тестам доступ потрібен — як і в Storage. -->
     <InternalsVisibleTo Include="FamilyTree.Tests" />

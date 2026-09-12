@@ -20,13 +20,20 @@ public sealed record MergeReport(
 /// Кожне поле не-null лише тоді, коли його треба проставити (ціль порожня, джерело має значення).
 /// Застосовується у <see cref="FamilyMerger.Apply"/>, щоб <c>Plan</c> не мутував документ.
 /// </summary>
+/// <param name="Facts">
+/// Життєві факти джерела, яких ще немає в цілі. На відміну від решти полів, факти
+/// не конфліктують: список за задумом тримає кілька записів, тож «інша професія»
+/// — це не суперечність, а другий період життя. Тому вони додаються, а не
+/// відкидаються на користь цілі.
+/// </param>
 public sealed record PersonFieldFill(
     Person Target,
     FamilyDate? DeathDate = null,
     string? BirthPlace = null,
     string? MaidenName = null,
     string? Notes = null,
-    string? PhotoPath = null);
+    string? PhotoPath = null,
+    IReadOnlyList<PersonFact>? Facts = null);
 
 /// <summary>
 /// План злиття: що саме буде додано (обчислюється без зміни документа, щоб показати
@@ -258,6 +265,7 @@ public sealed class FamilyMerger
             if (fill.MaidenName is { } maiden) fill.Target.MaidenName = maiden;
             if (fill.Notes is { } notes) fill.Target.Notes = notes;
             if (fill.PhotoPath is { } photo) fill.Target.PhotoPath = photo;
+            if (fill.Facts is { Count: > 0 } facts) fill.Target.Facts.AddRange(facts);
         }
 
         plan.AppliedAt = DateTime.UtcNow;
@@ -371,11 +379,26 @@ public sealed class FamilyMerger
         var notes = ResolveText(target.Notes, source.Notes, ref any, ref localConflicts);
         var photo = ResolveText(target.PhotoPath, source.PhotoPath, ref any, ref localConflicts);
 
+        // Факти доповнюють, а не заміщають: список і існує заради кількох записів.
+        // Рівність у PersonFact — за значенням (record), тож Contains відсіює точні
+        // дублікати без окремого компаратора. Distinct() прибирає дублі всередині
+        // самого джерела.
+        var newFacts = source.Facts
+            .Where(fact => !target.Facts.Contains(fact))
+            .Distinct()
+            .ToList();
+
+        if (newFacts.Count > 0)
+        {
+            any = true;
+        }
+
         conflicts += localConflicts;
 
         if (any)
         {
-            plan.PersonUpdates.Add(new PersonFieldFill(target, death, birthPlace, maiden, notes, photo));
+            plan.PersonUpdates.Add(new PersonFieldFill(
+                target, death, birthPlace, maiden, notes, photo, newFacts));
         }
     }
 
@@ -416,6 +439,10 @@ public sealed class FamilyMerger
         DeathDate = p.DeathDate,
         PhotoPath = p.PhotoPath,
         Notes = p.Notes,
+
+        // Новий список: клон не має ділити його з особою джерела.
+        Facts = [.. p.Facts],
+
         CreatedAt = p.CreatedAt,
         UpdatedAt = p.UpdatedAt,
     };

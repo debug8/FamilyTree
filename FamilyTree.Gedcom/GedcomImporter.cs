@@ -33,7 +33,14 @@ public static class GedcomImporter
         "BIRT", "DEAT", "DATE", "PLAC", "TIME", "NOTE",
         "FAMC", "FAMS", "PEDI", "_UID", "CHAN",
         "HUSB", "WIFE", "CHIL", "MARR", "DIV", "_FREL", "_MREL",
+
+        // Життєві факти (PersonFact) і структурована адреса, з якої RESI бере місце,
+        // коли PLAC відсутній — у чужих файлах це звичайна річ.
+        "OCCU", "RESI", "ADDR", "ADR1", "CITY", "STAE", "POST", "CTRY",
     };
+
+    /// <summary>Складові <c>ADDR</c> у порядку, у якому вони склеюються в один рядок місця.</summary>
+    private static readonly string[] AddressParts = { "ADR1", "CITY", "STAE", "POST", "CTRY" };
 
     private static readonly string[] MonthAbbreviations =
         { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
@@ -136,9 +143,105 @@ public static class GedcomImporter
             BirthPlace = Clean(indi.Path("BIRT", "PLAC")),
             DeathDate = death,
             Notes = Clean(indi.ChildValue("NOTE")),
+            Facts = ReadFacts(indi, counters),
             CreatedAt = changed,
             UpdatedAt = changed,
         };
+    }
+
+    /// <summary>
+    /// Життєві факти особи: <c>OCCU</c> (професія) і <c>RESI</c> (проживання).
+    /// Обидва теги повторювані, тож читаємо ВСІ входження в порядку з файлу —
+    /// послідовність професій і переїздів має значення й відновити її потім нізвідки.
+    /// </summary>
+    /// <remarks>
+    /// Розподіл полів іде за самим стандартом. У <c>OCCU</c> значення лежить у рядку
+    /// тега (<c>1 OCCU Коваль</c>) — воно й стає <see cref="PersonFact.Value"/>.
+    /// <c>RESI</c> у 5.5.1 — подія БЕЗ значення, усе несуть підтеги, тому місце
+    /// береться з <c>PLAC</c>, а за його відсутності — з <c>ADDR</c>. Пояснення при
+    /// проживанні (<c>NOTE</c>) кладемо у <see cref="PersonFact.Value"/>: інакше
+    /// експорт не мав би куди його повернути.
+    /// </remarks>
+    private static List<PersonFact> ReadFacts(GedcomNode indi, Counters counters)
+    {
+        var facts = new List<PersonFact>();
+
+        foreach (var node in indi.Children)
+        {
+            PersonFactKind kind;
+
+            if (string.Equals(node.Tag, "OCCU", StringComparison.OrdinalIgnoreCase))
+            {
+                kind = PersonFactKind.Occupation;
+            }
+            else if (string.Equals(node.Tag, "RESI", StringComparison.OrdinalIgnoreCase))
+            {
+                kind = PersonFactKind.Residence;
+            }
+            else
+            {
+                continue;
+            }
+
+            var inline = Clean(node.Value);
+            var place = Clean(node.ChildValue("PLAC")) ?? ReadAddress(node);
+
+            string? value;
+
+            if (kind == PersonFactKind.Occupation)
+            {
+                value = inline;
+            }
+            else
+            {
+                value = Clean(node.ChildValue("NOTE"));
+
+                // «1 RESI Полтава» — не за стандартом (RESI має бути подією без значення),
+                // але так пише чимало програм. Без цієї гілки місце просто зникало б:
+                // факт лишався б порожнім і його відкинуло б як голий RESI.
+                place ??= inline;
+            }
+
+            var fact = new PersonFact
+            {
+                Kind = kind,
+                Value = value,
+                Date = ReadDate(node.ChildValue("DATE"), counters),
+                Place = place,
+            };
+
+            // Голий «1 RESI» без місця, дати й пояснення трапляється в чужих файлах
+            // як залишок після редагування — інформації в ньому нуль.
+            if (!fact.IsEmpty)
+            {
+                facts.Add(fact);
+            }
+        }
+
+        return facts;
+    }
+
+    /// <summary>
+    /// Місце зі структурованої адреси: власне значення <c>ADDR</c>, а якщо воно порожнє —
+    /// склейка складових. Обидві форми законні, і програми пишуть то одну, то другу.
+    /// </summary>
+    private static string? ReadAddress(GedcomNode node)
+    {
+        if (node.Child("ADDR") is not { } address)
+        {
+            return null;
+        }
+
+        if (Clean(address.Value) is { } inline)
+        {
+            return inline;
+        }
+
+        var joined = string.Join(", ", AddressParts
+            .Select(tag => Clean(address.ChildValue(tag)))
+            .Where(part => part is not null));
+
+        return Clean(joined);
     }
 
     /// <summary>

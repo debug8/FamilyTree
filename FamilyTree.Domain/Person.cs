@@ -54,6 +54,17 @@ public sealed class Person : Entity
     /// <summary>Довільні нотатки.</summary>
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// Життєві факти: професія й місце проживання (GEDCOM <c>OCCU</c>/<c>RESI</c>).
+    /// Порядок значущий — його задає файл-джерело; сортування за датою робить UI.
+    /// <para>
+    /// Список, а не пара полів, бо обидва теги в GEDCOM повторювані: людина міняє
+    /// професію й переїжджає, і кожен період має власну дату. Порожній список у файл
+    /// не пишеться (див. <c>DocumentMapper</c>).
+    /// </para>
+    /// </summary>
+    public List<PersonFact> Facts { get; init; } = new();
+
     /// <summary>Час створення запису (аудит).</summary>
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
@@ -81,6 +92,12 @@ public sealed class Person : Entity
         PhotoPath = PhotoPath,
         PhotoThumbnail = PhotoThumbnail,
         Notes = Notes,
+
+        // Новий список, а не та сама посилання: інакше правка фактів у копії
+        // зачіпала б відкритий документ. Самі факти — record, тож незмінні
+        // й копіювати їх поелементно не треба.
+        Facts = [.. Facts],
+
         CreatedAt = CreatedAt,
         UpdatedAt = UpdatedAt,
     };

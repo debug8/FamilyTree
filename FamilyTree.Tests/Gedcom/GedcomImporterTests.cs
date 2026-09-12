@@ -191,10 +191,68 @@ public sealed class GedcomImporterTests
             out var report);
 
         doc.Persons.ShouldHaveSingleItem();
-        report.SkippedTags.Keys.ShouldContain("OCCU");
-        report.SkippedTags.Keys.ShouldContain("RESI");
+
+        // OCCU і RESI профіль тепер споживає — вони стають життєвими фактами особи,
+        // тож у пропущених їх більше немає. Незнайомий BAPM — так само лише запис у звіті,
+        // а не помилка: сенс тесту саме в цьому.
+        report.SkippedTags.Keys.ShouldNotContain("OCCU");
+        report.SkippedTags.Keys.ShouldNotContain("RESI");
         report.SkippedTags.Keys.ShouldContain("BAPM");
         report.HasWarnings.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Reads_all_occupations_and_residences_in_file_order()
+    {
+        var doc = Import(
+            "0 @I1@ INDI\n" +
+            "1 NAME Іван /Коваленко/\n" +
+            "1 OCCU коваль\n2 DATE FROM 1970 TO 1985\n2 PLAC Полтава\n" +
+            "1 RESI\n2 PLAC Полтава\n2 DATE 1970\n" +
+            "1 OCCU бригадир\n" +
+            "1 RESI\n2 ADDR\n3 CITY Чернівці\n3 CTRY Україна\n");
+
+        var person = doc.Persons.ShouldHaveSingleItem();
+
+        // Обидва теги повторювані, і порядок із файлу зберігається:
+        // послідовність професій і переїздів потім нізвідки не відновити.
+        person.Facts.Count.ShouldBe(4);
+
+        person.Facts[0].Kind.ShouldBe(PersonFactKind.Occupation);
+        person.Facts[0].Value.ShouldBe("коваль");
+        person.Facts[0].Place.ShouldBe("Полтава");
+        person.Facts[0].Date.ShouldNotBeNull();
+
+        person.Facts[1].Kind.ShouldBe(PersonFactKind.Residence);
+        person.Facts[1].Place.ShouldBe("Полтава");
+
+        person.Facts[2].Value.ShouldBe("бригадир");
+
+        // PLAC немає — місце збирається зі складових ADDR.
+        person.Facts[3].Place.ShouldBe("Чернівці, Україна");
+    }
+
+    [Fact]
+    public void Residence_written_as_tag_value_keeps_the_place()
+    {
+        // «1 RESI Полтава» суперечить 5.5.1 (RESI — подія без значення), але так
+        // пише чимало програм. Без обробки цієї форми місце зникало б мовчки.
+        var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 RESI Полтава\n");
+
+        var fact = doc.Persons.ShouldHaveSingleItem().Facts.ShouldHaveSingleItem();
+
+        fact.Kind.ShouldBe(PersonFactKind.Residence);
+        fact.Place.ShouldBe("Полтава");
+    }
+
+    [Fact]
+    public void Empty_residence_record_is_dropped()
+    {
+        // Голий «1 RESI» без місця, дати й пояснення — залишок після чужого
+        // редагування, інформації нуль.
+        var doc = Import("0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 RESI\n");
+
+        doc.Persons.ShouldHaveSingleItem().Facts.ShouldBeEmpty();
     }
 
     [Fact]

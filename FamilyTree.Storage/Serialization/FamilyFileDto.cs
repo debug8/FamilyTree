@@ -54,8 +54,33 @@ internal sealed class PersonDto
     public byte[]? PhotoThumbnail { get; set; }
 
     public string? Notes { get; set; }
+
+    // Життєві факти (OCCU/RESI). Без ініціалізатора: null = у файлі поля немає.
+    // Порожній список мапер теж пише як null — інакше кожна особа без фактів
+    // тягла б у файл зайвий рядок "facts": [].
+    public List<PersonFactDto?>? Facts { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// DTO життєвого факту особи (<see cref="PersonFact"/>).
+/// </summary>
+/// <remarks>
+/// <see cref="Kind"/> — рядок, а не enum через <c>JsonStringEnumConverter</c>: файл,
+/// записаний новішою збіркою з видом, якого ця ще не знає, має читатися без падіння.
+/// Конвертер кинув би <c>JsonException</c>, і користувач побачив би «файл пошкоджено»
+/// замість одного незнайомого запису. Невідомий рядок читається як
+/// <see cref="PersonFactKind.Other"/> зі збереженням оригіналу в <c>Label</c> і
+/// повертається у файл незміненим. Той самий підхід, що й у <see cref="FamilyDateDto.Kind"/>.
+/// </remarks>
+internal sealed class PersonFactDto
+{
+    public string? Kind { get; set; }      // occupation | residence | <оригінал невідомого виду>
+    public string? Value { get; set; }
+    public FamilyDateDto? Date { get; set; }
+    public string? Place { get; set; }
 }
 
 internal sealed class ParentChildLinkDto
