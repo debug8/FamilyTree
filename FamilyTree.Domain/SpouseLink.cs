@@ -16,6 +16,13 @@ public sealed class SpouseLink : Entity
     /// <summary>Дата шлюбу (може бути неточною — <see cref="FamilyDate"/>, T-5.2a).</summary>
     public FamilyDate? MarriageDate { get; set; }
 
+    /// <summary>
+    /// Місце шлюбу — GEDCOM <c>MARR.PLAC</c>. Вільний рядок, як <c>Person.BirthPlace</c>.
+    /// Місця розлучення (<c>DIV.PLAC</c>) свідомо немає: у реальних файлах воно не
+    /// трапляється, і при імпорті тег лишається в пропущених (див. IDEAS.md, «Місця подій»).
+    /// </summary>
+    public string? MarriagePlace { get; set; }
+
     /// <summary>Дата розлучення (null — дата невідома або шлюб чинний; див. <see cref="Divorced"/>).</summary>
     public FamilyDate? DivorceDate { get; set; }
 
@@ -43,7 +50,12 @@ public sealed class SpouseLink : Entity
     /// <paramref name="divorceDate"/>, шлюб і так неактивний незалежно від цього прапорця.
     /// </param>
     public static SpouseLink Create(
-        Guid personA, Guid personB, FamilyDate? marriageDate = null, FamilyDate? divorceDate = null, bool divorced = false)
+        Guid personA,
+        Guid personB,
+        FamilyDate? marriageDate = null,
+        FamilyDate? divorceDate = null,
+        bool divorced = false,
+        string? marriagePlace = null)
     {
         var (first, second) = personA.CompareTo(personB) <= 0 ? (personA, personB) : (personB, personA);
         return new SpouseLink
@@ -53,6 +65,7 @@ public sealed class SpouseLink : Entity
             MarriageDate = marriageDate,
             DivorceDate = divorceDate,
             Divorced = divorced,
+            MarriagePlace = marriagePlace,
         };
     }
 

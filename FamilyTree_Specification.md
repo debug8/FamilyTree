@@ -102,8 +102,11 @@ FamilyTree.sln
 | `Gender` | enum `Gender { Male, Female, Unknown }` | так | Потрібен для назв родства (дядько/тітка) |
 | `BirthDate` | FamilyDate? | ні | Може бути невідома. З формату v2 — `FamilyDate` (точна/часткова/приблизна/діапазон/фраза), див. T-5.2a |
 | `BirthPlace` | string(200) | ні | |
+| `BirthNote` | string? | ні | Нотатка при народженні — GEDCOM `BIRT.NOTE`. Окремо від `Notes` (`INDI.NOTE`): у файлі це різні теги |
 | `DeathDate` | FamilyDate? | ні | Див. T-5.2a. `null` — дата невідома АБО особа жива; розрізняє `Deceased` |
 | `Deceased` | bool | ні | Явна позначка «помер», коли дата невідома (GEDCOM `1 DEAT` без `DATE`). Прапорець позитивний навмисне: `false` за замовчуванням = «живий», тож старі файли без поля читаються правильно. Та сама конструкція, що й `SpouseLink.Divorced`. `false` у файл не пишеться |
+| `DeathPlace` | string(200) | ні | Місце смерті — GEDCOM `DEAT.PLAC` |
+| `DeathNote` | string? | ні | Обставини й причина смерті — GEDCOM `DEAT.NOTE`. Окремого поля під `CAUS` немає навмисно: реальні файли пишуть причину прозою в `NOTE` |
 | `IsAlive` | bool (обчислюване) | — | `DeathDate == null && !Deceased` |
 | `PhotoPath` | string? | ні | Копія фото в папці даних застосунку |
 | `Notes` | string? | ні | Довільні нотатки |
@@ -146,6 +149,7 @@ FamilyTree.sln
 | `Person1Id` / `Person2Id` | Guid | FK → Person; зберігати з `Person1Id < Person2Id` для унікальності |
 | `MarriageDate` | FamilyDate? | З формату v2 — `FamilyDate` (див. T-5.2a) |
 | `DivorceDate` | FamilyDate? | `null` = дата невідома **або** шлюб чинний (див. `IsActive`); тип — `FamilyDate` з v2 (T-5.2a) |
+| `MarriagePlace` | string? | Місце шлюбу — GEDCOM `MARR.PLAC`. Місця розлучення (`DIV.PLAC`) немає навмисно: у реальних файлах не трапляється |
 | `Divorced` | bool | Шлюб завершено, коли дату розлучення не вказано (у діалозі знято «В шлюбі»). Опційне поле формату: відсутнє/`false` для старих файлів |
 
 Чинність шлюбу — обчислюване: `IsActive = DivorceDate is null && !Divorced`. Поле `Divorced` додано, щоб
@@ -443,11 +447,11 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 *Профіль тегів («робочий»).* Ширший за суто мінімальний: покриває **всі поля моделі, крім `PhotoPath`**, — щоб експорт не втрачав даних, які користувач уже ввів.
 
 - `HEAD`: `SOUR`/`VERS`/`NAME`, `DATE`, `GEDC.VERS 5.5.1`, `GEDC.FORM LINEAGE-LINKED`, `CHAR UTF-8`, `SUBM` (заглушка).
-- `INDI`: `NAME` (+`GIVN`, `SURN`, `_MARNM`), `SEX`, `BIRT` (`DATE`, `PLAC`), `DEAT` (`DATE`), `OCCU` (`DATE`, `PLAC`), `RESI` (`DATE`, `PLAC`, `ADDR`, `NOTE`), `NOTE`, `FAMC` (+`PEDI`), `FAMS`, `CHAN.DATE`/`CHAN.TIME`, `_UID`.
-- `FAM`: `HUSB`, `WIFE`, `CHIL`, `MARR` (`DATE`), `DIV` (`DATE` або `Y`), `_UID`.
+- `INDI`: `NAME` (+`GIVN`, `SURN`, `_MARNM`), `SEX`, `BIRT` (`DATE`, `PLAC`, `NOTE`), `DEAT` (`DATE`, `PLAC`, `NOTE`), `OCCU` (`DATE`, `PLAC`), `RESI` (`DATE`, `PLAC`, `ADDR`, `NOTE`), `NOTE`, `FAMC` (+`PEDI`), `FAMS`, `CHAN.DATE`/`CHAN.TIME`, `_UID`.
+- `FAM`: `HUSB`, `WIFE`, `CHIL`, `MARR` (`DATE`, `PLAC`), `DIV` (`DATE` або `Y`), `_UID`.
 - `TRLR`.
 
-*Поза межами (свідомо).* Медіа (`OBJE`/`FILE`) — `PhotoPath` не експортується й не імпортується; джерела й репозиторії (`SOUR`/`REPO`/`SUBM`-деталі); події та атрибути, крім перелічених вище (`BAPM`, `BURI`, `EDUC`, `RELI`, `TITL`, `CAUS` тощо) — при імпорті пропускаються з лічильником; `ASSO`, `ALIA`; **`DEAT.PLAC`** — у моделі немає поля «місце смерті», тег пропускається (додавання поля — окрема задача, `IDEAS.md`); запис у GEDCOM 7.0; кодування ANSEL; шифровані/архівовані файли. Усе, що поза межами, **ніколи не валить імпорт** — лише збільшує лічильник пропущених тегів у звіті.
+*Поза межами (свідомо).* Медіа (`OBJE`/`FILE`) — `PhotoPath` не експортується й не імпортується; джерела й репозиторії (`SOUR`/`REPO`/`SUBM`-деталі); події та атрибути, крім перелічених вище (`BAPM`, `BURI`, `EDUC`, `RELI`, `TITL`, `CAUS` тощо) — при імпорті пропускаються з лічильником; `ASSO`, `ALIA`; **`DEAT.CAUS`** (реальні файли пишуть причину смерті прозою в `DEAT.NOTE`, тож окремого поля немає) і **`DIV.PLAC`** (не трапляється); запис у GEDCOM 7.0; кодування ANSEL; шифровані/архівовані файли. Усе, що поза межами, **ніколи не валить імпорт** — лише збільшує лічильник пропущених тегів у звіті.
 
 Список спожитого ведеться **кваліфікованими шляхами** від запису (`BIRT.PLAC`, `DEAT.DATE`, `CHIL._FREL`), а не голими іменами тегів: той самий `PLAC` під `BIRT` читається, а під `DEAT` — ні, і плоский список цього не розрізняв би. У тег поза профілем підрахунок не спускається — втрачено один запис (`EDUC`), а не три теги (`EDUC` + `EDUC.DATE` + `EDUC.PLAC`).
 
@@ -491,6 +495,9 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 | `Gender` | `SEX` | `M` / `F` / `U` | `M`→Male, `F`→Female, решта → Unknown |
 | `BirthDate` | `BIRT.DATE` | див. дати | див. дати |
 | `BirthPlace` | `BIRT.PLAC` | як є | як є |
+| `BirthNote` | `BIRT.NOTE` | як є (`CONC`/`CONT`) | як є |
+| `DeathPlace` | `DEAT.PLAC` | як є | як є |
+| `DeathNote` | `DEAT.NOTE` | як є (`CONC`/`CONT`) | як є |
 | `DeathDate` | `DEAT.DATE` | `DEAT` з `DATE`, коли дата є | як є |
 | `Deceased` | `DEAT` (наявність тега) | `1 DEAT Y`, коли особа позначена померлою, а дати немає | будь-який `DEAT` (`Y`, порожній, з підтегами) → `Deceased = true`; `DEAT` без `DATE` додатково рахується у звіті |
 | `Facts` (Occupation) | `OCCU` (+`DATE`, `PLAC`) | `Value` — значенням тега, як велить 5.5.1 | значення тега → `Value`, підтеги → `Date`/`Place` |
@@ -525,6 +532,8 @@ KinshipResult Compute(Person a, Person b, FamilyGraph graph);
 
 - Для кожного `CHIL`: `ParentChildLink` від `HUSB` і від `WIFE`. Роль береться з `PEDI` у **дитячому** `INDI.FAMC` (`birth`/`sealing` → `Biological`, `adopted` → `Adoptive`, `foster` → `Step`); якщо є `FAM.CHIL._FREL`/`_MREL` — вони мають пріоритет, бо задають роль окремо для батька й матері. Немає нічого → `Biological`.
 - `SpouseLink` створюється **лише** якщо в `FAM` є `MARR` або `DIV`. `FAM` без них — це просто спільні батьки, не подружжя.
+- `MARR.PLAC` → `SpouseLink.MarriagePlace` і назад. `DIV.PLAC` — поза профілем (поля немає), потрапляє у звіт.
+- `MARR` пишеться з `DATE` і/або `PLAC`; `MARR Y` — лише коли немає ні того, ні того.
 - `DIV` з `DATE` → `DivorceDate`; `DIV Y` (без дати) → `Divorced = true`.
 - Будь-який `DEAT` → `Deceased = true`; `DEAT` з `DATE` додатково дає `DeathDate`. Зворотно: `1 DEAT Y`, коли прапорець є, а дати немає.
 - Кілька пар `MARR`/`DIV` в одному `FAM` → кілька `SpouseLink` тієї самої пари; ті, що дадуть перекриття періодів, відкине `RelationshipValidator` з лічильником у звіті.

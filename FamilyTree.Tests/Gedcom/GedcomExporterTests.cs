@@ -90,6 +90,55 @@ public sealed class GedcomExporterTests
     }
 
     [Fact]
+    public void Death_place_and_note_are_written_as_subtags()
+    {
+        var doc = new GedcomTestDocument();
+        doc.Add(
+            "Коваленко", "Іван", Gender.Male,
+            death: FamilyDate.Exact(new DateOnly(1939, 5, 1)),
+            deathPlace: "Полтава",
+            deathNote: "помер у 40 років");
+
+        var indi = Individual(Export(doc), "I1");
+
+        indi.Path("DEAT", "DATE").ShouldBe("1 MAY 1939");
+        indi.Path("DEAT", "PLAC").ShouldBe("Полтава");
+        indi.Path("DEAT", "NOTE").ShouldBe("помер у 40 років");
+
+        // Маркер «Y» тут зайвий: подія має підтеги, і «1 DEAT Y» із ними був би суперечливим.
+        indi.Child("DEAT")!.Value.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Death_place_alone_is_enough_to_write_the_event()
+    {
+        // Дати немає, але місце є — подія мусить доїхати підтегом, а не маркером «Y».
+        var doc = new GedcomTestDocument();
+        doc.Add("Коваленко", "Іван", Gender.Male, deathPlace: "Полтава");
+
+        var indi = Individual(Export(doc), "I1");
+
+        indi.Path("DEAT", "PLAC").ShouldBe("Полтава");
+        indi.Child("DEAT")!.Value.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Birth_note_is_written_separately_from_person_notes()
+    {
+        var doc = new GedcomTestDocument();
+        doc.Add(
+            "Коваленко", "Іван", Gender.Male,
+            birth: FamilyDate.Exact(new DateOnly(1900, 1, 1)),
+            birthNote: "за метричною книгою",
+            notes: "коваль");
+
+        var indi = Individual(Export(doc), "I1");
+
+        indi.Path("BIRT", "NOTE").ShouldBe("за метричною книгою");
+        indi.ChildValue("NOTE").ShouldBe("коваль");
+    }
+
+    [Fact]
     public void Deceased_without_a_date_is_written_as_DEAT_Y()
     {
         // Стан «помер, дата невідома»: подія мусить дійти до файлу, інакше

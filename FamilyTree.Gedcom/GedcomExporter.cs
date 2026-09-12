@@ -108,22 +108,25 @@ public static class GedcomExporter
             _ => "U",
         }));
 
-        var birth = BuildEvent("BIRT", GedcomDateMapper.ToGedcom(person.BirthDate), person.BirthPlace);
+        var birth = BuildEvent(
+            "BIRT", GedcomDateMapper.ToGedcom(person.BirthDate), person.BirthPlace, person.BirthNote);
         if (birth is not null)
         {
             indi.Add(birth);
         }
 
-        // Місце смерті в моделі відсутнє (див. IDEAS.md), тому лише дата.
-        var death = BuildEvent("DEAT", GedcomDateMapper.ToGedcom(person.DeathDate), place: null);
+        var death = BuildEvent(
+            "DEAT", GedcomDateMapper.ToGedcom(person.DeathDate), person.DeathPlace, person.DeathNote);
         if (death is not null)
         {
             indi.Add(death);
         }
         else if (person.Deceased)
         {
-            // Стан «помер, дата невідома» (Person.Deceased). «Y» означає
-            // «подія була, подробиць немає» — так само, як у MARR/DIV нижче.
+            // Стан «помер, і про смерть не відомо взагалі нічого» (Person.Deceased).
+            // «Y» означає «подія була, подробиць немає» — так само, як у MARR/DIV нижче.
+            // Гілка спрацьовує лише коли BuildEvent не дав вузла, тобто порожні ВСІ три
+            // підтеги: «1 DEAT Y» з підтегом під ним було б суперечливим записом.
             indi.Add(new GedcomNode("DEAT", value: "Y"));
         }
 
@@ -223,12 +226,22 @@ public static class GedcomExporter
 
         foreach (var marriage in family.Marriages)
         {
+            var marriageDate = GedcomDateMapper.ToGedcom(marriage.MarriageDate);
+            var marriagePlace = Trimmed(marriage.MarriagePlace);
+
             var marr = new GedcomNode("MARR");
-            if (GedcomDateMapper.ToGedcom(marriage.MarriageDate) is { } marriageDate)
+
+            if (marriageDate is not null)
             {
                 marr.Add(new GedcomNode("DATE", value: marriageDate));
             }
-            else
+
+            if (marriagePlace is not null)
+            {
+                marr.Add(new GedcomNode("PLAC", value: marriagePlace));
+            }
+
+            if (marriageDate is null && marriagePlace is null)
             {
                 // MARR без жодного підтегу програми ігнорують; «Y» означає
                 // «подія була, подробиць немає».
@@ -331,9 +344,16 @@ public static class GedcomExporter
     private static string? Trimmed(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static GedcomNode? BuildEvent(string tag, string? date, string? place)
+    /// <summary>
+    /// Подія особи: <c>DATE</c>, <c>PLAC</c>, <c>NOTE</c>. Повертає <see langword="null"/>,
+    /// коли всі три порожні — тоді викликач вирішує, чи писати сам тег («1 DEAT Y»).
+    /// </summary>
+    private static GedcomNode? BuildEvent(string tag, string? date, string? place, string? note = null)
     {
-        if (date is null && string.IsNullOrWhiteSpace(place))
+        place = Trimmed(place);
+        note = Trimmed(note);
+
+        if (date is null && place is null && note is null)
         {
             return null;
         }
@@ -345,9 +365,14 @@ public static class GedcomExporter
             node.Add(new GedcomNode("DATE", value: date));
         }
 
-        if (!string.IsNullOrWhiteSpace(place))
+        if (place is not null)
         {
             node.Add(new GedcomNode("PLAC", value: place));
+        }
+
+        if (note is not null)
+        {
+            node.Add(new GedcomNode("NOTE", value: note));
         }
 
         return node;

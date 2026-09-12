@@ -239,6 +239,39 @@ public sealed class JsonFamilyStorageTests : IDisposable
     }
 
     [Fact]
+    public async Task Event_places_and_notes_survive_roundtrip()
+    {
+        var storage = new JsonFamilyStorage();
+        var path = PathFor("events.familytree");
+
+        var doc = FamilyDocument.CreateNew("Тест");
+        var a = new Person
+        {
+            LastName = "Коваленко", FirstName = "Іван", Gender = Gender.Male,
+            BirthPlace = "Полтава",
+            BirthNote = "за метричною книгою",
+            DeathDate = new DateOnly(1939, 5, 1),
+            DeathPlace = "Чернівці",
+            DeathNote = "помер удома\nпричина: запалення легень",
+        };
+        var b = new Person { LastName = "Коваленко", FirstName = "Марія", Gender = Gender.Female };
+        doc.Persons.Add(a);
+        doc.Persons.Add(b);
+        doc.SpouseLinks.Add(SpouseLink.Create(
+            a.Id, b.Id, new DateOnly(1920, 6, 1), marriagePlace: "Полтава"));
+
+        await storage.SaveAsync(doc, path);
+        var loaded = await storage.LoadAsync(path);
+
+        var person = loaded.Persons.Single(p => p.Id == a.Id);
+        person.BirthNote.ShouldBe("за метричною книгою");
+        person.DeathPlace.ShouldBe("Чернівці");
+        person.DeathNote.ShouldBe("помер удома\nпричина: запалення легень");
+
+        loaded.SpouseLinks.ShouldHaveSingleItem().MarriagePlace.ShouldBe("Полтава");
+    }
+
+    [Fact]
     public async Task Living_person_does_not_write_the_deceased_field()
     {
         // WhenWritingDefault: false у файл не потрапляє, інакше кожна жива особа

@@ -28,8 +28,25 @@ public sealed class Person : Entity
     /// <summary>Місце народження.</summary>
     public string? BirthPlace { get; set; }
 
+    /// <summary>
+    /// Нотатка при народженні — GEDCOM <c>BIRT.NOTE</c>. Окремо від <see cref="Notes"/>
+    /// (<c>INDI.NOTE</c>): у файлі це різні теги, і злиття їх в одне поле означало б, що
+    /// при зворотному експорті текст переїде в чужий тег.
+    /// </summary>
+    public string? BirthNote { get; set; }
+
     /// <summary>Дата смерті (null — дата невідома або особа жива; див. <see cref="Deceased"/>).</summary>
     public FamilyDate? DeathDate { get; set; }
+
+    /// <summary>Місце смерті — GEDCOM <c>DEAT.PLAC</c>. Такий самий вільний рядок, як <see cref="BirthPlace"/>.</summary>
+    public string? DeathPlace { get; set; }
+
+    /// <summary>
+    /// Нотатка при смерті — GEDCOM <c>DEAT.NOTE</c>. Саме сюди лягають обставини й причина
+    /// смерті: реальні файли пишуть їх прозою в <c>NOTE</c>, а не в передбачений стандартом
+    /// <c>CAUS</c> (окремого поля під причину тому й немає — див. CHANGELOG).
+    /// </summary>
+    public string? DeathNote { get; set; }
 
     /// <summary>
     /// Явна позначка, що особа померла, навіть коли дата смерті невідома
@@ -108,7 +125,10 @@ public sealed class Person : Entity
         MaidenName = MaidenName,
         BirthDate = BirthDate,
         BirthPlace = BirthPlace,
+        BirthNote = BirthNote,
         DeathDate = DeathDate,
+        DeathPlace = DeathPlace,
+        DeathNote = DeathNote,
         Deceased = Deceased,
         PhotoPath = PhotoPath,
         PhotoThumbnail = PhotoThumbnail,

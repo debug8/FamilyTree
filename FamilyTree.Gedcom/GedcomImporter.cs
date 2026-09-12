@@ -44,10 +44,11 @@ public static class GedcomImporter
 
         "SEX",
 
-        // Народження й смерть. DEAT.PLAC у моделі місця не має (див. IDEAS.md,
-        // «Місця подій»), тож свідомо НЕ тут: хай звіт про нього чесно повідомляє.
-        "BIRT", "BIRT.DATE", "BIRT.PLAC",
-        "DEAT", "DEAT.DATE",
+        // Народження й смерть — дата, місце й нотатка при кожній події.
+        // DIV.PLAC свідомо НЕ тут: у реальних файлах він не трапляється, поля в моделі
+        // немає, і хай звіт про нього чесно повідомляє, якщо колись трапиться.
+        "BIRT", "BIRT.DATE", "BIRT.PLAC", "BIRT.NOTE",
+        "DEAT", "DEAT.DATE", "DEAT.PLAC", "DEAT.NOTE",
 
         // Життєві факти (PersonFact). ADDR — звідки RESI/OCCU беруть місце, коли
         // PLAC відсутній; у чужих файлах це звичайна річ. NOTE читається лише під
@@ -65,7 +66,7 @@ public static class GedcomImporter
         // FAM. _FREL/_MREL — єдине, що задає роль окремо для батька й матері.
         "HUSB", "WIFE",
         "CHIL", "CHIL._FREL", "CHIL._MREL",
-        "MARR", "MARR.DATE",
+        "MARR", "MARR.DATE", "MARR.PLAC",
         "DIV", "DIV.DATE",
     };
 
@@ -174,7 +175,10 @@ public static class GedcomImporter
             },
             BirthDate = birth,
             BirthPlace = Clean(indi.Path("BIRT", "PLAC")),
+            BirthNote = Clean(indi.Path("BIRT", "NOTE")),
             DeathDate = death,
+            DeathPlace = Clean(indi.Path("DEAT", "PLAC")),
+            DeathNote = Clean(indi.Path("DEAT", "NOTE")),
             Deceased = deceased,
             Notes = Clean(indi.ChildValue("NOTE")),
             Facts = ReadFacts(indi, counters),
@@ -513,7 +517,8 @@ public static class GedcomImporter
         var count = Math.Max(marriages.Count, Math.Max(divorces.Count, 1));
         for (var i = 0; i < count; i++)
         {
-            var marriage = i < marriages.Count ? ReadDate(marriages[i].ChildValue("DATE"), counters) : null;
+            var marriageNode = i < marriages.Count ? marriages[i] : null;
+            var marriage = ReadDate(marriageNode?.ChildValue("DATE"), counters);
             var divorceNode = i < divorces.Count ? divorces[i] : null;
             var divorce = ReadDate(divorceNode?.ChildValue("DATE"), counters);
 
@@ -522,7 +527,8 @@ public static class GedcomImporter
                 wife.Id,
                 marriage,
                 divorce,
-                divorced: divorceNode is not null && divorce is null));
+                divorced: divorceNode is not null && divorce is null,
+                marriagePlace: Clean(marriageNode?.ChildValue("PLAC"))));
         }
     }
 

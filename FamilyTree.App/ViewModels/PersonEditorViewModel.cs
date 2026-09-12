@@ -53,11 +53,20 @@ public partial class PersonEditorViewModel : ObservableValidator
     private string? _birthPlace;
 
     [ObservableProperty]
+    private string? _birthNote;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDeathDate))]
     private bool _isAlive = true;
 
     [ObservableProperty]
     private FamilyDate? _deathDate;
+
+    [ObservableProperty]
+    private string? _deathPlace;
+
+    [ObservableProperty]
+    private string? _deathNote;
 
     [ObservableProperty]
     private string? _notes;
@@ -96,6 +105,9 @@ public partial class PersonEditorViewModel : ObservableValidator
             _selectedGender = Genders.FirstOrDefault(g => g.Value == existing.Gender);
             _birthDate = existing.BirthDate;
             _birthPlace = existing.BirthPlace;
+            _birthNote = existing.BirthNote;
+            _deathPlace = existing.DeathPlace;
+            _deathNote = existing.DeathNote;
             _deathDate = existing.DeathDate;
 
             // Через IsAlive, а не DeathDate is null: інакше особа, позначена померлою
@@ -238,7 +250,13 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.MaidenName = Normalize(MaidenName);
         person.BirthDate = BirthDate;
         person.BirthPlace = Normalize(BirthPlace);
+        person.BirthNote = Normalize(BirthNote);
+
+        // Поля смерті чистяться разом із датою: якщо особу повернули в «живі»,
+        // лишити місце й обставини смерті означало б суперечливий запис.
         person.DeathDate = IsAlive ? null : DeathDate;
+        person.DeathPlace = IsAlive ? null : Normalize(DeathPlace);
+        person.DeathNote = IsAlive ? null : Normalize(DeathNote);
 
         // Знята галочка без дати — це стан «помер, дата невідома», і саме його
         // тримає прапорець. Без нього збереження мовчки «оживляло» б особу.
@@ -295,6 +313,8 @@ public partial class PersonEditorViewModel : ObservableValidator
         if (value)
         {
             DeathDate = null;
+            DeathPlace = null;
+            DeathNote = null;
         }
     }
 

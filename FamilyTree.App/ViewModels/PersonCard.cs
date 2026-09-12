@@ -96,13 +96,7 @@ public sealed class PersonCardBuilder
             DetailMaiden = Line("Person_MaidenName", person.MaidenName),
             DetailGender = Line("Person_Gender", GenderText(person.Gender)),
             DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
-            // Особа, позначена померлою без дати, мусить показати хоч «дата невідома»:
-            // Line() віддає null на порожнє значення, і рядок просто зникав би.
-            DetailDeath = person.IsAlive
-                ? null
-                : Line("Person_DeathDate", FormatDate(person.DeathDate) is { Length: > 0 } date
-                    ? date
-                    : _localization.GetString("Person_DateUnknown")),
+            DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDeath(person)),
             DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
             DetailChildren = Line("Tree_Card_Children", childrenCount.ToString(CultureInfo.CurrentCulture)),
             DetailFacts = FormatFacts(person) is { Length: > 0 } facts ? facts : null,
@@ -210,6 +204,23 @@ public sealed class PersonCardBuilder
     // Культура — поточна мова UI (її виставляє LocalizationService).
     public static string FormatDate(FamilyDate? date) =>
         FamilyDateFormatter.Format(date, CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// Дата смерті + місце, дзеркально до <see cref="FormatBirth"/>: «10.03.1861 · Санкт-Петербург».
+    /// Порожньою не буває: особа, позначена померлою без дати, мусить показати хоч
+    /// «невідома», інакше <see cref="Line"/> віддасть null і рядок про смерть зникне.
+    /// </summary>
+    private string FormatDeath(Person person)
+    {
+        var date = FormatDate(person.DeathDate);
+
+        if (date.Length == 0)
+        {
+            date = _localization.GetString("Person_DateUnknown");
+        }
+
+        return string.IsNullOrWhiteSpace(person.DeathPlace) ? date : $"{date} · {person.DeathPlace}";
+    }
 
     /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
     public static string FormatBirth(Person person)

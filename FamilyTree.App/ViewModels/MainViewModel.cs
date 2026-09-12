@@ -972,7 +972,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         if (pick.Confirmed && pick.Candidate is { } other)
         {
-            var link = SpouseLink.Create(person.Id, other.Id, pick.MarriageDate, pick.DivorceDate, pick.Divorced);
+            var link = SpouseLink.Create(
+                person.Id, other.Id, pick.MarriageDate, pick.DivorceDate, pick.Divorced, pick.MarriagePlace);
             var result = _validator.ValidateSpouse(link, _session.Current.SpouseLinks);
             if (Accept(result))
             {
@@ -1024,13 +1025,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var editor = RelationshipEditorViewModel.ForSpouseEdit(
-            person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive);
+            person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive, link.MarriagePlace);
         if (_dialogs.ShowRelationshipEditor(editor))
         {
             // B-19: змінені дати проганяємо через валідатор (як AddSpouse), а не пишемо наосліп.
             // Перевіряємо проти інших зв'язків (сам себе виключаємо, щоб не було хибного дубля).
             var candidate = SpouseLink.Create(
-                link.Person1Id, link.Person2Id, editor.MarriageDate, editor.DivorceDate, editor.Divorced);
+                link.Person1Id, link.Person2Id, editor.MarriageDate, editor.DivorceDate, editor.Divorced,
+                editor.MarriagePlace);
             var others = _session.Current.SpouseLinks.Where(l => l != link).ToList();
             if (!Accept(_validator.ValidateSpouse(candidate, others)))
             {
@@ -1038,6 +1040,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
 
             link.MarriageDate = editor.MarriageDate;
+            link.MarriagePlace = NormalizePlace(editor.MarriagePlace);
             link.DivorceDate = editor.DivorceDate;
             link.Divorced = editor.Divorced;
             _session.MarkContentChanged();
@@ -1061,12 +1064,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return _dialogs.Confirm(message, _localization.GetString("Relation_Remove_Title"));
     }
 
+    /// <summary>
+    /// Порожній рядок із поля вводу — це «не вказано», а не значення: інакше пробіл із
+    /// діалогу доїхав би у файл і при експорті дав би порожній <c>PLAC</c>.
+    /// </summary>
+    private static string? NormalizePlace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     /// <summary>Результат діалогу вибору родича (щоб ViewModel діалогу не «протікала» далі).</summary>
     private readonly record struct RelativePick(
         bool Confirmed,
         Person? Candidate,
         bool HasCreatedPersons,
         FamilyDate? MarriageDate,
+        string? MarriagePlace,
         FamilyDate? DivorceDate,
         bool Divorced);
 
@@ -1092,6 +1103,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             editor.SelectedCandidate,
             editor.HasCreatedPersons,
             editor.MarriageDate,
+            NormalizePlace(editor.MarriagePlace),
             editor.DivorceDate,
             editor.Divorced);
     }

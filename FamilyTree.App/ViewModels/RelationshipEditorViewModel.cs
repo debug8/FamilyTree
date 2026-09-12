@@ -53,6 +53,9 @@ public partial class RelationshipEditorViewModel : ObservableObject
     private FamilyDate? _marriageDate;
 
     [ObservableProperty]
+    private string? _marriagePlace;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDivorceDate))]
     private bool _isMarried = true;
 
@@ -138,7 +141,12 @@ public partial class RelationshipEditorViewModel : ObservableObject
     /// розлучення = null»: шлюб може бути завершеним і без дати (див. <see cref="Divorced"/>).
     /// </param>
     public static RelationshipEditorViewModel ForSpouseEdit(
-        Person basePerson, Person spouse, FamilyDate? marriageDate, FamilyDate? divorceDate, bool isActive)
+        Person basePerson,
+        Person spouse,
+        FamilyDate? marriageDate,
+        FamilyDate? divorceDate,
+        bool isActive,
+        string? marriagePlace = null)
     {
         var vm = new RelationshipEditorViewModel(
             RelationshipRole.Spouse, basePerson, new[] { spouse }, isEditMode: true);
@@ -148,6 +156,7 @@ public partial class RelationshipEditorViewModel : ObservableObject
 
         // FamilyDateEditor редагує неточну дату напряму — без зведення до представницької (T-5.2a, 2.5).
         vm.MarriageDate = marriageDate;
+        vm.MarriagePlace = marriagePlace;
         vm.DivorceDate = divorceDate;
         return vm;
     }

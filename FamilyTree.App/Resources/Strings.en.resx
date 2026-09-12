@@ -181,6 +181,18 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Death date</value>
   </data>
+  <data name="Person_BirthNote" xml:space="preserve">
+    <value>Birth note</value>
+  </data>
+  <data name="Person_DeathPlace" xml:space="preserve">
+    <value>Death place</value>
+  </data>
+  <data name="Person_DeathNote" xml:space="preserve">
+    <value>Death circumstances</value>
+  </data>
+  <data name="Rel_MarriagePlace" xml:space="preserve">
+    <value>Marriage place</value>
+  </data>
   <data name="Person_DateUnknown" xml:space="preserve">
     <value>unknown</value>
   </data>

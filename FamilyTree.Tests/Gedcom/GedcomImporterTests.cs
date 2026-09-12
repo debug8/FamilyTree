@@ -235,10 +235,10 @@ public sealed class GedcomImporterTests
     }
 
     [Fact]
-    public void Subtags_the_profile_does_not_read_are_reported_with_their_path()
+    public void Reads_place_and_note_of_the_death_event()
     {
-        // Регресія: список спожитих тегів був плоским, тож «PLAC» і «NOTE» з-під BIRT
-        // та INDI закривали собою DEAT.PLAC і DEAT.NOTE — дані зникали, а звіт мовчав.
+        // Той самий запис, з якого почалася задача: обставини й причина смерті лежать
+        // у DEAT.NOTE прозою (а не в передбаченому стандартом CAUS), а CONT їх продовжує.
         var doc = Import(
             "0 @I1@ INDI\n" +
             "1 NAME Іван /Коваленко/\n" +
@@ -249,14 +249,62 @@ public sealed class GedcomImporterTests
             "3 CONT Причина смерті: запалення легень\n",
             out var report);
 
-        doc.Persons.ShouldHaveSingleItem().DeathDate.ShouldNotBeNull();
+        var person = doc.Persons.ShouldHaveSingleItem();
 
-        report.SkippedTags.Keys.ShouldContain("DEAT.PLAC");
-        report.SkippedTags.Keys.ShouldContain("DEAT.NOTE");
+        person.DeathDate.ShouldNotBeNull();
+        person.DeathPlace.ShouldBe("Полтава");
+        person.DeathNote.ShouldBe("помер у 40 років\nПричина смерті: запалення легень");
 
-        // Сам DEAT і його дата читаються, тож у пропущених їм місця немає.
-        report.SkippedTags.Keys.ShouldNotContain("DEAT");
-        report.SkippedTags.Keys.ShouldNotContain("DEAT.DATE");
+        // Усе спожито — у звіті про пропущені теги порожньо.
+        report.SkippedTags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Reads_note_of_the_birth_event_separately_from_person_notes()
+    {
+        // BIRT.NOTE та INDI.NOTE — різні теги й різні поля: злиття їх в одне означало б,
+        // що при зворотному експорті текст переїде в чужий тег.
+        var doc = Import(
+            "0 @I1@ INDI\n" +
+            "1 NAME Іван /Коваленко/\n" +
+            "1 BIRT\n2 DATE 1900\n2 PLAC Полтава\n2 NOTE за метричною книгою\n" +
+            "1 NOTE коваль у третьому поколінні\n",
+            out var report);
+
+        var person = doc.Persons.ShouldHaveSingleItem();
+
+        person.BirthPlace.ShouldBe("Полтава");
+        person.BirthNote.ShouldBe("за метричною книгою");
+        person.Notes.ShouldBe("коваль у третьому поколінні");
+        report.SkippedTags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Reads_marriage_place()
+    {
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 SEX M\n" +
+            "0 @I2@ INDI\n1 NAME Марія /Коваленко/\n1 SEX F\n" +
+            "0 @F1@ FAM\n1 HUSB @I1@\n1 WIFE @I2@\n1 MARR\n2 DATE 1950\n2 PLAC Полтава\n",
+            out var report);
+
+        doc.SpouseLinks.ShouldHaveSingleItem().MarriagePlace.ShouldBe("Полтава");
+        report.SkippedTags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Divorce_place_stays_outside_the_profile()
+    {
+        // Свідоме рішення: DIV.PLAC у реальних файлах не трапляється, поля в моделі немає,
+        // тож він мусить чесно потрапляти у звіт, а не зникати мовчки.
+        var doc = Import(
+            "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 SEX M\n" +
+            "0 @I2@ INDI\n1 NAME Марія /Коваленко/\n1 SEX F\n" +
+            "0 @F1@ FAM\n1 HUSB @I1@\n1 WIFE @I2@\n1 DIV\n2 DATE 1960\n2 PLAC Полтава\n",
+            out var report);
+
+        doc.SpouseLinks.ShouldHaveSingleItem();
+        report.SkippedTags.Keys.ShouldContain("DIV.PLAC");
     }
 
     [Fact]
@@ -290,12 +338,12 @@ public sealed class GedcomImporterTests
     public void Skipped_tags_are_counted_per_occurrence()
     {
         var doc = Import(
-            "0 @I1@ INDI\n1 NAME Перший /Тест/\n1 DEAT\n2 PLAC Полтава\n" +
-            "0 @I2@ INDI\n1 NAME Другий /Тест/\n1 DEAT\n2 PLAC Київ\n",
+            "0 @I1@ INDI\n1 NAME Перший /Тест/\n1 BURI\n2 PLAC Полтава\n" +
+            "0 @I2@ INDI\n1 NAME Другий /Тест/\n1 BURI\n2 PLAC Київ\n",
             out var report);
 
         doc.Persons.Count.ShouldBe(2);
-        report.SkippedTags["DEAT.PLAC"].ShouldBe(2);
+        report.SkippedTags["BURI"].ShouldBe(2);
     }
 
     [Fact]
@@ -305,11 +353,11 @@ public sealed class GedcomImporterTests
         var doc = Import(
             "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 SEX M\n" +
             "0 @I2@ INDI\n1 NAME Марія /Коваленко/\n1 SEX F\n" +
-            "0 @F1@ FAM\n1 HUSB @I1@\n1 WIFE @I2@\n1 MARR\n2 DATE 1950\n2 PLAC Полтава\n",
+            "0 @F1@ FAM\n1 HUSB @I1@\n1 WIFE @I2@\n1 MARR\n2 DATE 1950\n2 AGNC Парафія\n",
             out var report);
 
         doc.SpouseLinks.ShouldHaveSingleItem();
-        report.SkippedTags.Keys.ShouldContain("MARR.PLAC");
+        report.SkippedTags.Keys.ShouldContain("MARR.AGNC");
     }
 
     [Fact]

@@ -36,6 +36,9 @@ public sealed record PersonFieldFill(
     FamilyDate? DeathDate = null,
     bool Deceased = false,
     string? BirthPlace = null,
+    string? BirthNote = null,
+    string? DeathPlace = null,
+    string? DeathNote = null,
     string? MaidenName = null,
     string? Notes = null,
     string? PhotoPath = null,
@@ -229,7 +232,8 @@ public sealed class FamilyMerger
                 continue;
             }
 
-            var candidate = SpouseLink.Create(a, b, link.MarriageDate, link.DivorceDate, link.Divorced);
+            var candidate = SpouseLink.Create(
+                a, b, link.MarriageDate, link.DivorceDate, link.Divorced, link.MarriagePlace);
 
             // Ловить самошлюб (обидві особи зіставилися в одну) та перетин періодів.
             if (!_validator.ValidateSpouse(candidate, acceptedSpouseLinks).IsValid)
@@ -269,6 +273,9 @@ public sealed class FamilyMerger
             if (fill.DeathDate is { } death) fill.Target.DeathDate = death;
             if (fill.Deceased) fill.Target.Deceased = true;
             if (fill.BirthPlace is { } birthPlace) fill.Target.BirthPlace = birthPlace;
+            if (fill.BirthNote is { } birthNote) fill.Target.BirthNote = birthNote;
+            if (fill.DeathPlace is { } deathPlace) fill.Target.DeathPlace = deathPlace;
+            if (fill.DeathNote is { } deathNote) fill.Target.DeathNote = deathNote;
             if (fill.MaidenName is { } maiden) fill.Target.MaidenName = maiden;
             if (fill.Notes is { } notes) fill.Target.Notes = notes;
             if (fill.PhotoPath is { } photo) fill.Target.PhotoPath = photo;
@@ -392,6 +399,9 @@ public sealed class FamilyMerger
         }
 
         var birthPlace = ResolveText(target.BirthPlace, source.BirthPlace, ref any, ref localConflicts);
+        var birthNote = ResolveText(target.BirthNote, source.BirthNote, ref any, ref localConflicts);
+        var deathPlace = ResolveText(target.DeathPlace, source.DeathPlace, ref any, ref localConflicts);
+        var deathNote = ResolveText(target.DeathNote, source.DeathNote, ref any, ref localConflicts);
         var maiden = ResolveText(target.MaidenName, source.MaidenName, ref any, ref localConflicts);
         var notes = ResolveText(target.Notes, source.Notes, ref any, ref localConflicts);
         var photo = ResolveText(target.PhotoPath, source.PhotoPath, ref any, ref localConflicts);
@@ -415,7 +425,8 @@ public sealed class FamilyMerger
         if (any)
         {
             plan.PersonUpdates.Add(new PersonFieldFill(
-                target, death, deceased, birthPlace, maiden, notes, photo, newFacts));
+                target, death, deceased, birthPlace, birthNote, deathPlace, deathNote,
+                maiden, notes, photo, newFacts));
         }
     }
 
@@ -453,7 +464,10 @@ public sealed class FamilyMerger
         MaidenName = p.MaidenName,
         BirthDate = p.BirthDate,
         BirthPlace = p.BirthPlace,
+        BirthNote = p.BirthNote,
         DeathDate = p.DeathDate,
+        DeathPlace = p.DeathPlace,
+        DeathNote = p.DeathNote,
         Deceased = p.Deceased,
         PhotoPath = p.PhotoPath,
         Notes = p.Notes,

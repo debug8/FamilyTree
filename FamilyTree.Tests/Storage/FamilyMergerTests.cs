@@ -211,6 +211,44 @@ public class FamilyMergerTests
     }
 
     [Fact]
+    public void Duplicate_person_fills_empty_event_places_and_notes()
+    {
+        var existing = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        var target = DocOf(existing);
+
+        var enriched = Make("Шевченко", "Ольга", 1990, Gender.Female);
+        enriched.BirthNote = "за метричною книгою";
+        enriched.DeathPlace = "Чернівці";
+        enriched.DeathNote = "померла вдома";
+        var source = DocOf(enriched);
+
+        var report = _merger.Merge(target, source);
+
+        report.UpdatedPersons.ShouldBe(1);
+        report.Conflicts.ShouldBe(0);
+        existing.BirthNote.ShouldBe("за метричною книгою");
+        existing.DeathPlace.ShouldBe("Чернівці");
+        existing.DeathNote.ShouldBe("померла вдома");
+    }
+
+    [Fact]
+    public void Conflicting_death_place_keeps_target_value_and_is_counted()
+    {
+        var existing = Make("Мороз", "Іван", 1970);
+        existing.DeathPlace = "Львів";
+        var target = DocOf(existing);
+
+        var other = Make("Мороз", "Іван", 1970);
+        other.DeathPlace = "Одеса";
+        var source = DocOf(other);
+
+        var report = _merger.Merge(target, source);
+
+        report.Conflicts.ShouldBe(1);
+        existing.DeathPlace.ShouldBe("Львів");
+    }
+
+    [Fact]
     public void Deceased_target_is_not_revived_by_a_source_that_thinks_person_is_alive()
     {
         var existing = Make("Шевченко", "Ольга", 1990, Gender.Female);

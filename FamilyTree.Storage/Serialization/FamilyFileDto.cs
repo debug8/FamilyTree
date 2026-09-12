@@ -45,7 +45,10 @@ internal sealed class PersonDto
     public string? MaidenName { get; set; }
     public FamilyDateDto? BirthDate { get; set; }
     public string? BirthPlace { get; set; }
+    public string? BirthNote { get; set; }
     public FamilyDateDto? DeathDate { get; set; }
+    public string? DeathPlace { get; set; }
+    public string? DeathNote { get; set; }
 
     // Померла, дата невідома. WhenWritingDefault — точно як SpouseLinkDto.Divorced:
     // false у файл не пишемо (щоб не роздувати й не засмічувати diff), а відсутнє
@@ -104,6 +107,7 @@ internal sealed class SpouseLinkDto
     public Guid Person1Id { get; set; }
     public Guid Person2Id { get; set; }
     public FamilyDateDto? MarriageDate { get; set; }
+    public string? MarriagePlace { get; set; }
     public FamilyDateDto? DivorceDate { get; set; }
 
     // Шлюб завершено без дати. WhenWritingDefault: false не пишемо у файл (щоб не роздувати

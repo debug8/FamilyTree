@@ -58,6 +58,11 @@
                 <TextBox Style="{StaticResource InputTextBoxStyle}"
                          Text="{Binding BirthPlace, UpdateSourceTrigger=PropertyChanged}" />
 
+                <TextBlock Text="{loc:Localize Person_BirthNote}" Style="{StaticResource FieldLabel}" />
+                <TextBox Style="{StaticResource InputTextBoxStyle}"
+                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48" VerticalScrollBarVisibility="Auto"
+                         Text="{Binding BirthNote, UpdateSourceTrigger=PropertyChanged}" />
+
                 <CheckBox Content="{loc:Localize Person_IsAlive}" IsChecked="{Binding IsAlive}"
                           Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,14,0,0" />
 
@@ -65,6 +70,19 @@
                           Visibility="{Binding ShowDeathDate, Converter={StaticResource BoolToVisibility}}">
                     <controls:FamilyDateEditor Value="{Binding DeathDate}" />
                 </GroupBox>
+
+                <!-- Місце й обставини смерті ховаються разом із датою: для живої особи
+                     вони не мають сенсу, а ViewModel їх на збереженні однаково чистить. -->
+                <StackPanel Visibility="{Binding ShowDeathDate, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{loc:Localize Person_DeathPlace}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource InputTextBoxStyle}"
+                             Text="{Binding DeathPlace, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Text="{loc:Localize Person_DeathNote}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource InputTextBoxStyle}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48" VerticalScrollBarVisibility="Auto"
+                             Text="{Binding DeathNote, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
 
                 <TextBlock Text="{loc:Localize Person_Photo}" Style="{StaticResource FieldLabel}" />
                 <StackPanel Orientation="Horizontal">

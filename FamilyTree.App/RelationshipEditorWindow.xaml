@@ -118,6 +118,13 @@
                 <controls:FamilyDateEditor Value="{Binding MarriageDate}" />
             </GroupBox>
 
+            <!-- GroupBox, а не TextBlock+TextBox: стиль FieldLabel живе локально
+                 в PersonEditorWindow, а тут доступні лише глобальні ресурси. -->
+            <GroupBox Header="{loc:Localize Rel_MarriagePlace}" Style="{StaticResource FieldGroupBox}" Margin="0,10,0,0">
+                <TextBox Style="{StaticResource InputTextBoxStyle}"
+                         Text="{Binding MarriagePlace, UpdateSourceTrigger=PropertyChanged}" />
+            </GroupBox>
+
             <CheckBox Content="{loc:Localize Rel_IsMarried}" IsChecked="{Binding IsMarried}"
                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,10,0,0" />
 

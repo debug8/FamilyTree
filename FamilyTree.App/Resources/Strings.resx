@@ -181,6 +181,18 @@
   <data name="Person_DeathDate" xml:space="preserve">
     <value>Дата смерті</value>
   </data>
+  <data name="Person_BirthNote" xml:space="preserve">
+    <value>Нотатка при народженні</value>
+  </data>
+  <data name="Person_DeathPlace" xml:space="preserve">
+    <value>Місце смерті</value>
+  </data>
+  <data name="Person_DeathNote" xml:space="preserve">
+    <value>Обставини смерті</value>
+  </data>
+  <data name="Rel_MarriagePlace" xml:space="preserve">
+    <value>Місце шлюбу</value>
+  </data>
   <data name="Person_DateUnknown" xml:space="preserve">
     <value>невідома</value>
   </data>

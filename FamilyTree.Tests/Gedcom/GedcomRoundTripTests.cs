@@ -29,6 +29,9 @@ public sealed class GedcomRoundTripTests
             birth: FamilyDate.Exact(new DateOnly(1930, 3, 12)),
             death: FamilyDate.Approximate(DateApproximation.About, new DatePoint { Year = 2005 }),
             birthPlace: "Полтава",
+            birthNote: "за метричною книгою",
+            deathPlace: "Чернівці",
+            deathNote: "помер удома\nпричина: запалення легень",
             notes: "коваль; нотатка з @ і\nдвома рядками");
 
         var grandmother = doc.Add(
@@ -65,7 +68,8 @@ public sealed class GedcomRoundTripTests
         doc.Parent(grandmother, father);
         doc.Marry(grandfather, grandmother,
             FamilyDate.Exact(new DateOnly(1950, 6, 1)),
-            FamilyDate.Exact(new DateOnly(1960, 2, 2)));
+            FamilyDate.Exact(new DateOnly(1960, 2, 2)),
+            marriagePlace: "Полтава");
         doc.Marry(grandfather, grandmother, FamilyDate.Exact(new DateOnly(1965, 8, 8)));
 
         // Неодружені співбатьки.
@@ -151,7 +155,10 @@ public sealed class GedcomRoundTripTests
             actual.Gender.ShouldBe(expected.Gender);
             actual.BirthDate.ShouldBe(expected.BirthDate);
             actual.BirthPlace.ShouldBe(expected.BirthPlace);
+            actual.BirthNote.ShouldBe(expected.BirthNote);
             actual.DeathDate.ShouldBe(expected.DeathDate);
+            actual.DeathPlace.ShouldBe(expected.DeathPlace);
+            actual.DeathNote.ShouldBe(expected.DeathNote);
             actual.Deceased.ShouldBe(expected.Deceased);
             actual.IsAlive.ShouldBe(expected.IsAlive);
             actual.Notes.ShouldBe(expected.Notes);
@@ -164,8 +171,8 @@ public sealed class GedcomRoundTripTests
     private static IEnumerable<(Guid, Guid, ParentRole)> Parents(FamilyDocument document) =>
         document.ParentChildLinks.Select(l => (l.ParentId, l.ChildId, l.ParentRole)).ToList();
 
-    private static IEnumerable<(Guid, Guid, FamilyDate?, FamilyDate?, bool)> Spouses(FamilyDocument document) =>
+    private static IEnumerable<(Guid, Guid, FamilyDate?, string?, FamilyDate?, bool)> Spouses(FamilyDocument document) =>
         document.SpouseLinks
-            .Select(l => (l.Person1Id, l.Person2Id, l.MarriageDate, l.DivorceDate, l.Divorced))
+            .Select(l => (l.Person1Id, l.Person2Id, l.MarriageDate, l.MarriagePlace, l.DivorceDate, l.Divorced))
             .ToList();
 }

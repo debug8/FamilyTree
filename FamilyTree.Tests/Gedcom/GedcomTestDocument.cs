@@ -28,6 +28,9 @@ internal sealed class GedcomTestDocument
         FamilyDate? death = null,
         bool deceased = false,
         string? birthPlace = null,
+        string? birthNote = null,
+        string? deathPlace = null,
+        string? deathNote = null,
         string? notes = null)
     {
         var person = new Person
@@ -40,8 +43,11 @@ internal sealed class GedcomTestDocument
             Gender = gender,
             BirthDate = birth,
             DeathDate = death,
-            Deceased = deceased || death is not null,
+            Deceased = deceased || death is not null || deathPlace is not null || deathNote is not null,
             BirthPlace = birthPlace,
+            BirthNote = birthNote,
+            DeathPlace = deathPlace,
+            DeathNote = deathNote,
             Notes = notes,
             UpdatedAt = new DateTime(2026, 9, 3, 10, 20, 30, DateTimeKind.Utc),
         };
@@ -71,9 +77,10 @@ internal sealed class GedcomTestDocument
         Person second,
         FamilyDate? marriage = null,
         FamilyDate? divorce = null,
-        bool divorced = false)
+        bool divorced = false,
+        string? marriagePlace = null)
     {
-        var link = SpouseLink.Create(first.Id, second.Id, marriage, divorce, divorced);
+        var link = SpouseLink.Create(first.Id, second.Id, marriage, divorce, divorced, marriagePlace);
         Document.SpouseLinks.Add(link);
         return link;
     }
