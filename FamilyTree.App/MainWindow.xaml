@@ -339,6 +339,21 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- Життєві факти. Секція повністю згортається, коли фактів немає:
+                         вигляд вкладки для осіб без них не змінюється. -->
+                    <TextBlock Text="{loc:Localize Person_Facts}" FontWeight="SemiBold" Margin="0,0,0,4"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Visibility="{Binding HasSelectedPersonFacts, Converter={StaticResource BoolToVisibility}}" />
+                    <ItemsControl ItemsSource="{Binding SelectedPersonFacts}" Margin="0,0,0,16"
+                                  Visibility="{Binding HasSelectedPersonFacts, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

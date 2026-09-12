@@ -75,6 +75,9 @@
                             <TextBlock Text="{Binding DetailChildren}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        Visibility="{Binding DetailChildren, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailFacts}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailFacts, Converter={StaticResource NullToCollapsedConverter}}" />
                             <TextBlock Text="{Binding DetailNotes}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                        FontStyle="Italic" Foreground="{DynamicResource TextSecondaryBrush}"
                                        Visibility="{Binding DetailNotes, Converter={StaticResource NullToCollapsedConverter}}" />

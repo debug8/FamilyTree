@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -802,5 +802,32 @@ Details have been saved to the log:
   <data name="Export_Done" xml:space="preserve">
     <value>Tree saved to:
 {0}</value>
+  </data>
+  <data name="Person_Facts" xml:space="preserve">
+    <value>Life facts</value>
+  </data>
+  <data name="Person_Fact_Add" xml:space="preserve">
+    <value>Add fact</value>
+  </data>
+  <data name="Person_Fact_Remove" xml:space="preserve">
+    <value>Remove fact</value>
+  </data>
+  <data name="Person_Fact_Value" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Person_Fact_Place" xml:space="preserve">
+    <value>Place</value>
+  </data>
+  <data name="Person_Fact_Date" xml:space="preserve">
+    <value>When</value>
+  </data>
+  <data name="PersonFactKind_Occupation" xml:space="preserve">
+    <value>Occupation</value>
+  </data>
+  <data name="PersonFactKind_Residence" xml:space="preserve">
+    <value>Residence</value>
+  </data>
+  <data name="PersonFactKind_Other" xml:space="preserve">
+    <value>Other</value>
   </data>
 </root>

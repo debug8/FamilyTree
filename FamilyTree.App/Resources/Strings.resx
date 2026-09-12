@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -802,5 +802,32 @@
   <data name="Export_Done" xml:space="preserve">
     <value>Дерево збережено:
 {0}</value>
+  </data>
+  <data name="Person_Facts" xml:space="preserve">
+    <value>Життєві факти</value>
+  </data>
+  <data name="Person_Fact_Add" xml:space="preserve">
+    <value>Додати факт</value>
+  </data>
+  <data name="Person_Fact_Remove" xml:space="preserve">
+    <value>Прибрати факт</value>
+  </data>
+  <data name="Person_Fact_Value" xml:space="preserve">
+    <value>Опис</value>
+  </data>
+  <data name="Person_Fact_Place" xml:space="preserve">
+    <value>Місце</value>
+  </data>
+  <data name="Person_Fact_Date" xml:space="preserve">
+    <value>Коли</value>
+  </data>
+  <data name="PersonFactKind_Occupation" xml:space="preserve">
+    <value>Професія</value>
+  </data>
+  <data name="PersonFactKind_Residence" xml:space="preserve">
+    <value>Проживання</value>
+  </data>
+  <data name="PersonFactKind_Other" xml:space="preserve">
+    <value>Інше</value>
   </data>
 </root>

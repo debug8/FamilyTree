@@ -56,6 +56,12 @@ public sealed class PersonCard
 
     public string? DetailChildren { get; init; }
 
+    /// <summary>
+    /// Життєві факти одним рядком. Власного підпису не має, бо кожен факт уже
+    /// починається з назви свого виду («Професія: коваль»).
+    /// </summary>
+    public string? DetailFacts { get; init; }
+
     public string? DetailNotes { get; init; }
 }
 
@@ -93,8 +99,63 @@ public sealed class PersonCardBuilder
             DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDate(person.DeathDate)),
             DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
             DetailChildren = Line("Tree_Card_Children", childrenCount.ToString(CultureInfo.CurrentCulture)),
+            DetailFacts = FormatFacts(person) is { Length: > 0 } facts ? facts : null,
             DetailNotes = Line("Person_Notes", person.Notes),
         };
+
+    /// <summary>
+    /// Локалізована назва виду факту. Для виду з новішої збірки показуємо його власну
+    /// назву, а не «Інше»: вона єдине, що про цей факт відомо.
+    /// </summary>
+    public string FactKindText(PersonFact fact)
+    {
+        ArgumentNullException.ThrowIfNull(fact);
+
+        return fact.Kind switch
+        {
+            PersonFactKind.Occupation => _localization.GetString("PersonFactKind_Occupation"),
+            PersonFactKind.Residence => _localization.GetString("PersonFactKind_Residence"),
+            _ => string.IsNullOrWhiteSpace(fact.Label)
+                ? _localization.GetString("PersonFactKind_Other")
+                : fact.Label,
+        };
+    }
+
+    /// <summary>Один факт рядком: «Професія: коваль, Полтава (1970–1985)».</summary>
+    public string FormatFact(PersonFact fact)
+    {
+        ArgumentNullException.ThrowIfNull(fact);
+
+        var parts = new List<string>(2);
+
+        if (!string.IsNullOrWhiteSpace(fact.Value))
+        {
+            parts.Add(fact.Value.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(fact.Place))
+        {
+            parts.Add(fact.Place.Trim());
+        }
+
+        var body = string.Join(", ", parts);
+        var date = FormatDate(fact.Date);
+
+        if (date.Length > 0)
+        {
+            body = body.Length > 0 ? $"{body} ({date})" : date;
+        }
+
+        var kind = FactKindText(fact);
+        return body.Length > 0 ? $"{kind}: {body}" : kind;
+    }
+
+    /// <summary>Усі факти особи в один рядок — так само, як подружжя, через «; ».</summary>
+    public string FormatFacts(Person person)
+    {
+        ArgumentNullException.ThrowIfNull(person);
+        return string.Join("; ", person.Facts.Select(FormatFact));
+    }
 
     /// <summary>Рядок картки «Підпис: значення» або null, якщо значення порожнє (рядок ховається).</summary>
     public string? Line(string labelKey, string? value) =>

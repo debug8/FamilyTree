@@ -93,6 +93,60 @@
                     </StackPanel>
                 </StackPanel>
 
+                <TextBlock Text="{loc:Localize Person_Facts}" Style="{StaticResource FieldLabel}" />
+                <ItemsControl ItemsSource="{Binding Facts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" Width="26" Padding="0"
+                                                VerticalAlignment="Center"
+                                                ToolTip="{loc:Localize Person_Fact_Remove}"
+                                                Command="{Binding DataContext.RemoveFactCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" />
+
+                                        <!-- Вид із новішої збірки міняти нема на що: показуємо
+                                             його назву текстом. Згорнутий TextBlock місця не займає,
+                                             тож обидва варіанти можуть стояти в одному DockPanel. -->
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding CustomKindText}"
+                                                   VerticalAlignment="Center" FontStyle="Italic"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Visibility="{Binding IsCustomKind, Converter={StaticResource BoolToVisibility}}" />
+
+                                        <ComboBox Style="{StaticResource InputComboBoxStyle}"
+                                                  HorizontalAlignment="Left" MinWidth="170"
+                                                  ItemsSource="{Binding KindOptions}"
+                                                  SelectedItem="{Binding SelectedKind}"
+                                                  Visibility="{Binding IsKnownKind, Converter={StaticResource BoolToVisibility}}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding NameKey, Converter={StaticResource LocalizeConverter}}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </DockPanel>
+
+                                    <TextBlock Text="{loc:Localize Person_Fact_Value}" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                             Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" />
+
+                                    <TextBlock Text="{loc:Localize Person_Fact_Place}" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Style="{StaticResource InputTextBoxStyle}"
+                                             Text="{Binding Place, UpdateSourceTrigger=PropertyChanged}" />
+
+                                    <GroupBox Header="{loc:Localize Person_Fact_Date}" Style="{StaticResource FieldGroupBox}">
+                                        <controls:FamilyDateEditor Value="{Binding Date}" />
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="{loc:Localize Person_Fact_Add}" HorizontalAlignment="Left"
+                        Padding="10,4" Margin="0,2,0,0" Command="{Binding AddFactCommand}" />
+
                 <TextBlock Text="{loc:Localize Person_Notes}" Style="{StaticResource FieldLabel}" />
                 <TextBox Style="{StaticResource InputTextBoxStyle}"
                          AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"

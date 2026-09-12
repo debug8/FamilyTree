@@ -116,6 +116,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private ImageSource? _selectedPersonPhotoLarge;
 
+    // Життєві факти вибраної особи, вже відформатовані рядками. Складаються при
+    // застосуванні вибору з тієї ж причини, що й фото (див. RefreshSelectedFacts).
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedPersonFacts))]
+    private IReadOnlyList<string> _selectedPersonFacts = Array.Empty<string>();
+
     public MainViewModel(
         ILocalizationService localization,
         IThemeService theme,
@@ -1289,10 +1295,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
             : null;
     }
 
+    /// <summary>Чи показувати секцію життєвих фактів (без фактів вона згортається).</summary>
+    public bool HasSelectedPersonFacts => SelectedPersonFacts.Count > 0;
+
+    /// <summary>
+    /// Перескладає рядки фактів вибраної особи. Як і з фото, робиться на КОЖНЕ
+    /// застосування вибору: після редагування повертається той самий екземпляр особи,
+    /// тож саме присвоєння SelectedPerson нічого б не оновило. Новий список щоразу —
+    /// щоб прив'язка побачила зміну за посиланням.
+    /// </summary>
+    private void RefreshSelectedFacts() =>
+        SelectedPersonFacts = SelectedPerson is { } person
+            ? person.Facts.Select(_cards.FormatFact).ToList()
+            : Array.Empty<string>();
+
     private void ApplySelection(Person? value)
     {
         RefreshRelations();
         RefreshSelectedPhoto();
+        RefreshSelectedFacts();
 
         if (value is not null)
         {

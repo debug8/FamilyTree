@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -99,6 +100,11 @@ public partial class PersonEditorViewModel : ObservableValidator
             _isAlive = existing.DeathDate is null;
             _notes = existing.Notes;
             _photoPath = existing.PhotoPath;
+
+            foreach (var fact in existing.Facts)
+            {
+                Facts.Add(new PersonFactRow(fact));
+            }
         }
 
         // CanSave залежить від наявності помилок — оновлюємо його при зміні помилок.
@@ -128,6 +134,24 @@ public partial class PersonEditorViewModel : ObservableValidator
 
     /// <summary>Чи можна зберегти (немає помилок валідації).</summary>
     public bool CanSave => !HasErrors;
+
+    /// <summary>
+    /// Життєві факти особи (професія, проживання). Порядок рядків — це порядок,
+    /// у якому вони ляжуть у файл, тож нові додаються в кінець.
+    /// </summary>
+    public ObservableCollection<PersonFactRow> Facts { get; } = new();
+
+    [RelayCommand]
+    private void AddFact() => Facts.Add(new PersonFactRow());
+
+    [RelayCommand]
+    private void RemoveFact(PersonFactRow? row)
+    {
+        if (row is not null)
+        {
+            Facts.Remove(row);
+        }
+    }
 
     /// <summary>
     /// Абсолютний шлях для показу прев'ю: щойно вибраний файл, інакше — той, що вже
@@ -213,6 +237,20 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.DeathDate = IsAlive ? null : DeathDate;
         person.Notes = Normalize(Notes);
         person.PhotoPath = CommitPhoto();
+
+        // Список перезбирається цілком: рядки могли з'явитися, зникнути й помінятися
+        // місцями, і зіставляти їх зі старими нема за чим — у факта немає Id.
+        // Порожні рядки (натиснув «Додати» й передумав) просто не доходять до особи.
+        person.Facts.Clear();
+        foreach (var row in Facts)
+        {
+            var fact = row.ToFact();
+            if (!fact.IsEmpty)
+            {
+                person.Facts.Add(fact);
+            }
+        }
+
         person.UpdatedAt = DateTime.UtcNow;
 
         Result = person;
