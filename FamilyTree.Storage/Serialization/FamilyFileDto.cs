@@ -56,12 +56,11 @@ internal sealed class PersonDto
     public Gender Gender { get; set; }
     public string? MiddleName { get; set; }
     public string? MaidenName { get; set; }
-    public FamilyDateDto? BirthDate { get; set; }
-    public string? BirthPlace { get; set; }
-    public string? BirthNote { get; set; }
-    public FamilyDateDto? DeathDate { get; set; }
-    public string? DeathPlace { get; set; }
-    public string? DeathNote { get; set; }
+
+    // Події (схема v3): дата, місце й нотатка кожної лежать разом, а не шістьма плоскими
+    // полями поруч. Порожня подія у файл не пишеться взагалі — інваріант PersonEvent.
+    public PersonEventDto? Birth { get; set; }
+    public PersonEventDto? Death { get; set; }
 
     // Померла, дата невідома. WhenWritingDefault — точно як SpouseLinkDto.Divorced:
     // false у файл не пишемо (щоб не роздувати й не засмічувати diff), а відсутнє
@@ -87,6 +86,26 @@ internal sealed class PersonDto
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>Незнайомі поля особи — див. <see cref="DocumentExtras"/>.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>
+/// DTO події особи (<see cref="PersonEvent"/>) — народження чи смерть.
+/// </summary>
+/// <remarks>
+/// Своїх незнайомих полів подія теж не губить, попри те що не має <c>Id</c>: транзит для
+/// них лежить у <see cref="DocumentExtras"/> під <c>Id</c> ОСОБИ, окремим слотом на кожну
+/// подію. Інакше вкладення полів у <c>birth</c>/<c>death</c> пробило б дірку в гарантії,
+/// яку дав <c>[JsonExtensionData]</c>: до схеми v3 невідоме <c>birthFoo</c> лежало прямо
+/// в особі й зберігалося.
+/// </remarks>
+internal sealed class PersonEventDto
+{
+    public FamilyDateDto? Date { get; set; }
+    public string? Place { get; set; }
+    public string? Note { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }
 }

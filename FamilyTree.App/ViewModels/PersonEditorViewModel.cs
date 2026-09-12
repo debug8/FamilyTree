@@ -103,12 +103,12 @@ public partial class PersonEditorViewModel : ObservableValidator
             _middleName = existing.MiddleName;
             _maidenName = existing.MaidenName;
             _selectedGender = Genders.FirstOrDefault(g => g.Value == existing.Gender);
-            _birthDate = existing.BirthDate;
-            _birthPlace = existing.BirthPlace;
-            _birthNote = existing.BirthNote;
-            _deathPlace = existing.DeathPlace;
-            _deathNote = existing.DeathNote;
-            _deathDate = existing.DeathDate;
+            _birthDate = existing.Birth?.Date;
+            _birthPlace = existing.Birth?.Place;
+            _birthNote = existing.Birth?.Note;
+            _deathPlace = existing.Death?.Place;
+            _deathNote = existing.Death?.Note;
+            _deathDate = existing.Death?.Date;
 
             // Через IsAlive, а не DeathDate is null: інакше особа, позначена померлою
             // без дати, поверталася б у діалог із галочкою «Живий» — і наступне
@@ -248,15 +248,13 @@ public partial class PersonEditorViewModel : ObservableValidator
         person.Gender = SelectedGender!.Value;
         person.MiddleName = Normalize(MiddleName);
         person.MaidenName = Normalize(MaidenName);
-        person.BirthDate = BirthDate;
-        person.BirthPlace = Normalize(BirthPlace);
-        person.BirthNote = Normalize(BirthNote);
+        // PersonEvent.Create сам обрізає пробіли й повертає null, коли все порожнє,
+        // тож Normalize тут більше не потрібен.
+        person.Birth = PersonEvent.Create(BirthDate, BirthPlace, BirthNote);
 
-        // Поля смерті чистяться разом із датою: якщо особу повернули в «живі»,
-        // лишити місце й обставини смерті означало б суперечливий запис.
-        person.DeathDate = IsAlive ? null : DeathDate;
-        person.DeathPlace = IsAlive ? null : Normalize(DeathPlace);
-        person.DeathNote = IsAlive ? null : Normalize(DeathNote);
+        // Подія смерті чиститься цілком: якщо особу повернули в «живі», лишити місце
+        // й обставини смерті означало б суперечливий запис.
+        person.Death = IsAlive ? null : PersonEvent.Create(DeathDate, DeathPlace, DeathNote);
 
         // Знята галочка без дати — це стан «помер, дата невідома», і саме його
         // тримає прапорець. Без нього збереження мовчки «оживляло» б особу.

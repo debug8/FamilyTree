@@ -57,7 +57,7 @@ public sealed class SaveDurabilityTests : IDisposable
             FirstName = "Оксана",
             MiddleName = "Іванівна",
             Gender = Gender.Female,
-            BirthPlace = "Київ",
+            Birth = PersonEvent.Create(null, "Київ"),
         });
         return doc;
     }

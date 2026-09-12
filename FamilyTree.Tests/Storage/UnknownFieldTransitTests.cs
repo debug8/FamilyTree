@@ -239,9 +239,8 @@ public sealed class UnknownFieldTransitTests : IDisposable
             LastName = "Коваль",
             FirstName = "Іван",
             Gender = Gender.Male,
-            BirthDate = new DateOnly(1900, 1, 1),
-            BirthPlace = "Ковалівка",
-            DeathPlace = "Чернівці",
+            Birth = PersonEvent.Create(new DateOnly(1900, 1, 1), "Ковалівка"),
+            Death = PersonEvent.Create(null, "Чернівці"),
             Deceased = true,
             Notes = "нотатка",
         };

@@ -17,7 +17,13 @@ namespace FamilyTree.Storage;
 public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
 {
     /// <summary>Поточна підтримувана версія схеми файлу.</summary>
-    public const int CurrentSchemaVersion = 2;
+    /// <remarks>
+    /// v3 — події особи стали вкладеними об'єктами (<c>birth</c>/<c>death</c>). Бамп саме
+    /// тут доречний: це зміна СТРУКТУРИ наявних полів, а не додавання нових. Адитивні зміни
+    /// версію не піднімають — їх тримають опційні поля й <c>[JsonExtensionData]</c>
+    /// (див. <see cref="DocumentExtras"/>).
+    /// </remarks>
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>
     /// Значення <see cref="DocumentMeta.AppVersion"/> за замовчуванням, коли реальну версію
@@ -47,6 +53,7 @@ public sealed class JsonFamilyStorage : IFamilyStorage, IDisposable
     private static readonly IReadOnlyList<IFormatMigration> BuiltInMigrations =
     [
         new FormatMigrationV1ToV2(),
+        new FormatMigrationV2ToV3(),
     ];
 
     private readonly IReadOnlyList<IFormatMigration> _migrations;

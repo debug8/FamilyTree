@@ -437,17 +437,20 @@ public static class DocumentIntegrity
 
         foreach (var person in document.Persons)
         {
-            if (Invalid(person.BirthDate))
+            // PersonEvent — record, тож «скинути дату» означає перезібрати подію
+            // (WithDate), а не присвоїти властивість. Якщо крім битої дати в події
+            // нічого не було, вона стає null — порожніх подій не буває.
+            if (Invalid(person.Birth?.Date))
             {
-                person.BirthDate = null;
+                person.Birth = PersonEvent.WithDate(person.Birth, null);
                 cleared++;
             }
 
-            if (Invalid(person.DeathDate))
+            if (Invalid(person.Death?.Date))
             {
                 // Дата пішла, але сам факт смерті лишається відомим: без прапорця
                 // особа мовчки «ожила» б після чистки чужого файлу.
-                person.DeathDate = null;
+                person.Death = PersonEvent.WithDate(person.Death, null);
                 person.Deceased = true;
                 cleared++;
             }

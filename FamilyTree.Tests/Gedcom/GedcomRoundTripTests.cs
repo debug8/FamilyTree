@@ -129,7 +129,7 @@ public sealed class GedcomRoundTripTests
         var restored = GedcomImporter.Import(
             GedcomExporter.Export(doc.Document, "0.9.4", Stamp), out var report);
 
-        var birth = restored.Persons.Single().BirthDate.ShouldNotBeNull();
+        var birth = (restored.Persons.Single().Birth?.Date).ShouldNotBeNull();
         birth.OriginalGedcom.ShouldBe("FROM 1750 TO 1760");
         report.TextOnlyDates.ShouldBe(1);
 
@@ -153,12 +153,12 @@ public sealed class GedcomRoundTripTests
             actual.MiddleName.ShouldBe(expected.MiddleName);
             actual.MaidenName.ShouldBe(expected.MaidenName);
             actual.Gender.ShouldBe(expected.Gender);
-            actual.BirthDate.ShouldBe(expected.BirthDate);
-            actual.BirthPlace.ShouldBe(expected.BirthPlace);
-            actual.BirthNote.ShouldBe(expected.BirthNote);
-            actual.DeathDate.ShouldBe(expected.DeathDate);
-            actual.DeathPlace.ShouldBe(expected.DeathPlace);
-            actual.DeathNote.ShouldBe(expected.DeathNote);
+            (actual.Birth?.Date).ShouldBe(expected.Birth?.Date);
+            (actual.Birth?.Place).ShouldBe(expected.Birth?.Place);
+            (actual.Birth?.Note).ShouldBe(expected.Birth?.Note);
+            (actual.Death?.Date).ShouldBe(expected.Death?.Date);
+            (actual.Death?.Place).ShouldBe(expected.Death?.Place);
+            (actual.Death?.Note).ShouldBe(expected.Death?.Note);
             actual.Deceased.ShouldBe(expected.Deceased);
             actual.IsAlive.ShouldBe(expected.IsAlive);
             actual.Notes.ShouldBe(expected.Notes);

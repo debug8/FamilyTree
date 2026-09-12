@@ -39,12 +39,12 @@ public sealed class FamilyDateStorageTests : IDisposable
         var path = PathFor(Guid.NewGuid().ToString("N") + ".familytree");
 
         var doc = FamilyDocument.CreateNew("t");
-        doc.Persons.Add(new Person { LastName = "А", FirstName = "А", Gender = Gender.Male, BirthDate = birth });
+        doc.Persons.Add(new Person { LastName = "А", FirstName = "А", Gender = Gender.Male, Birth = PersonEvent.Create(birth) });
 
         await storage.SaveAsync(doc, path);
         var loaded = await storage.LoadAsync(path);
         loaded.RepairedIssues.ShouldBeEmpty();
-        return loaded.Persons.Single().BirthDate;
+        return loaded.Persons.Single().Birth?.Date;
     }
 
     [Fact]
@@ -135,8 +135,8 @@ public sealed class FamilyDateStorageTests : IDisposable
         var loaded = await new JsonFamilyStorage().LoadAsync(path);
 
         var taras = loaded.Persons.Single(p => p.FirstName == "Тарас");
-        taras.BirthDate.ShouldBe(FamilyDate.Exact(new DateOnly(1814, 3, 9)));
-        taras.DeathDate.ShouldBe(FamilyDate.Exact(new DateOnly(1861, 3, 10)));
+        (taras.Birth?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(1814, 3, 9)));
+        (taras.Death?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(1861, 3, 10)));
         loaded.SpouseLinks.Single().MarriageDate.ShouldBe(FamilyDate.Exact(new DateOnly(1840, 6, 1)));
         loaded.RepairedIssues.ShouldBeEmpty();
     }

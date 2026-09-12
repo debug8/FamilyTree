@@ -157,7 +157,7 @@ public sealed class DemoFamilyGenerator
             LastName = surname,
             FirstName = first,
             Gender = gender,
-            BirthDate = RandomDate(birthYear),
+            Birth = PersonEvent.Create(RandomDate(birthYear)),
             MaidenName = maiden,
             MiddleName = patronymicFrom is not null && gender != Gender.Unknown
                 ? Patronymic(patronymicFrom, gender == Gender.Female)
@@ -170,7 +170,7 @@ public sealed class DemoFamilyGenerator
             var deathYear = birthYear + _rnd.Next(63, 90);
             if (deathYear < _currentYear)
             {
-                person.DeathDate = RandomDate(deathYear);
+                person.Death = PersonEvent.Create(RandomDate(deathYear));
             }
         }
 

@@ -22,31 +22,21 @@ public sealed class Person : Entity
     /// <summary>Дівоче прізвище.</summary>
     public string? MaidenName { get; set; }
 
-    /// <summary>Дата народження (може бути невідома; неточна — див. <see cref="FamilyDate"/>, T-5.2a).</summary>
-    public FamilyDate? BirthDate { get; set; }
-
-    /// <summary>Місце народження.</summary>
-    public string? BirthPlace { get; set; }
+    /// <summary>
+    /// Народження: дата, місце, нотатка (GEDCOM <c>BIRT</c> з <c>DATE</c>/<c>PLAC</c>/<c>NOTE</c>).
+    /// <see langword="null"/> — про народження не відомо нічого; порожньої події не буває
+    /// (див. <see cref="PersonEvent"/>).
+    /// </summary>
+    public PersonEvent? Birth { get; set; }
 
     /// <summary>
-    /// Нотатка при народженні — GEDCOM <c>BIRT.NOTE</c>. Окремо від <see cref="Notes"/>
-    /// (<c>INDI.NOTE</c>): у файлі це різні теги, і злиття їх в одне поле означало б, що
-    /// при зворотному експорті текст переїде в чужий тег.
+    /// Смерть: дата, місце, нотатка (GEDCOM <c>DEAT</c>). <see langword="null"/> — подробиць
+    /// немає; це НЕ означає «жива» — стан «померла, подробиць немає» тримає
+    /// <see cref="Deceased"/>. Нотатка тут — обставини й причина смерті: реальні файли
+    /// пишуть їх прозою в <c>NOTE</c>, а не в передбачений стандартом <c>CAUS</c>
+    /// (окремого поля під причину тому й немає — див. CHANGELOG).
     /// </summary>
-    public string? BirthNote { get; set; }
-
-    /// <summary>Дата смерті (null — дата невідома або особа жива; див. <see cref="Deceased"/>).</summary>
-    public FamilyDate? DeathDate { get; set; }
-
-    /// <summary>Місце смерті — GEDCOM <c>DEAT.PLAC</c>. Такий самий вільний рядок, як <see cref="BirthPlace"/>.</summary>
-    public string? DeathPlace { get; set; }
-
-    /// <summary>
-    /// Нотатка при смерті — GEDCOM <c>DEAT.NOTE</c>. Саме сюди лягають обставини й причина
-    /// смерті: реальні файли пишуть їх прозою в <c>NOTE</c>, а не в передбачений стандартом
-    /// <c>CAUS</c> (окремого поля під причину тому й немає — див. CHANGELOG).
-    /// </summary>
-    public string? DeathNote { get; set; }
+    public PersonEvent? Death { get; set; }
 
     /// <summary>
     /// Явна позначка, що особа померла, навіть коли дата смерті невідома
@@ -59,6 +49,12 @@ public sealed class Person : Entity
     /// замовчуванням <c>false</c>, тож відсутнє поле у старих файлах читається як
     /// «живий» — правильна поведінка без міграції. Те саме рішення, що й у
     /// <see cref="SpouseLink.Divorced"/>.
+    /// </para>
+    /// <para>
+    /// Свідомо лишився ОКРЕМО від <see cref="Death"/>, а не всередині події: подія зникає
+    /// разом з останнім своїм полем, а цей стан має пережити навіть повну відсутність
+    /// подробиць. Плюс причина сумісності вище — загорнутий у подію, він втратив би
+    /// свій «безпечний» default.
     /// </para>
     /// </summary>
     public bool Deceased { get; set; }
@@ -105,11 +101,18 @@ public sealed class Person : Entity
 
     /// <summary>
     /// Обчислюване: особа жива, якщо немає дати смерті І її не позначено померлою.
-    /// Перевірка <c>DeathDate is null</c> лишена першою для зворотної сумісності зі
-    /// старими файлами, де смерть виражалася лише датою (поля <see cref="Deceased"/>
-    /// там немає → false).
+    /// Перевірка дати лишена першою для зворотної сумісності зі старими файлами, де
+    /// смерть виражалася лише датою (поля <see cref="Deceased"/> там немає → false).
     /// </summary>
-    public bool IsAlive => DeathDate is null && !Deceased;
+    /// <remarks>
+    /// Умова саме <c>Death?.Date is null</c>, а не <c>Death is null</c> — щоб поведінка
+    /// лишилася такою самою, як до появи <see cref="PersonEvent"/>. Сама наявність події
+    /// смерті НЕ ховає особу: подія лише з місцем чи нотаткою могла б прийти з чужого
+    /// файлу й без дати. Відповідь «померла» дає <see cref="Deceased"/>, і той, хто
+    /// створює подію смерті, мусить його поставити (так робить і <c>GedcomImporter</c>
+    /// для будь-якого <c>DEAT</c>, і редактор особи).
+    /// </remarks>
+    public bool IsAlive => Death?.Date is null && !Deceased;
 
     /// <summary>
     /// Копія особи з тим самим <see cref="Entity.Id"/> — для експортних копій документа,
@@ -123,12 +126,11 @@ public sealed class Person : Entity
         Gender = Gender,
         MiddleName = MiddleName,
         MaidenName = MaidenName,
-        BirthDate = BirthDate,
-        BirthPlace = BirthPlace,
-        BirthNote = BirthNote,
-        DeathDate = DeathDate,
-        DeathPlace = DeathPlace,
-        DeathNote = DeathNote,
+
+        // Події — record'и, тож незмінні: копіювати їх поелементно не треба
+        // (та сама причина, що й для фактів нижче).
+        Birth = Birth,
+        Death = Death,
         Deceased = Deceased,
         PhotoPath = PhotoPath,
         PhotoThumbnail = PhotoThumbnail,

@@ -14,8 +14,8 @@ public class RelationshipValidatorTests
         LastName = name,
         FirstName = name,
         Gender = gender,
-        BirthDate = birth,
-        DeathDate = death,
+        Birth = PersonEvent.Create(birth),
+        Death = PersonEvent.Create(death),
     };
 
     private static ParentChildLink Pc(Person parent, Person child, ParentRole role = ParentRole.Biological) =>

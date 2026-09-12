@@ -31,7 +31,7 @@ internal static class PersonQuery
             // незалежно від напрямку. Неточну дату зводимо до представницької (ToComparable).
             PersonSortField.BirthDate => Direction(
                     source,
-                    p => p.BirthDate?.ToComparable() ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
+                    p => p.Birth?.Date?.ToComparable() ?? (descending ? DateOnly.MinValue : DateOnly.MaxValue),
                     Comparer<DateOnly>.Default,
                     descending)
                 .ThenBy(p => p.LastName, StringComparer.CurrentCulture),

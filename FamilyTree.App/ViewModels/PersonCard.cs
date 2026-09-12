@@ -189,8 +189,8 @@ public sealed class PersonCardBuilder
     {
         ArgumentNullException.ThrowIfNull(person);
 
-        var birth = person.BirthDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var birth = person.Birth?.Date?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var death = person.Death?.Date?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
         return (birth, death) switch
         {
             (null, null) => string.Empty,
@@ -212,21 +212,22 @@ public sealed class PersonCardBuilder
     /// </summary>
     private string FormatDeath(Person person)
     {
-        var date = FormatDate(person.DeathDate);
+        var date = FormatDate(person.Death?.Date);
 
         if (date.Length == 0)
         {
             date = _localization.GetString("Person_DateUnknown");
         }
 
-        return string.IsNullOrWhiteSpace(person.DeathPlace) ? date : $"{date} · {person.DeathPlace}";
+        var place = person.Death?.Place;
+        return string.IsNullOrWhiteSpace(place) ? date : $"{date} · {place}";
     }
 
     /// <summary>Дата народження + місце (якщо є): «01.01.1980 · Київ».</summary>
     public static string FormatBirth(Person person)
     {
-        var date = FormatDate(person.BirthDate);
-        var place = person.BirthPlace;
+        var date = FormatDate(person.Birth?.Date);
+        var place = person.Birth?.Place;
         return (date, hasPlace: !string.IsNullOrWhiteSpace(place)) switch
         {
             ("", false) => string.Empty,

@@ -40,8 +40,8 @@ public sealed class JsonFamilyStorageTests : IDisposable
             FirstName = "Тарас",
             MiddleName = "Григорович",
             Gender = Gender.Male,
-            BirthDate = new DateOnly(1814, 3, 9),
-            DeathDate = new DateOnly(1861, 3, 10),
+            Birth = PersonEvent.Create(new DateOnly(1814, 3, 9)),
+            Death = PersonEvent.Create(new DateOnly(1861, 3, 10)),
             Notes = "поет",
         };
         var child = new Person
@@ -79,8 +79,8 @@ public sealed class JsonFamilyStorageTests : IDisposable
         loadedFather.FirstName.ShouldBe("Тарас");
         loadedFather.MiddleName.ShouldBe("Григорович");
         loadedFather.Gender.ShouldBe(Gender.Male);
-        loadedFather.BirthDate.ShouldBe(FamilyDate.Exact(new DateOnly(1814, 3, 9)));
-        loadedFather.DeathDate.ShouldBe(FamilyDate.Exact(new DateOnly(1861, 3, 10)));
+        (loadedFather.Birth?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(1814, 3, 9)));
+        (loadedFather.Death?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(1861, 3, 10)));
         loadedFather.IsAlive.ShouldBeFalse();
 
         loaded.SpouseLinks[0].MarriageDate.ShouldBe(FamilyDate.Exact(new DateOnly(1840, 6, 1)));
@@ -234,7 +234,7 @@ public sealed class JsonFamilyStorageTests : IDisposable
 
         var person = loaded.Persons.ShouldHaveSingleItem();
         person.Deceased.ShouldBeTrue();
-        person.DeathDate.ShouldBeNull();
+        (person.Death?.Date).ShouldBeNull();
         person.IsAlive.ShouldBeFalse();
     }
 
@@ -248,11 +248,9 @@ public sealed class JsonFamilyStorageTests : IDisposable
         var a = new Person
         {
             LastName = "Коваленко", FirstName = "Іван", Gender = Gender.Male,
-            BirthPlace = "Полтава",
-            BirthNote = "за метричною книгою",
-            DeathDate = new DateOnly(1939, 5, 1),
-            DeathPlace = "Чернівці",
-            DeathNote = "помер удома\nпричина: запалення легень",
+            Birth = PersonEvent.Create(null, "Полтава", "за метричною книгою"),
+            Death = PersonEvent.Create(
+                new DateOnly(1939, 5, 1), "Чернівці", "помер удома\nпричина: запалення легень"),
         };
         var b = new Person { LastName = "Коваленко", FirstName = "Марія", Gender = Gender.Female };
         doc.Persons.Add(a);
@@ -264,9 +262,9 @@ public sealed class JsonFamilyStorageTests : IDisposable
         var loaded = await storage.LoadAsync(path);
 
         var person = loaded.Persons.Single(p => p.Id == a.Id);
-        person.BirthNote.ShouldBe("за метричною книгою");
-        person.DeathPlace.ShouldBe("Чернівці");
-        person.DeathNote.ShouldBe("помер удома\nпричина: запалення легень");
+        (person.Birth?.Note).ShouldBe("за метричною книгою");
+        (person.Death?.Place).ShouldBe("Чернівці");
+        (person.Death?.Note).ShouldBe("помер удома\nпричина: запалення легень");
 
         loaded.SpouseLinks.ShouldHaveSingleItem().MarriagePlace.ShouldBe("Полтава");
     }

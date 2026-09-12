@@ -18,8 +18,8 @@ public sealed class PersonYearsConverter : IValueConverter
             return string.Empty;
         }
 
-        var birth = person.BirthDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
-        var death = person.DeathDate?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var birth = person.Birth?.Date?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
+        var death = person.Death?.Date?.EffectiveYear?.ToString(CultureInfo.InvariantCulture);
 
         return (birth, death) switch
         {

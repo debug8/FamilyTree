@@ -36,9 +36,9 @@ public sealed class GedcomImporterTests
         person.FirstName.ShouldBe("Іван");
         person.MiddleName.ShouldBe("Петрович");
         person.Gender.ShouldBe(Gender.Male);
-        person.BirthDate.ShouldBe(FamilyDate.Exact(new DateOnly(1950, 3, 12)));
-        person.BirthPlace.ShouldBe("Полтава");
-        person.DeathDate!.Approximation.ShouldBe(DateApproximation.About);
+        (person.Birth?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(1950, 3, 12)));
+        (person.Birth?.Place).ShouldBe("Полтава");
+        person.Death!.Date!.Approximation.ShouldBe(DateApproximation.About);
         person.Notes.ShouldBe("коваль");
     }
 
@@ -86,7 +86,7 @@ public sealed class GedcomImporterTests
         var person = doc.Persons.Single();
 
         person.Deceased.ShouldBeTrue();
-        person.DeathDate.ShouldBeNull();
+        (person.Death?.Date).ShouldBeNull();
         person.IsAlive.ShouldBeFalse();
         report.DeathsWithoutDate.ShouldBe(1);
     }
@@ -108,7 +108,7 @@ public sealed class GedcomImporterTests
         var person = doc.Persons.Single();
 
         person.Deceased.ShouldBeTrue();
-        person.DeathDate.ShouldNotBeNull();
+        (person.Death?.Date).ShouldNotBeNull();
         report.DeathsWithoutDate.ShouldBe(0);
     }
 
@@ -251,9 +251,9 @@ public sealed class GedcomImporterTests
 
         var person = doc.Persons.ShouldHaveSingleItem();
 
-        person.DeathDate.ShouldNotBeNull();
-        person.DeathPlace.ShouldBe("Полтава");
-        person.DeathNote.ShouldBe("помер у 40 років\nПричина смерті: запалення легень");
+        (person.Death?.Date).ShouldNotBeNull();
+        (person.Death?.Place).ShouldBe("Полтава");
+        (person.Death?.Note).ShouldBe("помер у 40 років\nПричина смерті: запалення легень");
 
         // Усе спожито — у звіті про пропущені теги порожньо.
         report.SkippedTags.ShouldBeEmpty();
@@ -273,8 +273,8 @@ public sealed class GedcomImporterTests
 
         var person = doc.Persons.ShouldHaveSingleItem();
 
-        person.BirthPlace.ShouldBe("Полтава");
-        person.BirthNote.ShouldBe("за метричною книгою");
+        (person.Birth?.Place).ShouldBe("Полтава");
+        (person.Birth?.Note).ShouldBe("за метричною книгою");
         person.Notes.ShouldBe("коваль у третьому поколінні");
         report.SkippedTags.ShouldBeEmpty();
     }
@@ -315,7 +315,7 @@ public sealed class GedcomImporterTests
             "0 @I1@ INDI\n1 NAME Іван /Коваленко/\n1 BIRT\n2 DATE 1900\n2 PLAC Полтава\n1 NOTE коваль\n",
             out var report);
 
-        doc.Persons.ShouldHaveSingleItem().BirthPlace.ShouldBe("Полтава");
+        (doc.Persons.ShouldHaveSingleItem().Birth?.Place).ShouldBe("Полтава");
         report.SkippedTags.ShouldBeEmpty();
     }
 

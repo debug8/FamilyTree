@@ -34,8 +34,8 @@ public class DemoFamilyGeneratorTests
         a.SpouseLinks.Count.ShouldBe(b.SpouseLinks.Count);
 
         // Ідентифікатори випадкові, але імена/стать/дати керуються насінням — мають збігатися.
-        var shapeA = a.Persons.Select(p => (p.LastName, p.FirstName, p.Gender, p.BirthDate, p.DeathDate));
-        var shapeB = b.Persons.Select(p => (p.LastName, p.FirstName, p.Gender, p.BirthDate, p.DeathDate));
+        var shapeA = a.Persons.Select(p => (p.LastName, p.FirstName, p.Gender, p.Birth?.Date, p.Death?.Date));
+        var shapeB = b.Persons.Select(p => (p.LastName, p.FirstName, p.Gender, p.Birth?.Date, p.Death?.Date));
         shapeA.ShouldBe(shapeB);
     }
 
@@ -45,8 +45,8 @@ public class DemoFamilyGeneratorTests
         var a = DemoFamilyGenerator.Generate(Options(seed: 1));
         var b = DemoFamilyGenerator.Generate(Options(seed: 2));
 
-        var shapeA = a.Persons.Select(p => $"{p.FirstName} {p.Gender} {p.BirthDate}").ToList();
-        var shapeB = b.Persons.Select(p => $"{p.FirstName} {p.Gender} {p.BirthDate}").ToList();
+        var shapeA = a.Persons.Select(p => $"{p.FirstName} {p.Gender} {p.Birth?.Date}").ToList();
+        var shapeB = b.Persons.Select(p => $"{p.FirstName} {p.Gender} {p.Birth?.Date}").ToList();
         shapeA.ShouldNotBe(shapeB);
     }
 
@@ -141,9 +141,9 @@ public class DemoFamilyGeneratorTests
             var result = DemoFamilyGenerator.Generate(
                 Options(seed: seed, generations: generations, maxPersons: maxPersons));
 
-            result.Persons.ShouldAllBe(p => p.BirthDate!.ToComparable()!.Value <= today);
-            result.Persons.Where(p => p.DeathDate is not null)
-                .ShouldAllBe(p => p.DeathDate!.ToComparable()!.Value <= today);
+            result.Persons.ShouldAllBe(p => p.Birth!.Date!.ToComparable()!.Value <= today);
+            result.Persons.Where(p => p.Death?.Date is not null)
+                .ShouldAllBe(p => p.Death!.Date!.ToComparable()!.Value <= today);
             result.SpouseLinks.Where(s => s.MarriageDate is not null)
                 .ShouldAllBe(s => s.MarriageDate!.ToComparable()!.Value <= today);
             result.SpouseLinks.Where(s => s.DivorceDate is not null)

@@ -173,12 +173,18 @@ public static class GedcomImporter
                 "F" => Gender.Female,
                 _ => Gender.Unknown,
             },
-            BirthDate = birth,
-            BirthPlace = Clean(indi.Path("BIRT", "PLAC")),
-            BirthNote = Clean(indi.Path("BIRT", "NOTE")),
-            DeathDate = death,
-            DeathPlace = Clean(indi.Path("DEAT", "PLAC")),
-            DeathNote = Clean(indi.Path("DEAT", "NOTE")),
+            Birth = PersonEvent.Create(
+                birth,
+                Clean(indi.Path("BIRT", "PLAC")),
+                Clean(indi.Path("BIRT", "NOTE"))),
+
+            // Подія смерті може вийти null («1 DEAT Y» без підтегів) — сам факт смерті
+            // тримає прапорець нижче, а не наявність події.
+            Death = PersonEvent.Create(
+                death,
+                Clean(indi.Path("DEAT", "PLAC")),
+                Clean(indi.Path("DEAT", "NOTE"))),
+
             Deceased = deceased,
             Notes = Clean(indi.ChildValue("NOTE")),
             Facts = ReadFacts(indi, counters),

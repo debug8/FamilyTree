@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FamilyTree.Domain;
 
 namespace FamilyTree.Storage.Serialization;
@@ -78,6 +79,8 @@ internal static class DocumentMapper
                 var person = ToDomain(personDto);
                 document.Persons.Add(person);
                 DocumentExtras.Remember(extras.Persons, person.Id, personDto.Extra);
+                DocumentExtras.Remember(extras.PersonBirths, person.Id, personDto.Birth?.Extra);
+                DocumentExtras.Remember(extras.PersonDeaths, person.Id, personDto.Death?.Extra);
             }
         }
 
@@ -112,12 +115,8 @@ internal static class DocumentMapper
         Gender = p.Gender,
         MiddleName = p.MiddleName,
         MaidenName = p.MaidenName,
-        BirthDate = ToDto(p.BirthDate),
-        BirthPlace = p.BirthPlace,
-        BirthNote = p.BirthNote,
-        DeathDate = ToDto(p.DeathDate),
-        DeathPlace = p.DeathPlace,
-        DeathNote = p.DeathNote,
+        Birth = ToDto(p.Birth, DocumentExtras.Lookup(extras.PersonBirths, p.Id)),
+        Death = ToDto(p.Death, DocumentExtras.Lookup(extras.PersonDeaths, p.Id)),
         Deceased = p.Deceased,
         PhotoPath = p.PhotoPath,
         PhotoThumbnail = p.PhotoThumbnail,
@@ -136,12 +135,8 @@ internal static class DocumentMapper
         Gender = d.Gender,
         MiddleName = d.MiddleName,
         MaidenName = d.MaidenName,
-        BirthDate = ToDomain(d.BirthDate),
-        BirthPlace = d.BirthPlace,
-        BirthNote = d.BirthNote,
-        DeathDate = ToDomain(d.DeathDate),
-        DeathPlace = d.DeathPlace,
-        DeathNote = d.DeathNote,
+        Birth = ToDomain(d.Birth),
+        Death = ToDomain(d.Death),
         Deceased = d.Deceased,
         PhotoPath = d.PhotoPath,
         PhotoThumbnail = d.PhotoThumbnail,
@@ -150,6 +145,34 @@ internal static class DocumentMapper
         CreatedAt = d.CreatedAt,
         UpdatedAt = d.UpdatedAt,
     };
+
+    // ---- Події: PersonEvent ↔ PersonEventDto (схема v3) ----------------------
+
+    private static PersonEventDto? ToDto(PersonEvent? e, Dictionary<string, JsonElement>? extra)
+    {
+        // Порожньої події в моделі не буває (інваріант PersonEvent), тож null тут означає
+        // «нічого не відомо» — і в такому разі об'єкта у файлі немає взагалі. Виняток —
+        // незнайомі поля з файлу: якщо вони є, подія у файлі БУЛА, і викидати її вміст
+        // не можна, навіть коли все знайоме в ній порожнє.
+        if (e is null)
+        {
+            return extra is { Count: > 0 } ? new PersonEventDto { Extra = extra } : null;
+        }
+
+        return new PersonEventDto
+        {
+            Date = ToDto(e.Date),
+            Place = e.Place,
+            Note = e.Note,
+            Extra = extra,
+        };
+    }
+
+    // Через фабрику, а не конструктор: вона тримає інваріант «порожньої події не буває»,
+    // тож {"birth":{}} чи {"birth":{"place":"  "}} з чужого файлу стає null, а не порожнім
+    // об'єктом, який потім поїхав би назад у файл.
+    private static PersonEvent? ToDomain(PersonEventDto? d) =>
+        d is null ? null : PersonEvent.Create(ToDomain(d.Date), d.Place, d.Note);
 
     // ---- Життєві факти: PersonFact ↔ PersonFactDto (OCCU/RESI) --------------
 

@@ -109,14 +109,14 @@ public static class GedcomExporter
         }));
 
         var birth = BuildEvent(
-            "BIRT", GedcomDateMapper.ToGedcom(person.BirthDate), person.BirthPlace, person.BirthNote);
+            "BIRT", GedcomDateMapper.ToGedcom(person.Birth?.Date), person.Birth?.Place, person.Birth?.Note);
         if (birth is not null)
         {
             indi.Add(birth);
         }
 
         var death = BuildEvent(
-            "DEAT", GedcomDateMapper.ToGedcom(person.DeathDate), person.DeathPlace, person.DeathNote);
+            "DEAT", GedcomDateMapper.ToGedcom(person.Death?.Date), person.Death?.Place, person.Death?.Note);
         if (death is not null)
         {
             indi.Add(death);

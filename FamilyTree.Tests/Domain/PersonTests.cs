@@ -25,7 +25,7 @@ public class PersonTests
     public void IsAlive_is_false_when_death_date_set()
     {
         var person = NewPerson();
-        person.DeathDate = new DateOnly(1861, 3, 10);
+        person.Death = PersonEvent.WithDate(person.Death, new DateOnly(1861, 3, 10));
 
         person.IsAlive.ShouldBeFalse();
     }
@@ -38,7 +38,7 @@ public class PersonTests
         var person = NewPerson();
         person.Deceased = true;
 
-        person.DeathDate.ShouldBeNull();
+        (person.Death?.Date).ShouldBeNull();
         person.IsAlive.ShouldBeFalse();
     }
 
@@ -48,7 +48,7 @@ public class PersonTests
         // У старих файлах поля Deceased немає, тож воно читається як false, а смерть
         // виражена лише датою. IsAlive мусить це витримувати.
         var person = NewPerson();
-        person.DeathDate = new DateOnly(1861, 3, 10);
+        person.Death = PersonEvent.WithDate(person.Death, new DateOnly(1861, 3, 10));
         person.Deceased = false;
 
         person.IsAlive.ShouldBeFalse();

@@ -57,6 +57,16 @@ internal sealed class DocumentExtras
     /// <summary>Незнайомі поля осіб за <c>Person.Id</c>.</summary>
     public Dictionary<Guid, Dictionary<string, JsonElement>> Persons { get; } = new();
 
+    /// <summary>
+    /// Незнайомі поля ПОДІЇ народження — теж за <c>Person.Id</c>, бо власного <c>Id</c>
+    /// у події немає (схема v3). Окремий словник, а не спільний із <see cref="Persons"/>:
+    /// <c>birth.foo</c> і <c>person.foo</c> — різні поля з однаковою назвою.
+    /// </summary>
+    public Dictionary<Guid, Dictionary<string, JsonElement>> PersonBirths { get; } = new();
+
+    /// <summary>Незнайомі поля події смерті — за <c>Person.Id</c>, як і <see cref="PersonBirths"/>.</summary>
+    public Dictionary<Guid, Dictionary<string, JsonElement>> PersonDeaths { get; } = new();
+
     /// <summary>Незнайомі поля зв'язків «батько–дитина» за <c>ParentChildLink.Id</c>.</summary>
     public Dictionary<Guid, Dictionary<string, JsonElement>> ParentChildLinks { get; } = new();
 
@@ -71,6 +81,8 @@ internal sealed class DocumentExtras
         Root is null or { Count: 0 } &&
         Meta is null or { Count: 0 } &&
         Persons.Count == 0 &&
+        PersonBirths.Count == 0 &&
+        PersonDeaths.Count == 0 &&
         ParentChildLinks.Count == 0 &&
         SpouseLinks.Count == 0;
 

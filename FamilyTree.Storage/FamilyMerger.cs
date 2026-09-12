@@ -270,12 +270,15 @@ public sealed class FamilyMerger
         // непорожні розбіжності лишаються як є й пораховані в plan.Conflicts.
         foreach (var fill in plan.PersonUpdates)
         {
-            if (fill.DeathDate is { } death) fill.Target.DeathDate = death;
+            // Події — record'и: кожне доповнення перезбирає подію з решти її полів,
+            // тож порядок цих рядків не має значення, а відсутня подія створюється
+            // першим же непорожнім значенням.
+            if (fill.DeathDate is { } death) fill.Target.Death = PersonEvent.WithDate(fill.Target.Death, death);
             if (fill.Deceased) fill.Target.Deceased = true;
-            if (fill.BirthPlace is { } birthPlace) fill.Target.BirthPlace = birthPlace;
-            if (fill.BirthNote is { } birthNote) fill.Target.BirthNote = birthNote;
-            if (fill.DeathPlace is { } deathPlace) fill.Target.DeathPlace = deathPlace;
-            if (fill.DeathNote is { } deathNote) fill.Target.DeathNote = deathNote;
+            if (fill.BirthPlace is { } birthPlace) fill.Target.Birth = PersonEvent.WithPlace(fill.Target.Birth, birthPlace);
+            if (fill.BirthNote is { } birthNote) fill.Target.Birth = PersonEvent.WithNote(fill.Target.Birth, birthNote);
+            if (fill.DeathPlace is { } deathPlace) fill.Target.Death = PersonEvent.WithPlace(fill.Target.Death, deathPlace);
+            if (fill.DeathNote is { } deathNote) fill.Target.Death = PersonEvent.WithNote(fill.Target.Death, deathNote);
             if (fill.MaidenName is { } maiden) fill.Target.MaidenName = maiden;
             if (fill.Notes is { } notes) fill.Target.Notes = notes;
             if (fill.PhotoPath is { } photo) fill.Target.PhotoPath = photo;
@@ -335,7 +338,7 @@ public sealed class FamilyMerger
         // Ключем беремо представницьку дату (ToComparable): для точних дат це та сама
         // ISO-стрічка, що й раніше, тож зіставлення наявних файлів не змінюється. Нерезолвна
         // (напр. фраза) чи відсутня дата → null: таких людей автоматично не зливаємо (T-5.2a).
-        if (p.BirthDate?.ToComparable() is not { } birth)
+        if (p.Birth?.Date?.ToComparable() is not { } birth)
         {
             return null;
         }
@@ -375,15 +378,15 @@ public sealed class FamilyMerger
         var localConflicts = 0;
 
         FamilyDate? death = null;
-        if (target.DeathDate is null)
+        if (target.Death?.Date is null)
         {
-            if (source.DeathDate is { } d)
+            if (source.Death?.Date is { } d)
             {
                 death = d;
                 any = true;
             }
         }
-        else if (source.DeathDate is { } sd && sd != target.DeathDate)
+        else if (source.Death?.Date is { } sd && sd != target.Death.Date)
         {
             localConflicts++;
         }
@@ -398,10 +401,10 @@ public sealed class FamilyMerger
             any = true;
         }
 
-        var birthPlace = ResolveText(target.BirthPlace, source.BirthPlace, ref any, ref localConflicts);
-        var birthNote = ResolveText(target.BirthNote, source.BirthNote, ref any, ref localConflicts);
-        var deathPlace = ResolveText(target.DeathPlace, source.DeathPlace, ref any, ref localConflicts);
-        var deathNote = ResolveText(target.DeathNote, source.DeathNote, ref any, ref localConflicts);
+        var birthPlace = ResolveText(target.Birth?.Place, source.Birth?.Place, ref any, ref localConflicts);
+        var birthNote = ResolveText(target.Birth?.Note, source.Birth?.Note, ref any, ref localConflicts);
+        var deathPlace = ResolveText(target.Death?.Place, source.Death?.Place, ref any, ref localConflicts);
+        var deathNote = ResolveText(target.Death?.Note, source.Death?.Note, ref any, ref localConflicts);
         var maiden = ResolveText(target.MaidenName, source.MaidenName, ref any, ref localConflicts);
         var notes = ResolveText(target.Notes, source.Notes, ref any, ref localConflicts);
         var photo = ResolveText(target.PhotoPath, source.PhotoPath, ref any, ref localConflicts);
@@ -462,12 +465,8 @@ public sealed class FamilyMerger
         Gender = p.Gender,
         MiddleName = p.MiddleName,
         MaidenName = p.MaidenName,
-        BirthDate = p.BirthDate,
-        BirthPlace = p.BirthPlace,
-        BirthNote = p.BirthNote,
-        DeathDate = p.DeathDate,
-        DeathPlace = p.DeathPlace,
-        DeathNote = p.DeathNote,
+        Birth = p.Birth,
+        Death = p.Death,
         Deceased = p.Deceased,
         PhotoPath = p.PhotoPath,
         Notes = p.Notes,

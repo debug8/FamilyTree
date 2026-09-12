@@ -19,7 +19,7 @@ public class FamilyMergerTests
         LastName = last,
         FirstName = first,
         Gender = g,
-        BirthDate = new DateOnly(year, 1, 1),
+        Birth = PersonEvent.Create(new DateOnly(year, 1, 1)),
     };
 
     private static FamilyDocument DocOf(params Person[] persons)
@@ -175,9 +175,9 @@ public class FamilyMergerTests
         var target = DocOf(existing);
 
         var enriched = Make("Шевченко", "Ольга", 1990, Gender.Female); // інший Id
-        enriched.BirthPlace = "Київ";
+        enriched.Birth = PersonEvent.WithPlace(enriched.Birth, "Київ");
         enriched.Notes = "уточнення від родича";
-        enriched.DeathDate = new DateOnly(2020, 5, 1);
+        enriched.Death = PersonEvent.WithDate(enriched.Death, new DateOnly(2020, 5, 1));
         var source = DocOf(enriched);
 
         var report = _merger.Merge(target, source);
@@ -185,9 +185,9 @@ public class FamilyMergerTests
         report.UpdatedPersons.ShouldBe(1);
         report.Conflicts.ShouldBe(0);
         report.AddedPersons.ShouldBe(0);
-        existing.BirthPlace.ShouldBe("Київ");
+        (existing.Birth?.Place).ShouldBe("Київ");
         existing.Notes.ShouldBe("уточнення від родича");
-        existing.DeathDate.ShouldBe(FamilyDate.Exact(new DateOnly(2020, 5, 1)));
+        (existing.Death?.Date).ShouldBe(FamilyDate.Exact(new DateOnly(2020, 5, 1)));
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public class FamilyMergerTests
         report.UpdatedPersons.ShouldBe(1);
         report.Conflicts.ShouldBe(0);
         existing.Deceased.ShouldBeTrue();
-        existing.DeathDate.ShouldBeNull();
+        (existing.Death?.Date).ShouldBeNull();
         existing.IsAlive.ShouldBeFalse();
     }
 
@@ -217,35 +217,35 @@ public class FamilyMergerTests
         var target = DocOf(existing);
 
         var enriched = Make("Шевченко", "Ольга", 1990, Gender.Female);
-        enriched.BirthNote = "за метричною книгою";
-        enriched.DeathPlace = "Чернівці";
-        enriched.DeathNote = "померла вдома";
+        enriched.Birth = PersonEvent.WithNote(enriched.Birth, "за метричною книгою");
+        enriched.Death = PersonEvent.WithPlace(enriched.Death, "Чернівці");
+        enriched.Death = PersonEvent.WithNote(enriched.Death, "померла вдома");
         var source = DocOf(enriched);
 
         var report = _merger.Merge(target, source);
 
         report.UpdatedPersons.ShouldBe(1);
         report.Conflicts.ShouldBe(0);
-        existing.BirthNote.ShouldBe("за метричною книгою");
-        existing.DeathPlace.ShouldBe("Чернівці");
-        existing.DeathNote.ShouldBe("померла вдома");
+        (existing.Birth?.Note).ShouldBe("за метричною книгою");
+        (existing.Death?.Place).ShouldBe("Чернівці");
+        (existing.Death?.Note).ShouldBe("померла вдома");
     }
 
     [Fact]
     public void Conflicting_death_place_keeps_target_value_and_is_counted()
     {
         var existing = Make("Мороз", "Іван", 1970);
-        existing.DeathPlace = "Львів";
+        existing.Death = PersonEvent.WithPlace(existing.Death, "Львів");
         var target = DocOf(existing);
 
         var other = Make("Мороз", "Іван", 1970);
-        other.DeathPlace = "Одеса";
+        other.Death = PersonEvent.WithPlace(other.Death, "Одеса");
         var source = DocOf(other);
 
         var report = _merger.Merge(target, source);
 
         report.Conflicts.ShouldBe(1);
-        existing.DeathPlace.ShouldBe("Львів");
+        (existing.Death?.Place).ShouldBe("Львів");
     }
 
     [Fact]
@@ -267,18 +267,18 @@ public class FamilyMergerTests
     public void Conflicting_nonempty_field_keeps_target_value_and_is_counted()
     {
         var existing = Make("Мороз", "Іван", 1970);
-        existing.BirthPlace = "Львів";
+        existing.Birth = PersonEvent.WithPlace(existing.Birth, "Львів");
         var target = DocOf(existing);
 
         var other = Make("Мороз", "Іван", 1970); // той самий, інший Id
-        other.BirthPlace = "Одеса";               // непорожній конфлікт
+        other.Birth = PersonEvent.WithPlace(other.Birth, "Одеса");               // непорожній конфлікт
         var source = DocOf(other);
 
         var report = _merger.Merge(target, source);
 
         report.Conflicts.ShouldBe(1);
         report.UpdatedPersons.ShouldBe(0);        // заповнювати нічого — єдине поле конфліктне
-        existing.BirthPlace.ShouldBe("Львів");    // значення цілі збережено, не перезаписано
+        (existing.Birth?.Place).ShouldBe("Львів");    // значення цілі збережено, не перезаписано
     }
 
     [Fact]
@@ -289,14 +289,14 @@ public class FamilyMergerTests
         var existing = new Person
         {
             Id = fixedId, LastName = "Коваль", FirstName = "Іван",
-            Gender = Gender.Male, BirthDate = new DateOnly(1950, 1, 1),
+            Gender = Gender.Male, Birth = PersonEvent.Create(new DateOnly(1950, 1, 1)),
         };
         var target = DocOf(existing);
 
         var other = new Person
         {
             Id = fixedId, LastName = "Петренко", FirstName = "Олег",
-            Gender = Gender.Male, BirthDate = new DateOnly(1975, 2, 2),
+            Gender = Gender.Male, Birth = PersonEvent.Create(new DateOnly(1975, 2, 2)),
         };
         var child = Make("Петренко", "Мала", 2000, Gender.Female);
         var source = DocOf(other, child);
