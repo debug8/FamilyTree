@@ -811,6 +811,12 @@ Details have been saved to the log:
   <data name="Tree_ExportScale" xml:space="preserve">
     <value>Scale</value>
   </data>
+  <data name="Tree_Menu_SetRoot" xml:space="preserve">
+    <value>Build tree from this person</value>
+  </data>
+  <data name="Tree_Menu_AddSpouse" xml:space="preserve">
+    <value>Add spouse</value>
+  </data>
   <data name="Export_Title" xml:space="preserve">
     <value>Export tree</value>
   </data>

@@ -811,6 +811,12 @@
   <data name="Tree_ExportScale" xml:space="preserve">
     <value>Масштаб</value>
   </data>
+  <data name="Tree_Menu_SetRoot" xml:space="preserve">
+    <value>Побудувати дерево від особи</value>
+  </data>
+  <data name="Tree_Menu_AddSpouse" xml:space="preserve">
+    <value>Додати подружжя</value>
+  </data>
   <data name="Export_Title" xml:space="preserve">
     <value>Експорт дерева</value>
   </data>

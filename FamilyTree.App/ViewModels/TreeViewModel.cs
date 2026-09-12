@@ -167,11 +167,34 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     public ObservableCollection<GenerationBandViewModel> Bands { get; } = new();
 
     /// <summary>
-    /// Корінь дерева змінився (напр. подвійний клік по вузлу на полотні). Дозволяє власнику
-    /// (MainViewModel) синхронізувати вибір застосунку, щоб наступний RefreshPersons() не
-    /// «відкотив» корінь назад на стару виділену особу (B-06). Не спрацьовує на скидання (null).
+    /// Корінь дерева змінився (напр. пункт «Побудувати дерево від особи» в меню вузла).
+    /// Дозволяє власнику (MainViewModel) синхронізувати вибір застосунку, щоб наступний
+    /// RefreshPersons() не «відкотив» корінь назад на стару виділену особу (B-06).
+    /// Не спрацьовує на скидання (null).
     /// </summary>
     public event EventHandler<Guid>? RootChanged;
+
+    /// <summary>
+    /// Меню вузла попросило відкрити редактор особи. Саме дерево цього не вміє: редактор,
+    /// валідатор і документ живуть у MainViewModel, тож прохання передається йому. Корінь
+    /// при цьому НЕ змінюється — дерево лишається побудованим від тієї самої особи.
+    /// </summary>
+    public event EventHandler<Guid>? EditPersonRequested;
+
+    /// <summary>Меню вузла попросило додати подружжя (виконує власник — див. EditPersonRequested).</summary>
+    public event EventHandler<Guid>? AddSpouseRequested;
+
+    /// <summary>Меню вузла попросило видалити особу (підтвердження показує власник).</summary>
+    public event EventHandler<Guid>? DeletePersonRequested;
+
+    /// <summary>Редагувати особу з меню вузла.</summary>
+    public void RequestEditPerson(Guid personId) => EditPersonRequested?.Invoke(this, personId);
+
+    /// <summary>Додати подружжя особі з меню вузла.</summary>
+    public void RequestAddSpouse(Guid personId) => AddSpouseRequested?.Invoke(this, personId);
+
+    /// <summary>Видалити особу з меню вузла.</summary>
+    public void RequestDeletePerson(Guid personId) => DeletePersonRequested?.Invoke(this, personId);
 
     /// <summary>Задає кореневу особу й перебудовує дерево. Повторний вибір тієї самої
     /// особи нічого не робить — інакше сортування/пошук у списку осіб коштували б

@@ -43,8 +43,17 @@ public partial class FamilyGraphSurface : UserControl
     /// <summary>Одиночний клік по вузлу.</summary>
     public event EventHandler<TreeNodeViewModel>? NodeSelected;
 
-    /// <summary>Подвійний клік по вузлу (напр. зробити коренем).</summary>
-    public event EventHandler<TreeNodeViewModel>? NodeActivated;
+    /// <summary>Меню вузла: «Побудувати дерево від особи».</summary>
+    public event EventHandler<TreeNodeViewModel>? NodeSetRootRequested;
+
+    /// <summary>Меню вузла: «Редагувати».</summary>
+    public event EventHandler<TreeNodeViewModel>? NodeEditRequested;
+
+    /// <summary>Меню вузла: «Додати подружжя».</summary>
+    public event EventHandler<TreeNodeViewModel>? NodeAddSpouseRequested;
+
+    /// <summary>Меню вузла: «Видалити» (підтвердження — на боці виконавця).</summary>
+    public event EventHandler<TreeNodeViewModel>? NodeDeleteRequested;
 
     /// <summary>Наведення на вузол.</summary>
     public event EventHandler<TreeNodeViewModel>? NodePointerEntered;
@@ -109,16 +118,41 @@ public partial class FamilyGraphSurface : UserControl
             return;
         }
 
-        if (e.ClickCount == 2)
-        {
-            NodeActivated?.Invoke(this, node);
-        }
-        else
+        NodeSelected?.Invoke(this, node);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Правий клік по картці: виділяємо вузол, щоб було видно, над ким відкриється меню.
+    /// Подію НЕ позначаємо обробленою — саме меню WPF відкриває на відпусканні правої
+    /// кнопки, і робить це лише для необробленого ланцюжка.
+    /// </summary>
+    private void Node_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (Interactive && sender is FrameworkElement { DataContext: TreeNodeViewModel node })
         {
             NodeSelected?.Invoke(this, node);
         }
+    }
 
-        e.Handled = true;
+    private void NodeMenuSetRoot_Click(object sender, RoutedEventArgs e) => RaiseNodeMenu(sender, NodeSetRootRequested);
+
+    private void NodeMenuEdit_Click(object sender, RoutedEventArgs e) => RaiseNodeMenu(sender, NodeEditRequested);
+
+    private void NodeMenuAddSpouse_Click(object sender, RoutedEventArgs e) => RaiseNodeMenu(sender, NodeAddSpouseRequested);
+
+    private void NodeMenuDelete_Click(object sender, RoutedEventArgs e) => RaiseNodeMenu(sender, NodeDeleteRequested);
+
+    /// <summary>
+    /// Спільна частина пунктів меню: вузол береться з DataContext пункту (ContextMenu,
+    /// оголошене в шаблоні вузла, успадковує його DataContext), далі — відповідна подія.
+    /// </summary>
+    private void RaiseNodeMenu(object sender, EventHandler<TreeNodeViewModel>? handler)
+    {
+        if (Interactive && sender is FrameworkElement { DataContext: TreeNodeViewModel node })
+        {
+            handler?.Invoke(this, node);
+        }
     }
 
     private void Node_MouseEnter(object sender, MouseEventArgs e)

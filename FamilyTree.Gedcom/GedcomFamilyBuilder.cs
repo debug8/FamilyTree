@@ -184,6 +184,11 @@ public static class GedcomFamilyBuilder
     /// </summary>
     private static IEnumerable<Slots> AssignSlots(List<Person> parents)
     {
+        // Сортування за Id тут потрібне заради ДЕТЕРМІНОВАНОСТІ — щоб той самий документ
+        // завжди давав той самий розподіл HUSB/WIFE. Хронології воно не дає й не має:
+        // у межах мілісекунди UUIDv7 упорядкований випадково (див. Entity.Id), а при
+        // імпорті осіб створюється саме пачками. Не «покращувати» на «хто раніше
+        // створений, той HUSB» — цього тут не буде.
         var sorted = parents.OrderBy(p => p.Id).ToList();
 
         if (sorted.Count == 1)

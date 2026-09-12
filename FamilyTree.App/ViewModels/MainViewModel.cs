@@ -160,6 +160,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _session.DocumentChanged += OnDocumentChanged;
         _session.ContentChanged += OnContentChanged;
         _tree.RootChanged += OnTreeRootChanged;
+        _tree.EditPersonRequested += OnTreeEditPersonRequested;
+        _tree.AddSpouseRequested += OnTreeAddSpouseRequested;
+        _tree.DeletePersonRequested += OnTreeDeletePersonRequested;
 
         RefreshPersons();
     }
@@ -867,16 +870,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void EditPerson()
     {
-        if (SelectedPerson is not { } person)
+        if (SelectedPerson is { } person)
         {
-            return;
+            EditPersonInternal(person);
         }
+    }
 
+    /// <summary>
+    /// Редагує ВКАЗАНУ особу. Окремо від команди, бо меню вузла дерева діє над особою
+    /// з-під курсора, а не над виділеною — і виділення при цьому навмисно не чіпається
+    /// (інакше дерево перебудувалося б від іншого кореня, чого з меню ніхто не просив).
+    /// </summary>
+    private void EditPersonInternal(Person person)
+    {
         var editor = NewPersonEditor(person);
         if (_dialogs.ShowPersonEditor(editor))
         {
-            // Особа вже виділена; RefreshPersons() з ContentChanged збереже вибір за Id
-            // навіть якщо зміна імені перемістила її в сортуванні.
+            // Вибір тримається за Id: RefreshPersons() з ContentChanged збереже його
+            // навіть якщо зміна імені перемістила особу в сортуванні.
             _session.MarkContentChanged();
         }
     }
@@ -884,11 +895,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void DeletePerson()
     {
-        if (SelectedPerson is not { } person)
+        if (SelectedPerson is { } person)
         {
-            return;
+            DeletePersonInternal(person);
         }
+    }
 
+    /// <summary>Видаляє ВКАЗАНУ особу після підтвердження (див. <see cref="EditPersonInternal(Person)"/>).</summary>
+    private void DeletePersonInternal(Person person)
+    {
         var affectedLinks =
             _session.Current.ParentChildLinks.Count(l => l.Involves(person.Id)) +
             _session.Current.SpouseLinks.Count(l => l.Involves(person.Id));
@@ -962,11 +977,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void AddSpouse()
     {
-        if (SelectedPerson is not { } person)
+        if (SelectedPerson is { } person)
         {
-            return;
+            AddSpouseInternal(person);
         }
+    }
 
+    /// <summary>Додає подружжя ВКАЗАНІЙ особі (див. <see cref="EditPersonInternal(Person)"/>).</summary>
+    private void AddSpouseInternal(Person person)
+    {
         var pick = PickRelative(RelationshipRole.Spouse, person);
         var changed = pick.HasCreatedPersons;
 
@@ -1353,6 +1372,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    // ---- Меню вузла дерева ----------------------------------------------
+    //
+    // Пункти меню діють над особою З-ПІД КУРСОРА, а не над виділеною, і виділення
+    // НЕ змінюють: інакше кожен виклик меню тягнув би за собою ApplySelection() і
+    // перебудову дерева від іншого кореня. Перебудова лишилася окремим, явним
+    // пунктом «Побудувати дерево від особи» (він іде через SetRoot → RootChanged).
+
+    private void OnTreeEditPersonRequested(object? sender, Guid personId) => OnTreeNodeAction(personId, EditPersonInternal);
+
+    private void OnTreeAddSpouseRequested(object? sender, Guid personId) => OnTreeNodeAction(personId, AddSpouseInternal);
+
+    private void OnTreeDeletePersonRequested(object? sender, Guid personId) => OnTreeNodeAction(personId, DeletePersonInternal);
+
+    /// <summary>
+    /// Знаходить особу вузла в документі й виконує над нею дію. Особи може вже не бути
+    /// (дерево малювалося до видалення), тому пошук, а не довіра до Id з полотна.
+    /// </summary>
+    private void OnTreeNodeAction(Guid personId, Action<Person> action)
+    {
+        if (_session.Current.Persons.FirstOrDefault(p => p.Id == personId) is { } person)
+        {
+            action(person);
+        }
+    }
+
     partial void OnSearchTextChanged(string? value) => DebounceSearch();
 
     partial void OnSelectedSortChanged(PersonSortOption value) => RefreshPersons();
@@ -1605,6 +1649,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _session.DocumentChanged -= OnDocumentChanged;
         _session.ContentChanged -= OnContentChanged;
         _tree.RootChanged -= OnTreeRootChanged;
+        _tree.EditPersonRequested -= OnTreeEditPersonRequested;
+        _tree.AddSpouseRequested -= OnTreeAddSpouseRequested;
+        _tree.DeletePersonRequested -= OnTreeDeletePersonRequested;
         _searchCts?.Cancel();
         _selectionCts?.Cancel();
     }

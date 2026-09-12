@@ -1,9 +1,11 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using FamilyTree.App.Localization;
 using FamilyTree.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +33,14 @@ public partial class TreeCanvasControl : UserControl
 
         // Взаємодія полотна → команди ViewModel (полотно про VM не знає).
         Surface.NodeSelected += (_, node) => Vm?.SelectNode(node.PersonId);
-        Surface.NodeActivated += (_, node) => Vm?.SetRoot(node.PersonId);
+
+        // Меню вузла (ПКМ по картці). Корінь дерево міняє саме; решту — власник (MainViewModel),
+        // бо редагування/подружжя/видалення потребують діалогів, валідатора й документа.
+        Surface.NodeSetRootRequested += (_, node) => Vm?.SetRoot(node.PersonId);
+        Surface.NodeEditRequested += (_, node) => Vm?.RequestEditPerson(node.PersonId);
+        Surface.NodeAddSpouseRequested += (_, node) => Vm?.RequestAddSpouse(node.PersonId);
+        Surface.NodeDeleteRequested += (_, node) => Vm?.RequestDeletePerson(node.PersonId);
+
         Surface.NodePointerEntered += (_, node) => Vm?.HighlightChildrenOf(node.PersonId);
         Surface.CouplePointerEntered += (_, couple) => Vm?.HighlightChildrenOfCouple(couple.MemberA, couple.MemberB);
         Surface.EdgePointerEntered += (_, edge) => Vm?.HighlightEdge(edge);
@@ -76,12 +85,29 @@ public partial class TreeCanvasControl : UserControl
         Scroller.ScrollToVerticalOffset(contentY * newScale - viewportPoint.Y);
     }
 
+    // ---- Панорамування лівою кнопкою ------------------------------------
+    //
+    // Тягнути дерево можна за ВІЛЬНЕ місце полотна: над карткою особи ліва кнопка
+    // виділяє вузол, а права відкриває меню.
+    //
+    // Події саме тунельні (Preview*): ScrollViewer у власному класовому обробнику
+    // MouseLeftButtonDown забирає фокус і позначає подію обробленою, тож звичайний
+    // (бульбашковий) обробник на ньому до нас би не дійшов. Ціна тунелю — фільтр
+    // «звідки не можна тягнути» доводиться робити руками (CanStartPan): подія приходить
+    // раніше, ніж до картки чи до смуг прокрутки, тож автоматично вони себе не захистять.
+
     private void Pan_Start(object sender, MouseButtonEventArgs e)
     {
+        if (!CanStartPan(e.OriginalSource))
+        {
+            return;
+        }
+
         _panning = true;
         _panStart = e.GetPosition(Scroller);
         _hOffsetStart = Scroller.HorizontalOffset;
         _vOffsetStart = Scroller.VerticalOffset;
+        Scroller.Cursor = Cursors.SizeAll;
         Scroller.CaptureMouse();
     }
 
@@ -92,15 +118,59 @@ public partial class TreeCanvasControl : UserControl
             return;
         }
 
+        // Кнопку могли відпустити поза вікном (або захоплення відібрав діалог) — тоді
+        // відпускання до нас не дійшло б і полотно «залипло» б на курсорі.
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            StopPanning();
+            return;
+        }
+
         var current = e.GetPosition(Scroller);
         Scroller.ScrollToHorizontalOffset(_hOffsetStart - (current.X - _panStart.X));
         Scroller.ScrollToVerticalOffset(_vOffsetStart - (current.Y - _panStart.Y));
     }
 
-    private void Pan_End(object sender, MouseButtonEventArgs e)
+    private void Pan_End(object sender, MouseButtonEventArgs e) => StopPanning();
+
+    private void StopPanning()
     {
+        if (!_panning)
+        {
+            return;
+        }
+
         _panning = false;
+        Scroller.Cursor = null;
         Scroller.ReleaseMouseCapture();
+    }
+
+    /// <summary>
+    /// Чи можна почати панорамування з цього місця. Піднімаємося від елемента під
+    /// курсором до <c>Scroller</c> і відмовляємо у двох випадках:
+    /// <list type="bullet">
+    /// <item>картка особи — там ліва кнопка виділяє вузол;</item>
+    /// <item>смуга прокрутки — вона ЧАСТИНА шаблону ScrollViewer, тож тунельна подія
+    /// приходить до нього раніше, ніж до неї. Без цієї перевірки панорамування
+    /// перехоплювало захоплення миші, і повзунки просто не тягнулися.</item>
+    /// </list>
+    /// </summary>
+    private bool CanStartPan(object? originalSource)
+    {
+        var current = originalSource as DependencyObject;
+        while (current is not null && current != Scroller)
+        {
+            if (current is ScrollBar or FrameworkElement { DataContext: TreeNodeViewModel })
+            {
+                return false;
+            }
+
+            current = current is Visual or Visual3D
+                ? VisualTreeHelper.GetParent(current)
+                : LogicalTreeHelper.GetParent(current);
+        }
+
+        return true;
     }
 
     private void Fit_Click(object sender, RoutedEventArgs e)

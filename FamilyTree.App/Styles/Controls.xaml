@@ -355,6 +355,52 @@
         </Style.Triggers>
     </Style>
 
+    <!--
+      Контекстне меню. Пункти (MenuItem) уже тематизовані стилем вище, а от саму
+      «коробку» малює типовий шаблон ContextMenu — і фон там із системного ключа
+      SystemColors.MenuBrush, тобто світлий незалежно від нашої теми. На темній темі
+      це давало світлу панель зі світлим же текстом. Рамка та ж, що й у спливних
+      підменю (MenuTopLevelHeaderTemplate/MenuSubmenuHeaderTemplate) — щоб меню
+      верхнього рядка й меню на картці дерева виглядали однаково.
+
+      HasDropShadow=True тут не про тінь: він вмикає прозорість спливного вікна,
+      без якої скруглені кути лягли б на системний прямокутник.
+    -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="4" Padding="2">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Resources>
+            <!--
+              Роздільник у меню бере стиль за ключем MenuItem.SeparatorStyleKey, а типовий
+              теж системний (світла риска). Перевизначаємо ЛИШЕ в межах цього стилю —
+              як і з кутом смуг прокрутки нижче: меню верхнього рядка лишається як було.
+            -->
+            <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+                <Setter Property="Height" Value="1" />
+                <Setter Property="Margin" Value="6,4" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Separator">
+                            <Border Background="{DynamicResource BorderBrush}" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Style.Resources>
+    </Style>
+
     <!-- Смуги прокрутки -->
     <Style x:Key="ScrollThumbStyle" TargetType="Thumb">
         <Setter Property="Template">
