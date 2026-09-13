@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -18,6 +19,13 @@ public partial class TreeCanvasControl : UserControl
     private const double MinScale = 0.2;
     private const double MaxScale = 3.0;
 
+    /// <summary>
+    /// Горизонтальне колесо миші (нахил). WPF його не бачить взагалі: <c>MouseWheel</c>
+    /// — це лише вертикальний <c>WM_MOUSEWHEEL</c>, а <c>WM_MOUSEHWHEEL</c> фреймворк
+    /// мовчки викидає. Тому ловимо повідомлення вікна самі (див. <see cref="OnWindowMessage"/>).
+    /// </summary>
+    private const int WmMouseHWheel = 0x020E;
+
     private readonly ScaleTransform _sceneScale = new();
 
     private bool _panning;
@@ -25,11 +33,18 @@ public partial class TreeCanvasControl : UserControl
     private double _hOffsetStart;
     private double _vOffsetStart;
 
+    // Вікно, на яке почеплено хук. Тримаємо посилання, щоб відчепитися при вивантаженні:
+    // вкладку «Дерево» перемикають туди-сюди, і без цього хуки накопичувалися б.
+    private HwndSource? _hwndSource;
+
     public TreeCanvasControl()
     {
         InitializeComponent();
 
         Surface.LayoutTransform = _sceneScale; // зум сцени
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
 
         // Взаємодія полотна → команди ViewModel (полотно про VM не знає).
         Surface.NodeSelected += (_, node) => Vm?.SelectNode(node.PersonId);
@@ -48,6 +63,52 @@ public partial class TreeCanvasControl : UserControl
     }
 
     private TreeViewModel? Vm => DataContext as TreeViewModel;
+
+    // ---- Горизонтальне колесо (нахил) -----------------------------------
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_hwndSource is not null)
+        {
+            return; // уже причеплені (повторний Loaded при поверненні на вкладку)
+        }
+
+        _hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+        _hwndSource?.AddHook(OnWindowMessage);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        _hwndSource?.RemoveHook(OnWindowMessage);
+        _hwndSource = null;
+    }
+
+    /// <summary>
+    /// Обробляє <c>WM_MOUSEHWHEEL</c> — нахил колеса вбік. Повідомлення приходить
+    /// активному вікну, а не контролу під курсором, тож перевіряємо <c>IsMouseOver</c>:
+    /// нахил над іншою частиною вікна дерева не має рухати.
+    /// </summary>
+    private IntPtr OnWindowMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WmMouseHWheel || !Scroller.IsMouseOver)
+        {
+            return IntPtr.Zero;
+        }
+
+        // Дельта — старше слово wParam, зі знаком: нахил праворуч додатний.
+        // unchecked навмисно: 0xFFFF..0x8000 — це від'ємні значення, а не переповнення.
+        var delta = unchecked((short)((wParam.ToInt64() >> 16) & 0xFFFF));
+        if (delta == 0)
+        {
+            return IntPtr.Zero;
+        }
+
+        // Той самий крок, що й у Shift+колесо нижче (знак протилежний: там «колесо
+        // вгору = ліворуч», а тут напрям нахилу вже й є напрямом руху).
+        Scroller.ScrollToHorizontalOffset(Scroller.HorizontalOffset + delta);
+        handled = true;
+        return IntPtr.Zero;
+    }
 
     private void Scroller_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
