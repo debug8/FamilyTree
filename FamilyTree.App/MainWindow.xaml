@@ -75,6 +75,7 @@
                 <MenuItem Header="{loc:Localize Menu_Import}" Command="{Binding ImportCommand}" />
                 <MenuItem Header="{loc:Localize Menu_ImportGedcom}" Command="{Binding ImportGedcomCommand}" />
                 <MenuItem Header="{loc:Localize Menu_ExportGedcom}" Command="{Binding ExportGedcomCommand}" />
+                <MenuItem Header="{loc:Localize Menu_SaveCopyWithPhotos}" Command="{Binding SaveCopyWithPhotosCommand}" />
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Settings}" Command="{Binding OpenSettingsCommand}" />
                 <Separator />
