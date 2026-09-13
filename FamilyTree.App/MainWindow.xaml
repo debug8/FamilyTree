@@ -319,19 +319,21 @@
                                             <Button Style="{StaticResource RowIconButtonStyle}"
                                                     ToolTip="{loc:Localize Common_Edit}"
                                                     Command="{Binding DataContext.EditSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding Person}">
+                                                    CommandParameter="{Binding}">
                                                 <Path Data="{StaticResource PencilGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
                                                       Width="15" Height="15" Stretch="Uniform" />
                                             </Button>
                                             <Button Style="{StaticResource RowIconButtonStyle}"
                                                     ToolTip="{loc:Localize Common_Delete}"
                                                     Command="{Binding DataContext.RemoveSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding Person}">
+                                                    CommandParameter="{Binding}">
                                                 <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
                                                       Width="15" Height="15" Stretch="Uniform" />
                                             </Button>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding FullName}" VerticalAlignment="Center" Margin="0,0,8,0"
+                                        <!-- RowTitle, а не FullName: при повторному шлюбі до імені
+                                             додається період, інакше два рядки не розрізнити. -->
+                                        <TextBlock Text="{Binding RowTitle}" VerticalAlignment="Center" Margin="0,0,8,0"
                                                    TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                     </DockPanel>

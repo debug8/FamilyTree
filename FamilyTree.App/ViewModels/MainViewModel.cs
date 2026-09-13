@@ -1030,27 +1030,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Редагує шлюб із рядка списку «Подружжя». Рядок несе Id СВОГО зв'язку, тому пошук за парою
+    /// тут не потрібен і не годиться: у пари може бути кілька шлюбів, і «перший, що стосується
+    /// обох» — не обов'язково той, чию кнопку натиснули (B-67).
+    /// </summary>
     [RelayCommand]
-    private void EditSpouse(Person? spouse)
+    private void EditSpouse(PersonCard? row)
     {
-        if (SelectedPerson is { } person && spouse is not null)
+        if (SelectedPerson is { } person && FindSpouseLink(row) is { } link)
         {
-            EditSpouseInternal(person, spouse);
+            EditSpouseLink(link, person, row!.Person);
         }
     }
 
     /// <summary>
-    /// Редагує шлюб ВКАЗАНОЇ пари (див. <see cref="EditPersonInternal(Person)"/>): зв'язок
-    /// шукається за парою осіб. Меню рамки в дереві цим шляхом НЕ йде — воно вже знає, який
-    /// саме зв'язок редагує (див. <see cref="OnTreeEditCoupleRequested"/>).
+    /// Зв'язок подружжя за Id рядка списку. Шукаємо в документі щоразу: список міг бути
+    /// побудований до змін, а зв'язку вже може не бути.
     /// </summary>
-    private void EditSpouseInternal(Person person, Person spouse)
-    {
-        if (_session.Current.SpouseLinks.FirstOrDefault(l => l.Involves(person.Id) && l.Involves(spouse.Id)) is { } link)
-        {
-            EditSpouseLink(link, person, spouse);
-        }
-    }
+    private SpouseLink? FindSpouseLink(PersonCard? row) =>
+        row is null || row.SpouseLinkId == Guid.Empty
+            ? null
+            : _session.Current.SpouseLinks.FirstOrDefault(l => l.Id == row.SpouseLinkId);
 
     /// <summary>
     /// Редагує КОНКРЕТНИЙ зв'язок подружжя. Спільне тіло для обох входів — списку «Подружжя»
@@ -1081,13 +1082,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Видаляє шлюб із рядка списку «Подружжя» — САМЕ ЦЕЙ зв'язок, за його Id. Попереднє
+    /// видалення «за парою» зносило разом і повторний шлюб тієї самої пари (B-67).
+    /// </summary>
     [RelayCommand]
-    private void RemoveSpouse(Person? spouse)
+    private void RemoveSpouse(PersonCard? row)
     {
-        if (SelectedPerson is { } person && spouse is not null
-            && ConfirmRemoveRelation("Relation_RemoveSpouse_Confirm", spouse.FullName, person.FullName))
+        if (SelectedPerson is { } person && FindSpouseLink(row) is { } link
+            && ConfirmRemoveRelation("Relation_RemoveSpouse_Confirm", row!.RowTitle, person.FullName))
         {
-            _session.Current.SpouseLinks.RemoveAll(l => l.Involves(person.Id) && l.Involves(spouse.Id));
+            _session.Current.SpouseLinks.Remove(link);
             _session.MarkContentChanged();
         }
     }
@@ -1159,7 +1164,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return created;
     }
 
-    /// <summary>Id усіх прямих родичів особи: батьки, діти та подружжя.</summary>
+    /// <summary>
+    /// Id прямих родичів особи: батьки, діти та ЧИННЕ подружжя. Список іде в діалог зв'язку як
+    /// «уже пов'язані» — тих, хто в ньому, галочка «Приховувати вже пов'язаних» ховає зі списку
+    /// кандидатів. Колишнє подружжя сюди НЕ входить (B-68): зв'язок із ним завершено, і саме його
+    /// найчастіше додають повторно — «одружились знову». Поки він потрапляв у цей список, повторний
+    /// шлюб було не ввести, не здогадавшись зняти галочку.
+    /// </summary>
     private List<Guid> DirectRelativeIds(Person person)
     {
         var doc = _session.Current;
@@ -1179,7 +1190,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         foreach (var link in doc.SpouseLinks)
         {
-            if (link.SpouseOf(person.Id) is { } spouseId)
+            if (link.IsActive && link.SpouseOf(person.Id) is { } spouseId)
             {
                 ids.Add(spouseId);
             }
@@ -1612,12 +1623,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
         }
 
-        foreach (var link in doc.SpouseLinks.Where(l => l.Involves(person.Id)))
+        // Рядок «Подружжя» = ЗВ'ЯЗОК, а не особа: у пари може бути кілька шлюбів (B-16), і тоді
+        // той самий чоловік/дружина з'являється двічі. Кожен рядок несе Id свого зв'язку, щоб
+        // «Редагувати» й «Видалити» діяли саме на нього, а не на перший знайдений за парою (B-67).
+        // Коли особа в списку повторюється, до підпису додаємо період шлюбу — інакше два однакові
+        // рядки не розрізнити.
+        var spouseLinks = doc.SpouseLinks.Where(l => l.Involves(person.Id)).ToList();
+        var repeated = spouseLinks
+            .Select(l => l.SpouseOf(person.Id))
+            .Where(id => id is not null)
+            .GroupBy(id => id!.Value)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet();
+
+        foreach (var link in spouseLinks)
         {
-            if (link.SpouseOf(person.Id) is { } spouseId && byId.TryGetValue(spouseId, out var spouse))
+            if (link.SpouseOf(person.Id) is not { } spouseId || !byId.TryGetValue(spouseId, out var spouse))
             {
-                Spouses.Add(Card(spouse));
+                continue;
             }
+
+            string? period = null;
+            if (repeated.Contains(spouseId)
+                && PersonCardBuilder.FormatMarriagePeriod(link) is { Length: > 0 } text)
+            {
+                period = text;
+            }
+
+            Spouses.Add(_cards.Build(
+                spouse, doc, byId, childCounts.GetValueOrDefault(spouse.Id),
+                spouseLinkId: link.Id, spousePeriod: period));
         }
     }
 

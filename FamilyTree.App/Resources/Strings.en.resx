@@ -276,6 +276,9 @@ Embedded photo thumbnails: {1}. The originals stayed on this computer.</value>
   <data name="Rel_CandidatesFound" xml:space="preserve">
     <value>Showing {0} of {1}</value>
   </data>
+  <data name="Rel_EditingWith" xml:space="preserve">
+    <value>Marriage with</value>
+  </data>
   <data name="Rel_SecondParent_Title" xml:space="preserve">
     <value>Second parent</value>
   </data>
@@ -747,6 +750,9 @@ The app would not be able to open such a file, so nothing was written and the ex
   </data>
   <data name="Validation_DivorceBeforeMarriage" xml:space="preserve">
     <value>Warning: divorce date is earlier than the marriage date.</value>
+  </data>
+  <data name="Validation_DuplicateSpouseUnknownDates" xml:space="preserve">
+    <value>Warning: this couple already has an ended marriage, and the new one has no dates — it cannot be told apart from a duplicate.</value>
   </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Today</value>

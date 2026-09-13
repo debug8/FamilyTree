@@ -27,4 +27,8 @@ public static class ValidationKeys
 
     // Дата розлучення раніша за дату шлюбу (B-19).
     public const string DivorceBeforeMarriage = "Validation_DivorceBeforeMarriage";
+
+    // Схоже на дубль шлюбу, але лише через невідомі дати: у пари вже є ЗАВЕРШЕНИЙ шлюб,
+    // а в новому не вказано жодної дати, тож розвести їх у часі нічим (B-68).
+    public const string DuplicateSpouseUnknownDates = "Validation_DuplicateSpouseUnknownDates";
 }

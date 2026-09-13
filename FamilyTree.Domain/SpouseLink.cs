@@ -79,18 +79,33 @@ public sealed class SpouseLink : Entity
     /// (одружились → розлучились → одружились знову), який легітимний. Перевірку «та сама пара»
     /// робить викликач — тут порівнюються лише періоди.
     /// </para>
+    /// <para>
+    /// Відкритий кінець означає «шлюб ТРИВАЄ», а не «дата невідома» — тому <see cref="Divorced"/>
+    /// закриває період навіть без <see cref="DivorceDate"/> (B-68). Без цього завершений шлюб без
+    /// дати розлучення тягнувся у +∞ і перетинався з будь-яким наступним, тобто повторний шлюб
+    /// пари ставало неможливо записати — рівно той випадок, заради якого B-16 і робився.
+    /// Момент закінчення тоді невідомий, і за нього береться початок: перетином лишається лише те,
+    /// що накриває саму дату шлюбу.
+    /// </para>
     /// </summary>
     public bool PeriodOverlaps(SpouseLink other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
         var start1 = MarriageDate?.ToComparable() ?? DateOnly.MinValue;
-        var end1 = DivorceDate?.ToComparable() ?? DateOnly.MaxValue;
+        var end1 = PeriodEnd(this, start1);
         var start2 = other.MarriageDate?.ToComparable() ?? DateOnly.MinValue;
-        var end2 = other.DivorceDate?.ToComparable() ?? DateOnly.MaxValue;
+        var end2 = PeriodEnd(other, start2);
 
         return start1 <= end2 && start2 <= end1;
     }
+
+    /// <summary>
+    /// Кінець періоду шлюбу: дата розлучення, якщо відома; початок — якщо шлюб завершено без дати
+    /// (<see cref="Divorced"/>); і <see cref="DateOnly.MaxValue"/> лише для ЧИННОГО шлюбу.
+    /// </summary>
+    private static DateOnly PeriodEnd(SpouseLink link, DateOnly start) =>
+        link.DivorceDate?.ToComparable() ?? (link.Divorced ? start : DateOnly.MaxValue);
 
     /// <summary>Чи стосується цей зв'язок вказаної особи.</summary>
     public bool Involves(Guid personId) => Person1Id == personId || Person2Id == personId;

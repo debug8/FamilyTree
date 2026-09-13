@@ -96,6 +96,8 @@ public partial class RelationshipEditorViewModel : ObservableObject
     /// <summary>Чи показувати панель пошуку/фільтрів (у режимі редагування вона зайва).</summary>
     public bool ShowFilters => !IsEditMode;
 
+    public double Height => IsEditMode ? 400 : 640;
+
     /// <summary>Чи доступне створення нової особи прямо з діалогу.</summary>
     public bool CanCreatePerson => !IsEditMode && _createPerson is not null;
 
@@ -259,8 +261,12 @@ public partial class RelationshipEditorViewModel : ObservableObject
             return;
         }
 
-        // У режимі редагування дат контрагент зафіксований — фільтри його не торкаються.
-        var query = IsEditMode ? _candidates.AsEnumerable() : Filter(_candidates);
+        // У режимі редагування дат контрагент зафіксований, а списку в діалозі немає взагалі
+        // (там один рядок із тим, з ким шлюб), тож наповнювати його нема для кого. Раніше сюди
+        // копіювалися ВСІ особи документа — на великій родині це тисячі елементів у колекцію,
+        // якої ніхто не побачить. Вибір від цього не страждає: його виставляє ForSpouseEdit
+        // одразу після конструктора, а CanConfirm дивиться лише на нього.
+        var query = IsEditMode ? Enumerable.Empty<Person>() : Filter(_candidates);
         var ordered = PersonQuery.Sort(query, SelectedSort?.Field ?? PersonSortField.LastName, SortDescending);
 
         // Вибір зберігаємо, якщо особа лишилась у списку, інакше знімаємо —

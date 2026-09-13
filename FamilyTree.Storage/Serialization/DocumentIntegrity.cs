@@ -249,9 +249,16 @@ public static class DocumentIntegrity
     /// Прибирає повторні зв'язки тієї самої пари. Порядок збережених зв'язків не
     /// змінюється — лишається перший.
     /// <para>
-    /// Для подружжя ключ включає <see cref="SpouseLink.MarriageDate"/>: повторний шлюб тієї
-    /// самої пари з іншою датою — легітимна історія (B-16), і викидати його не можна.
-    /// Дублем лишається запис із тією самою парою і тією самою датою шлюбу.
+    /// Для подружжя дублем вважається запис, що збігається з попереднім УСІМА полями: пара,
+    /// дати шлюбу й розлучення, прапорець завершення, місце. Будь-яка відмінність — окремий
+    /// шлюб, і викидати його не можна (повторний шлюб пари — легітимна історія, B-16).
+    /// </para>
+    /// <para>
+    /// Спершу ключ складався лише з пари й дати шлюбу — і з'їдав реальні дані (B-70): пара, у
+    /// якої перший шлюб завершено без дати розлучення, а другий записано без дати шлюбу, давала
+    /// два однакові ключі <c>(a, b, null)</c>, тож ДРУГИЙ шлюб зникав просто при відкриванні
+    /// файлу. Тепер такі записи різняться прапорцем <see cref="SpouseLink.Divorced"/>, і
+    /// лишаються обидва.
     /// </para>
     /// </summary>
     private static int RemoveDuplicateLinks(FamilyDocument document)
@@ -261,11 +268,20 @@ public static class DocumentIntegrity
         var seenParentChild = new HashSet<(Guid Parent, Guid Child)>();
         removed += document.ParentChildLinks.RemoveAll(l => !seenParentChild.Add((l.ParentId, l.ChildId)));
 
-        var seenSpouse = new HashSet<(Guid First, Guid Second, FamilyDate? Marriage)>();
-        removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add((l.Person1Id, l.Person2Id, l.MarriageDate)));
+        var seenSpouse = new HashSet<SpouseKey>();
+        removed += document.SpouseLinks.RemoveAll(l => !seenSpouse.Add(new SpouseKey(
+            l.Person1Id, l.Person2Id, l.MarriageDate, l.DivorceDate, l.Divorced, l.MarriagePlace)));
 
         return removed;
     }
+
+    /// <summary>
+    /// Ключ порівняння подружніх зв'язків — увесь вміст запису. Рівність за значенням
+    /// (<see cref="FamilyDate"/> теж record), тож два однакові записи дають однаковий ключ, а
+    /// будь-яка змістовна відмінність робить їх різними зв'язками.
+    /// </summary>
+    private readonly record struct SpouseKey(
+        Guid First, Guid Second, FamilyDate? Marriage, FamilyDate? Divorce, bool Divorced, string? Place);
 
     /// <summary>
     /// Відкидає ребра «батько-дитина», що замикають цикл (особа стає власним предком).

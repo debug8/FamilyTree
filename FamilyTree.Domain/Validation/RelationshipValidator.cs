@@ -120,13 +120,32 @@ public sealed class RelationshipValidator
         // Дубль пари (ідентифікатори нормалізовані у SpouseLink) (п.3). Дублем вважаємо
         // лише ПЕРЕТИН періодів шлюбу: повторний шлюб тієї самої пари з роздільними періодами
         // (розлучились → одружились знову) — легітимний і має записатися (B-16).
-        var isDuplicate = existingLinks.Any(l =>
-            l.Person1Id == candidate.Person1Id
-            && l.Person2Id == candidate.Person2Id
-            && l.PeriodOverlaps(candidate));
-        if (isDuplicate)
+        var overlapping = existingLinks
+            .Where(l => l.Person1Id == candidate.Person1Id
+                && l.Person2Id == candidate.Person2Id
+                && l.PeriodOverlaps(candidate))
+            .ToList();
+
+        if (overlapping.Count > 0)
         {
-            errors.Add(ValidationMessage.Of(ValidationKeys.DuplicateSpouse));
+            // Перетин міг «вирости» з невідомих меж: у кандидата без жодної дати період — це вся
+            // вісь часу, тож він накриває будь-який минулий шлюб. Коли всі наявні шлюби пари вже
+            // завершені, це не доведений дубль, а брак дат — а блокувати ввід через НЕВІДОМУ дату
+            // в генеалогічному застосунку неправильно (B-68): там, де дати не знають, і потрібен
+            // запис. Тому попереджаємо й даємо записати. Якщо ж хоч один наявний шлюб ЧИННИЙ —
+            // помилка лишається: двох одночасних шлюбів однієї пари не буває.
+            var datesUnknown = candidate.MarriageDate?.ToComparable() is null
+                && candidate.DivorceDate?.ToComparable() is null
+                && overlapping.TrueForAll(l => !l.IsActive);
+
+            if (datesUnknown)
+            {
+                warnings.Add(ValidationMessage.Of(ValidationKeys.DuplicateSpouseUnknownDates));
+            }
+            else
+            {
+                errors.Add(ValidationMessage.Of(ValidationKeys.DuplicateSpouse));
+            }
         }
 
         // Дата розлучення раніша за дату шлюбу — м'яке попередження (B-19). Не жорстка помилка:

@@ -28,6 +28,22 @@ public sealed class PersonCard
 
     public string FullName => Person.FullName;
 
+    /// <summary>
+    /// Id зв'язку подружжя для рядка списку «Подружжя» (<c>Guid.Empty</c> — картка не про шлюб).
+    /// Пари осіб для пошуку зв'язку НЕ досить: у пари може бути кілька шлюбів (B-16), і рядок
+    /// мусить знати СВІЙ — інакше «Редагувати» відкриває чужий, а «Видалити» зносить обидва (B-67).
+    /// </summary>
+    public Guid SpouseLinkId { get; init; }
+
+    /// <summary>
+    /// Період шлюбу для підпису рядка. Заповнюється лише тоді, коли та сама особа трапляється
+    /// в списку «Подружжя» двічі (повторний шлюб): два однакові рядки інакше не розрізнити.
+    /// </summary>
+    public string? SpousePeriod { get; init; }
+
+    /// <summary>Підпис рядка списку: ім'я, а за потреби — з періодом шлюбу.</summary>
+    public string RowTitle => SpousePeriod is null ? FullName : $"{FullName} ({SpousePeriod})";
+
     /// <summary>Роки життя «1980–2021» (порожньо, якщо дат немає).</summary>
     public string Years { get; init; } = string.Empty;
 
@@ -80,15 +96,25 @@ public sealed class PersonCardBuilder
     /// Кількість дітей. Передається зовні, бо викликачі вже мають дешеве джерело
     /// (граф або словник), і рахувати links на кожну картку було б O(n·m).
     /// </param>
+    /// <param name="spouseLinkId">
+    /// Для рядка списку «Подружжя» — Id ЙОГО зв'язку; решта викликів лишають <c>default</c>.
+    /// </param>
+    /// <param name="spousePeriod">
+    /// Період шлюбу для підпису рядка, коли ту саму особу треба показати двічі (повторний шлюб).
+    /// </param>
     public PersonCard Build(
         Person person,
         FamilyDocument doc,
         IReadOnlyDictionary<Guid, Person> persons,
         int childrenCount,
-        string? relationBadge = null) =>
+        string? relationBadge = null,
+        Guid spouseLinkId = default,
+        string? spousePeriod = null) =>
         new()
         {
             Person = person,
+            SpouseLinkId = spouseLinkId,
+            SpousePeriod = spousePeriod,
             Years = FormatYears(person),
             RelationBadge = relationBadge,
             PhotoPath = ResolvePhoto(person.PhotoPath),

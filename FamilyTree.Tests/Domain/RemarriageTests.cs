@@ -77,7 +77,76 @@ public class RemarriageTests
         result.Errors.ShouldContain(m => m.Key == ValidationKeys.DuplicateSpouse);
     }
 
+    /// <summary>
+    /// B-68: найчастіший реальний випадок — перший шлюб завершено галочкою «В шлюбі», а дати
+    /// розлучення ніхто не знає. До фікса такий шлюб тягнувся у +∞ і блокував будь-який наступний.
+    /// </summary>
+    [Fact]
+    public void Remarriage_is_allowed_when_previous_marriage_ended_without_a_divorce_date()
+    {
+        var a = Make("A", Gender.Male);
+        var b = Make("B", Gender.Female);
+        var ended = SpouseLink.Create(a.Id, b.Id, new DateOnly(1990, 1, 1), divorceDate: null, divorced: true);
+        var candidate = SpouseLink.Create(a.Id, b.Id, new DateOnly(2000, 1, 1));
+
+        var result = new RelationshipValidator().ValidateSpouse(candidate, new[] { ended });
+
+        result.IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>
+    /// B-68: дат немає взагалі, а попередній шлюб завершено — перетин «доводиться» лише невідомими
+    /// межами. Це попередження (користувач підтверджує), а не жорстка помилка.
+    /// </summary>
+    [Fact]
+    public void Remarriage_without_any_dates_is_a_warning_not_an_error()
+    {
+        var a = Make("A", Gender.Male);
+        var b = Make("B", Gender.Female);
+        var ended = SpouseLink.Create(a.Id, b.Id, new DateOnly(1990, 1, 1), new DateOnly(1995, 1, 1));
+        var candidate = SpouseLink.Create(a.Id, b.Id);
+
+        var result = new RelationshipValidator().ValidateSpouse(candidate, new[] { ended });
+
+        result.IsValid.ShouldBeTrue();
+        result.Warnings.ShouldContain(m => m.Key == ValidationKeys.DuplicateSpouseUnknownDates);
+    }
+
+    /// <summary>
+    /// Зворотний бік попереднього: поки наявний шлюб ЧИННИЙ, другий без дат лишається помилкою —
+    /// двох одночасних шлюбів однієї пари не буває.
+    /// </summary>
+    [Fact]
+    public void Second_marriage_without_dates_is_an_error_while_the_first_is_active()
+    {
+        var a = Make("A", Gender.Male);
+        var b = Make("B", Gender.Female);
+        var active = SpouseLink.Create(a.Id, b.Id, new DateOnly(1990, 1, 1));
+        var candidate = SpouseLink.Create(a.Id, b.Id);
+
+        var result = new RelationshipValidator().ValidateSpouse(candidate, new[] { active });
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(m => m.Key == ValidationKeys.DuplicateSpouse);
+    }
+
     // --- PeriodOverlaps: межі та відкриті інтервали -----------------------
+
+    [Fact]
+    public void PeriodOverlaps_closes_the_period_of_a_marriage_ended_without_a_date()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+
+        // Завершений без дати розлучення: період стискається до самої дати шлюбу.
+        var ended = SpouseLink.Create(a, b, new DateOnly(1990, 1, 1), divorceDate: null, divorced: true);
+        var later = SpouseLink.Create(a, b, new DateOnly(1995, 1, 1));
+        var covering = SpouseLink.Create(a, b, new DateOnly(1985, 1, 1), new DateOnly(1992, 1, 1));
+
+        ended.PeriodOverlaps(later).ShouldBeFalse();
+        later.PeriodOverlaps(ended).ShouldBeFalse();   // симетрично
+        ended.PeriodOverlaps(covering).ShouldBeTrue(); // 1990 всередині [1985, 1992]
+    }
 
     [Fact]
     public void PeriodOverlaps_treats_missing_bounds_as_open()

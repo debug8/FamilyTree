@@ -276,6 +276,9 @@
   <data name="Rel_CandidatesFound" xml:space="preserve">
     <value>Показано: {0} з {1}</value>
   </data>
+  <data name="Rel_EditingWith" xml:space="preserve">
+    <value>Шлюб з</value>
+  </data>
   <data name="Rel_SecondParent_Title" xml:space="preserve">
     <value>Другий з батьків</value>
   </data>
@@ -747,6 +750,9 @@
   </data>
   <data name="Validation_DivorceBeforeMarriage" xml:space="preserve">
     <value>Попередження: дата розлучення раніша за дату шлюбу.</value>
+  </data>
+  <data name="Validation_DuplicateSpouseUnknownDates" xml:space="preserve">
+    <value>Попередження: у цієї пари вже є завершений шлюб, а дат нового не вказано — відрізнити його від дубля неможливо.</value>
   </data>
   <data name="StatusBar_Today" xml:space="preserve">
     <value>Сьогодні</value>

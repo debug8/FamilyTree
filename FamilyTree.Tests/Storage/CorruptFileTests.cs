@@ -310,6 +310,42 @@ public sealed class CorruptFileTests : IDisposable
     }
 
     [Fact]
+    public async Task Remarriage_without_dates_is_preserved_when_previous_is_divorced()
+    {
+        // B-70: найчастіший реальний повторний шлюб — перший завершено БЕЗ дати розлучення,
+        // другий записано БЕЗ дати шлюбу. За ключем «пара + дата шлюбу» обидва давали (a, b, null),
+        // і другий шлюб зникав просто при відкриванні файлу. Різняться вони лише прапорцем.
+        var path = await WriteAsync("remarriage-nodates.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{PersonB}}}]," +
+            $"\"spouseLinks\":[" +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"divorced\":true}}," +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.SpouseLinks.Count.ShouldBe(2);
+        doc.SpouseLinks.Count(l => l.IsActive).ShouldBe(1);
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Spouse_links_differing_only_by_divorce_date_are_both_preserved()
+    {
+        // Та сама пара, та сама дата шлюбу, різні дати розлучення — теж два різні записи.
+        // Ключ, що дивився лише на дату шлюбу, залишав один із них.
+        var path = await WriteAsync("dupspouse-divorce.familytree",
+            $"{{\"schemaVersion\":1,\"persons\":[{{{PersonA}}},{{{PersonB}}}]," +
+            $"\"spouseLinks\":[" +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"1990-01-01\",\"divorceDate\":\"1995-01-01\"}}," +
+            $"{{\"person1Id\":\"{IdA}\",\"person2Id\":\"{IdB}\",\"marriageDate\":\"1990-01-01\",\"divorceDate\":\"1999-01-01\"}}]}}");
+
+        var doc = await LoadAsync(path);
+
+        doc.SpouseLinks.Count.ShouldBe(2);
+        doc.RepairedIssues.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Reversed_spouse_link_becomes_detectable_duplicate()
     {
         // Після нормалізації та сама пара у двох порядках стає одним зв'язком.
