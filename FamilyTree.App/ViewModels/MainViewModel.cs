@@ -116,6 +116,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private ImageSource? _selectedPersonPhotoLarge;
 
+    // Дати вибраної особи, вже відформатовані рядками «Дата народження: …» / «Дата смерті: …» —
+    // підпис під іменем на вкладці «Особа», той самий вигляд, що й у картці-тултіпі.
+    // Складаються при застосуванні вибору з тієї ж причини, що фото й факти
+    // (див. RefreshSelectedDates).
+    [ObservableProperty]
+    private string? _selectedPersonBirth;
+
+    [ObservableProperty]
+    private string? _selectedPersonDeath;
+
     // Життєві факти вибраної особи, вже відформатовані рядками. Складаються при
     // застосуванні вибору з тієї ж причини, що й фото (див. RefreshSelectedFacts).
     [ObservableProperty]
@@ -1366,11 +1376,38 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ? person.Facts.Select(_cards.FormatFact).ToList()
             : Array.Empty<string>();
 
+    /// <summary>
+    /// Перечитує дати вибраної особи (підпис під іменем). Рядки складаються ТИМ САМИМ
+    /// складальником, що й картка-тултіп, тож «Дата народження: …» / «Дата смерті: …»
+    /// виглядають однаково в обох місцях — включно з місцем події та «невідома» для особи,
+    /// позначеної померлою без дати.
+    /// <para>
+    /// Як і з фото, робиться на КОЖНЕ застосування вибору, а не лише на зміну особи: після
+    /// редагування RefreshPersons() повертає той самий екземпляр, тож присвоєння SelectedPerson
+    /// нічого б не оновило. Порожній рядок → null, і він згортається на вкладці.
+    /// </para>
+    /// </summary>
+    private void RefreshSelectedDates()
+    {
+        if (SelectedPerson is not { } person)
+        {
+            SelectedPersonBirth = null;
+            SelectedPersonDeath = null;
+            return;
+        }
+
+        SelectedPersonBirth = _cards.Line("Person_BirthDate", PersonCardBuilder.FormatBirth(person));
+        SelectedPersonDeath = person.IsAlive
+            ? null
+            : _cards.Line("Person_DeathDate", _cards.FormatDeath(person));
+    }
+
     private void ApplySelection(Person? value)
     {
         RefreshRelations();
         RefreshSelectedPhoto();
         RefreshSelectedFacts();
+        RefreshSelectedDates();
 
         if (value is not null)
         {
@@ -1714,6 +1751,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(AvailableNamingStyles));
         OnPropertyChanged(nameof(AvailableSortOptions));
         OnPropertyChanged(nameof(PersonsCountText));
+        RefreshSelectedDates(); // підписи й формат дат залежать від мови
         RaiseDocumentInfo();
     }
 

@@ -209,9 +209,24 @@
                          Міняєте Width фото або зазор — перераховуйте всі три. -->
                     <DockPanel Margin="0,0,0,16" LastChildFill="False">
 
-                        <TextBlock Text="{Binding SelectedPerson.FullName}" DockPanel.Dock="Left" Margin="0,0,120,0"
-                                   Style="{StaticResource PersonNameTextStyle}"
-                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                        <!-- Ім'я з датою народження під ним. Блоком, а не двома дітьми DockPanel:
+                             резерв під фото (Margin 120) має лишитися ОДИН на обидва рядки,
+                             інакше розрахунок із коментаря вище розсиплеться. -->
+                        <StackPanel DockPanel.Dock="Left" Margin="0,0,120,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SelectedPerson.FullName}"
+                                       Style="{StaticResource PersonNameTextStyle}"
+                                       TextWrapping="Wrap" />
+                            <!-- Дати — тими самими рядками, що й у картці-тултіпі: «Дата
+                                 народження: …», «Дата смерті: …». Порожній рядок згортається,
+                                 тож для особи без дат вигляд вкладки не змінюється, а для живої
+                                 рядка про смерть немає взагалі. -->
+                            <TextBlock Text="{Binding SelectedPersonBirth}" Margin="0,4,0,0"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Visibility="{Binding SelectedPersonBirth, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding SelectedPersonDeath}" Margin="0,2,0,0"
+                                       Style="{StaticResource SecondaryTextStyle}"
+                                       Visibility="{Binding SelectedPersonDeath, Converter={StaticResource NullToCollapsedConverter}}" />
+                        </StackPanel>
                         <Border DockPanel.Dock="Left" Width="100" Height="100" Padding="2" Margin="-80,0,-20,-66"
                                 CornerRadius="6" VerticalAlignment="Top"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"

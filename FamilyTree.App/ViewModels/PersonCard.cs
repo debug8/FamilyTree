@@ -236,7 +236,7 @@ public sealed class PersonCardBuilder
     /// Порожньою не буває: особа, позначена померлою без дати, мусить показати хоч
     /// «невідома», інакше <see cref="Line"/> віддасть null і рядок про смерть зникне.
     /// </summary>
-    private string FormatDeath(Person person)
+    public string FormatDeath(Person person)
     {
         var date = FormatDate(person.Death?.Date);
 
