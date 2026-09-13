@@ -97,8 +97,14 @@
   <data name="Common_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
+  <data name="Common_EditPerson" xml:space="preserve">
+    <value>Edit person</value>
+  </data>
   <data name="Common_Delete" xml:space="preserve">
     <value>Delete</value>
+  </data>
+  <data name="Common_Remove" xml:space="preserve">
+    <value>Remove</value>
   </data>
   <data name="Common_Save" xml:space="preserve">
     <value>Save</value>
@@ -263,6 +269,9 @@ Embedded photo thumbnails: {1}. The originals stayed on this computer.</value>
   </data>
   <data name="Rel_EditSpouse" xml:space="preserve">
     <value>Edit spouse</value>
+  </data>
+  <data name="Rel_RemoveSpouse" xml:space="preserve">
+    <value>Delete marriage</value>
   </data>
   <data name="Rel_CreateNew" xml:space="preserve">
     <value>+ Create</value>

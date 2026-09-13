@@ -260,15 +260,26 @@
                                                  Content="{Binding}" ContentTemplate="{StaticResource PersonCardTemplate}" />
                                     </Border.ToolTip>
                                     <!-- Кнопки докуються праворуч і оголошені ПЕРШИМИ:
-                                         у DockPanel заповнює простір саме останній елемент. -->
+                                         у DockPanel заповнює простір саме останній елемент.
+                                         Олівець редагує САМУ ОСОБУ (на відміну від подружжя,
+                                         де він редагує шлюб), тож і підказка в нього інша. -->
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Style="{StaticResource RowIconButtonStyle}"
-                                                ToolTip="{loc:Localize Common_Delete}"
-                                                Command="{Binding DataContext.RemoveParentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding Person}">
-                                            <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
-                                                  Width="15" Height="15" Stretch="Uniform" />
-                                        </Button>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button Style="{StaticResource RowIconButtonStyle}"
+                                                    ToolTip="{loc:Localize Common_EditPerson}"
+                                                    Command="{Binding DataContext.EditRelativeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding Person}">
+                                                <Path Data="{StaticResource PencilGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                      Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                            <Button Style="{StaticResource RowIconButtonStyle}"
+                                                    ToolTip="{loc:Localize Common_Remove}"
+                                                    Command="{Binding DataContext.RemoveParentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding Person}">
+                                                <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                      Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding FullName}" VerticalAlignment="Center" Margin="0,0,8,0"
                                                    TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -296,13 +307,22 @@
                                                  Content="{Binding}" ContentTemplate="{StaticResource PersonCardTemplate}" />
                                     </Border.ToolTip>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Style="{StaticResource RowIconButtonStyle}"
-                                                ToolTip="{loc:Localize Common_Delete}"
-                                                Command="{Binding DataContext.RemoveChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding Person}">
-                                            <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
-                                                  Width="15" Height="15" Stretch="Uniform" />
-                                        </Button>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button Style="{StaticResource RowIconButtonStyle}"
+                                                    ToolTip="{loc:Localize Common_EditPerson}"
+                                                    Command="{Binding DataContext.EditRelativeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding Person}">
+                                                <Path Data="{StaticResource PencilGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                      Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                            <Button Style="{StaticResource RowIconButtonStyle}"
+                                                    ToolTip="{loc:Localize Common_Remove}"
+                                                    Command="{Binding DataContext.RemoveChildCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding Person}">
+                                                <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
+                                                      Width="15" Height="15" Stretch="Uniform" />
+                                            </Button>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding FullName}" VerticalAlignment="Center" Margin="0,0,8,0"
                                                    TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -332,14 +352,14 @@
                                     <DockPanel>
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                             <Button Style="{StaticResource RowIconButtonStyle}"
-                                                    ToolTip="{loc:Localize Common_Edit}"
+                                                    ToolTip="{loc:Localize Rel_EditSpouse}"
                                                     Command="{Binding DataContext.EditSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}">
                                                 <Path Data="{StaticResource PencilGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
                                                       Width="15" Height="15" Stretch="Uniform" />
                                             </Button>
                                             <Button Style="{StaticResource RowIconButtonStyle}"
-                                                    ToolTip="{loc:Localize Common_Delete}"
+                                                    ToolTip="{loc:Localize Rel_RemoveSpouse}"
                                                     Command="{Binding DataContext.RemoveSpouseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}">
                                                 <Path Data="{StaticResource TrashGeometry}" Fill="{DynamicResource TextSecondaryBrush}"
