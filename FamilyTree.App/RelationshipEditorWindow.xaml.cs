@@ -12,6 +12,30 @@ public partial class RelationshipEditorWindow : Window
     public RelationshipEditorWindow()
     {
         InitializeComponent();
+
+        // Розмір вікна виставляємо ТУТ, а не прив'язкою до ViewModel. Прив'язка на
+        // Window.Height не працює: вікно бере Width/Height для створення нативного вікна ще
+        // до того, як прив'язка встигає активуватися (її Status лишається Unattached), тож у
+        // Height їде NaN — «авто», тобто типовий системний розмір. Та сама прив'язка, змінена
+        // у ВЖЕ відкритому вікні, спрацьовує миттєво — елемент на той час живий; через це
+        // розходження баг і виглядає загадковим.
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    /// <summary>
+    /// У режимі редагування списку кандидатів немає — лишається один рядок «Шлюб з». Тому
+    /// рядок сітки перестає тягнутися, а висоту рахує WPF за вмістом. Це чесніше за фіксоване
+    /// число: додане згодом поле саме розсуне вікно, а не опиниться за його краєм.
+    /// </summary>
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is not RelationshipEditorViewModel { IsEditMode: true })
+        {
+            return;
+        }
+
+        CandidatesRow.Height = GridLength.Auto;
+        SizeToContent = SizeToContent.Height;
     }
 
     private void Confirm_Click(object sender, RoutedEventArgs e) => DialogResult = true;

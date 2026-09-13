@@ -96,8 +96,6 @@ public partial class RelationshipEditorViewModel : ObservableObject
     /// <summary>Чи показувати панель пошуку/фільтрів (у режимі редагування вона зайва).</summary>
     public bool ShowFilters => !IsEditMode;
 
-    public double Height => IsEditMode ? 400 : 640;
-
     /// <summary>Чи доступне створення нової особи прямо з діалогу.</summary>
     public bool CanCreatePerson => !IsEditMode && _createPerson is not null;
 

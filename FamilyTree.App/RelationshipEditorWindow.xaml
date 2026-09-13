@@ -4,14 +4,16 @@
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
         xmlns:controls="clr-namespace:FamilyTree.App.Controls"
         Title="{Binding TitleKey, Converter={StaticResource LocalizeConverter}}"
-        Height="{Binding Height, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" Width="520" MinHeight="400" MinWidth="500"
+        Height="640" Width="520" MinHeight="400" MinWidth="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Background="{DynamicResource BackgroundBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <!-- Рядок списку кандидатів. У режимі редагування списку немає, і тягнути цей рядок
+                 нема чого — code-behind робить його Auto, а вікно міряє висоту за вмістом. -->
+            <RowDefinition x:Name="CandidatesRow" Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
