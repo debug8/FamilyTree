@@ -817,6 +817,9 @@
   <data name="Tree_Menu_AddSpouse" xml:space="preserve">
     <value>Додати подружжя</value>
   </data>
+  <data name="Tree_Menu_EditCouple" xml:space="preserve">
+    <value>Редагувати подружжя</value>
+  </data>
   <data name="Export_Title" xml:space="preserve">
     <value>Експорт дерева</value>
   </data>

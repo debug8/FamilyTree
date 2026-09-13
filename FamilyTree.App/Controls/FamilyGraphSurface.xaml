@@ -46,7 +46,16 @@
                             ToolTip="{Binding Tooltip}"
                             ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
                             ToolTipService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                            MouseEnter="Couple_MouseEnter" MouseLeave="Surface_PointerLeave" />
+                            ContextMenuService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            MouseEnter="Couple_MouseEnter" MouseLeave="Surface_PointerLeave">
+                        <!-- Меню рамки шлюбу. Як і в меню вузла, пункт лише повідомляє назовні:
+                             сам зв'язок редагує власник (MainViewModel) — там і діалог, і валідатор. -->
+                        <Border.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{loc:Localize Tree_Menu_EditCouple}" Click="CoupleMenuEdit_Click" />
+                            </ContextMenu>
+                        </Border.ContextMenu>
+                    </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

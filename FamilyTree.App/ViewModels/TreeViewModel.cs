@@ -187,6 +187,13 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     /// <summary>Меню вузла попросило видалити особу (підтвердження показує власник).</summary>
     public event EventHandler<Guid>? DeletePersonRequested;
 
+    /// <summary>
+    /// Меню рамки шлюбу попросило відредагувати подружжя. Передаємо Id зв'язку, а не пару
+    /// осіб: у пари може бути кілька шлюбів (B-16), і редагувати треба саме той, чию рамку
+    /// клацнули. Сам <c>SpouseLink</c> власник бере з документа за цим Id.
+    /// </summary>
+    public event EventHandler<Guid>? EditCoupleRequested;
+
     /// <summary>Редагувати особу з меню вузла.</summary>
     public void RequestEditPerson(Guid personId) => EditPersonRequested?.Invoke(this, personId);
 
@@ -195,6 +202,15 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
     /// <summary>Видалити особу з меню вузла.</summary>
     public void RequestDeletePerson(Guid personId) => DeletePersonRequested?.Invoke(this, personId);
+
+    /// <summary>Редагувати шлюб із меню рамки. <paramref name="linkId"/> — Id зв'язку рамки.</summary>
+    public void RequestEditCouple(Guid linkId)
+    {
+        if (linkId != Guid.Empty)
+        {
+            EditCoupleRequested?.Invoke(this, linkId);
+        }
+    }
 
     /// <summary>Задає кореневу особу й перебудовує дерево. Повторний вибір тієї самої
     /// особи нічого не робить — інакше сортування/пошук у списку осіб коштували б
@@ -405,6 +421,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         // Активні подружжя → рамка + якір знизу рамки; розлучені → пунктирне ребро.
         var coupleAnchors = new List<(Guid A, Guid B, double X, double Y)>();
         var childToParents = new Dictionary<Guid, List<Guid>>();
+        var activeLinks = ActiveSpouseLinks(doc);
 
         foreach (var edge in layout.Edges.Reverse())
         {
@@ -412,15 +429,19 @@ public partial class TreeViewModel : ObservableObject, IDisposable
             {
                 var a = positions[edge.FromId];
                 var b = positions[edge.ToId];
-                if (graph.IsSpouseActive(edge.FromId, edge.ToId))
+
+                // Умова рамки — наявність ЧИННОГО зв'язку, а не окремий graph.IsSpouseActive:
+                // сенс той самий («чинний хоча б один зв'язок пари»), але тепер рамка й тултіп
+                // спираються на ТОЙ САМИЙ зв'язок, що поїде далі в меню. Розійтися вони не можуть.
+                if (activeLinks.TryGetValue(OrderPair(edge.FromId, edge.ToId), out var link))
                 {
                     var left = Math.Min(a.X, b.X) - couplePad;
                     var top = Math.Min(a.Y, b.Y) - couplePad;
                     var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
                     var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
                     Couples.Add(new CoupleBoxViewModel(left, BoxY(top, height), width, height,
-                        BuildCoupleTooltip(edge.FromId, edge.ToId, doc, persons),
-                        edge.FromId, edge.ToId));
+                        BuildCoupleTooltip(edge.FromId, edge.ToId, link, persons),
+                        edge.FromId, edge.ToId, link.Id));
                     coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
                 }
                 else
@@ -572,8 +593,40 @@ public partial class TreeViewModel : ObservableObject, IDisposable
             ? $"{a.FullName} — {b.FullName}"
             : null;
 
+    /// <summary>
+    /// Чинні шлюби за впорядкованою парою осіб. Збирається раз на перемальовування — замість
+    /// лінійного пошуку по <c>SpouseLinks</c> на КОЖНУ рамку — і, головне, відбирає саме чинний
+    /// зв'язок: у пари їх може бути кілька (повторний шлюб — B-16), і пошук «перший, що
+    /// стосується обох» міг віддати давній, розлучений.
+    /// <para>
+    /// Двох чинних зв'язків в однієї пари бути не може (валідатор не пропускає перетин
+    /// періодів), але у файлі з чужого імпорту таке трапляється — тоді перемагає перший,
+    /// а не останній: так вибір не залежить від порядку записів у файлі.
+    /// </para>
+    /// </summary>
+    private static Dictionary<(Guid, Guid), SpouseLink> ActiveSpouseLinks(FamilyDocument doc)
+    {
+        var result = new Dictionary<(Guid, Guid), SpouseLink>();
+        foreach (var link in doc.SpouseLinks)
+        {
+            if (link.IsActive)
+            {
+                result.TryAdd(OrderPair(link.Person1Id, link.Person2Id), link);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Ключ пари — ті самі впорядковані ідентифікатори, що й у <c>SpouseLink.Create</c>,
+    /// тож пара збігається незалежно від того, з якого боку прийшло ребро розкладки.
+    /// </summary>
+    private static (Guid, Guid) OrderPair(Guid a, Guid b) => a.CompareTo(b) <= 0 ? (a, b) : (b, a);
+
     /// <summary>Короткий опис шлюбу для тултіпа рамки: «Ім'я ♥ Ім'я · у шлюбі з 2005».</summary>
-    private string? BuildCoupleTooltip(Guid aId, Guid bId, FamilyDocument doc, IReadOnlyDictionary<Guid, Person> persons)
+    private string? BuildCoupleTooltip(
+        Guid aId, Guid bId, SpouseLink link, IReadOnlyDictionary<Guid, Person> persons)
     {
         if (!persons.TryGetValue(aId, out var a) || !persons.TryGetValue(bId, out var b))
         {
@@ -581,8 +634,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         }
 
         var couple = $"{a.FullName}  ♥  {b.FullName}";
-        var link = doc.SpouseLinks.FirstOrDefault(l => l.Involves(aId) && l.Involves(bId));
-        if (link?.MarriageDate is not { } date)
+        if (link.MarriageDate is not { } date)
         {
             return couple;
         }

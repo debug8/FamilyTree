@@ -163,6 +163,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tree.EditPersonRequested += OnTreeEditPersonRequested;
         _tree.AddSpouseRequested += OnTreeAddSpouseRequested;
         _tree.DeletePersonRequested += OnTreeDeletePersonRequested;
+        _tree.EditCoupleRequested += OnTreeEditCoupleRequested;
 
         RefreshPersons();
     }
@@ -1032,17 +1033,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void EditSpouse(Person? spouse)
     {
-        if (SelectedPerson is not { } person || spouse is null)
+        if (SelectedPerson is { } person && spouse is not null)
         {
-            return;
+            EditSpouseInternal(person, spouse);
         }
+    }
 
-        var link = _session.Current.SpouseLinks.FirstOrDefault(l => l.Involves(person.Id) && l.Involves(spouse.Id));
-        if (link is null)
+    /// <summary>
+    /// Редагує шлюб ВКАЗАНОЇ пари (див. <see cref="EditPersonInternal(Person)"/>): зв'язок
+    /// шукається за парою осіб. Меню рамки в дереві цим шляхом НЕ йде — воно вже знає, який
+    /// саме зв'язок редагує (див. <see cref="OnTreeEditCoupleRequested"/>).
+    /// </summary>
+    private void EditSpouseInternal(Person person, Person spouse)
+    {
+        if (_session.Current.SpouseLinks.FirstOrDefault(l => l.Involves(person.Id) && l.Involves(spouse.Id)) is { } link)
         {
-            return;
+            EditSpouseLink(link, person, spouse);
         }
+    }
 
+    /// <summary>
+    /// Редагує КОНКРЕТНИЙ зв'язок подружжя. Спільне тіло для обох входів — списку «Подружжя»
+    /// на вкладці «Особа» й меню рамки в дереві, — щоб валідація змінених дат (B-19) була одна.
+    /// </summary>
+    private void EditSpouseLink(SpouseLink link, Person person, Person spouse)
+    {
         var editor = RelationshipEditorViewModel.ForSpouseEdit(
             person, spouse, link.MarriageDate, link.DivorceDate, link.IsActive, link.MarriagePlace);
         if (_dialogs.ShowRelationshipEditor(editor))
@@ -1386,6 +1401,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnTreeDeletePersonRequested(object? sender, Guid personId) => OnTreeNodeAction(personId, DeletePersonInternal);
 
     /// <summary>
+    /// Меню рамки шлюбу: «Редагувати подружжя». Рамка приносить Id САМЕ того зв'язку, за яким
+    /// її намальовано, — пари осіб тут замало: у пари може бути кілька шлюбів (B-16), і пошук
+    /// «перший, що стосується обох» відкрив би давній, розлучений. Зв'язок і осіб шукаємо в
+    /// документі щоразу з тієї самої причини, що й у <see cref="OnTreeNodeAction"/> — сцену
+    /// могли намалювати до змін. Виділення, як і в меню вузла, не чіпаємо.
+    /// </summary>
+    private void OnTreeEditCoupleRequested(object? sender, Guid linkId)
+    {
+        var doc = _session.Current;
+        if (doc.SpouseLinks.FirstOrDefault(l => l.Id == linkId) is not { } link)
+        {
+            return;
+        }
+
+        var a = doc.Persons.FirstOrDefault(p => p.Id == link.Person1Id);
+        var b = doc.Persons.FirstOrDefault(p => p.Id == link.Person2Id);
+        if (a is not null && b is not null)
+        {
+            EditSpouseLink(link, a, b);
+        }
+    }
+
+    /// <summary>
     /// Знаходить особу вузла в документі й виконує над нею дію. Особи може вже не бути
     /// (дерево малювалося до видалення), тому пошук, а не довіра до Id з полотна.
     /// </summary>
@@ -1652,6 +1690,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _tree.EditPersonRequested -= OnTreeEditPersonRequested;
         _tree.AddSpouseRequested -= OnTreeAddSpouseRequested;
         _tree.DeletePersonRequested -= OnTreeDeletePersonRequested;
+        _tree.EditCoupleRequested -= OnTreeEditCoupleRequested;
         _searchCts?.Cancel();
         _selectionCts?.Cancel();
     }

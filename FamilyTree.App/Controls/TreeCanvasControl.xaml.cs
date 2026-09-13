@@ -56,6 +56,9 @@ public partial class TreeCanvasControl : UserControl
         Surface.NodeAddSpouseRequested += (_, node) => Vm?.RequestAddSpouse(node.PersonId);
         Surface.NodeDeleteRequested += (_, node) => Vm?.RequestDeletePerson(node.PersonId);
 
+        // Меню рамки шлюбу (ПКМ по рамці навколо подружжя) — теж до власника.
+        Surface.CoupleEditRequested += (_, couple) => Vm?.RequestEditCouple(couple.LinkId);
+
         Surface.NodePointerEntered += (_, node) => Vm?.HighlightChildrenOf(node.PersonId);
         Surface.CouplePointerEntered += (_, couple) => Vm?.HighlightChildrenOfCouple(couple.MemberA, couple.MemberB);
         Surface.EdgePointerEntered += (_, edge) => Vm?.HighlightEdge(edge);

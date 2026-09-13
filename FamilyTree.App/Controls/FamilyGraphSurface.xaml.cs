@@ -55,6 +55,9 @@ public partial class FamilyGraphSurface : UserControl
     /// <summary>Меню вузла: «Видалити» (підтвердження — на боці виконавця).</summary>
     public event EventHandler<TreeNodeViewModel>? NodeDeleteRequested;
 
+    /// <summary>Меню рамки шлюбу: «Редагувати подружжя».</summary>
+    public event EventHandler<CoupleBoxViewModel>? CoupleEditRequested;
+
     /// <summary>Наведення на вузол.</summary>
     public event EventHandler<TreeNodeViewModel>? NodePointerEntered;
 
@@ -152,6 +155,18 @@ public partial class FamilyGraphSurface : UserControl
         if (Interactive && sender is FrameworkElement { DataContext: TreeNodeViewModel node })
         {
             handler?.Invoke(this, node);
+        }
+    }
+
+    /// <summary>
+    /// Пункт меню рамки шлюбу. Пара береться з DataContext пункту — ContextMenu оголошене
+    /// в шаблоні рамки, тож успадковує її <see cref="CoupleBoxViewModel"/>.
+    /// </summary>
+    private void CoupleMenuEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (Interactive && sender is FrameworkElement { DataContext: CoupleBoxViewModel couple })
+        {
+            CoupleEditRequested?.Invoke(this, couple);
         }
     }
 
