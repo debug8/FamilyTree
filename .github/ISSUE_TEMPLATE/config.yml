@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Питання про використання
+    url: https://github.com/debug8/FamilyTree/discussions
+    about: Не баг і не пропозиція — спитайте в Discussions.

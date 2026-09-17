@@ -1,0 +1,117 @@
+name: Баг
+description: Щось працює не так, як має
+title: "[Баг]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Дякую за звіт. Що детальніше опишете кроки, то швидше знайдеться причина.
+        Якщо баг стосується конкретної родини — прикріпіть `.familytree` (фото в нього не входять).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Що сталося
+      description: Коротко — що пішло не так.
+      placeholder: При відкритті файлу другий шлюб пари зникає зі списку «Подружжя».
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Кроки відтворення
+      description: По пунктах, від чистого запуску застосунку.
+      value: |
+        1. Відкрити `...`
+        2. Перейти на вкладку `...`
+        3. Натиснути `...`
+        4. Побачити помилку
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Що мало статися
+      placeholder: Обидва шлюби лишаються у списку, чинний позначений суцільною рамкою.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Важливість
+      description: За шкалою з `BUGS-2026-07-30.md`.
+      options:
+        - "🔴 Критично — втрата або спотворення даних, застосунок непрацездатний"
+        - "🟠 Важливо — видимий дефект, порушення інваріанту"
+        - "⚪ Дрібне — косметика, крихкість, технічний борг"
+      default: 1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Шар
+      description: Якщо відомо. Можна кілька.
+      multiple: true
+      options:
+        - Domain
+        - Storage
+        - App (WPF)
+        - Gedcom
+        - Tools / SeedGenerator
+        - Installer
+        - Не знаю
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Версія застосунку
+      description: «Про програму» або властивості `FamilyTree.exe`.
+      placeholder: 0.9.8
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Windows
+      description: Версія та збірка — `winver`.
+      placeholder: Windows 11 24H2 (26100.2033)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Мова інтерфейсу
+      options:
+        - Українська
+        - English
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Лог
+      description: |
+        `%AppData%\FamilyTree\logs` — останній файл. Вставте кінець, де видно помилку.
+        Це поле рендериться як код, форматувати не треба.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Додатково
+      description: Скриншот, файл `.familytree`, будь-що інше корисне. Перетягніть сюди.
+    validations:
+      required: false

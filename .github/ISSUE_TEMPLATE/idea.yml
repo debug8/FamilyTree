@@ -1,0 +1,73 @@
+name: Ідея / покращення
+description: Нова можливість або зміна наявної поведінки
+title: "[Ідея]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Перед тим як заводити — гляньте `BACKLOG.md` і `IDEAS.md`: можливо, це вже записано.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Яку проблему це вирішує
+      description: Спершу біль, потім рішення. Це найважливіше поле.
+      placeholder: |
+        Щоб побачити життя людини як послідовність, доводиться ходити блоками вкладки
+        «Особа» й по черзі відкривати картки дітей. Порядок і проміжки не видно ніде.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Пропозиція
+      description: Що саме зробити. Якщо є кілька варіантів — перелічіть їх.
+    validations:
+      required: true
+
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Рішення, які треба ухвалити
+      description: Розвилки, які блокують реалізацію (формат, назва, обсяг, сумісність).
+      placeholder: |
+        - Окрема вкладка чи панель на «Особі»?
+        - Read-only чи редагування по місцю?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Орієнтовний обсяг
+      options:
+        - Малий — одне-два місця, механічно
+        - Середній — кілька шарів, є тести
+        - Помітний — окрема задача на кілька сеансів
+        - Не знаю
+      default: 3
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Що зачіпає
+      options:
+        - label: Формат файлу (`schemaVersion`, міграція)
+        - label: Обмін GEDCOM
+        - label: Локалізацію (обидва resx)
+        - label: Злиття документів
+        - label: Нічого з переліченого
+    validations:
+      required: false
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Пов'язане
+      description: Номери issue, розділи `IDEAS.md`, пункти специфікації (`T-5.2`).
+    validations:
+      required: false
