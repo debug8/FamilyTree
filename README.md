@@ -15,6 +15,14 @@
   не стартує (помилка про відсутній `api-ms-win-crt-*.dll`). Інсталятор перевіряє версію ОС
   і зупиняється з поясненням.
 
+## Плани й баги
+
+Відкриті задачі — в [Issues](https://github.com/debug8/FamilyTree/issues): ідеї під міткою
+[`idea`](https://github.com/debug8/FamilyTree/issues?q=is%3Aissue+is%3Aopen+label%3Aidea),
+дефекти під [`bug`](https://github.com/debug8/FamilyTree/issues?q=is%3Aissue+is%3Aopen+label%3Abug).
+Історія змін — у [`CHANGELOG.md`](CHANGELOG.md), розгорнуті постановки й старі аудити — в
+[`docs/archive/`](docs/archive/).
+
 ## Технології
 
 - .NET 10 (LTS), C#, WPF
