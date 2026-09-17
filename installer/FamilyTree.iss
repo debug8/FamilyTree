@@ -50,6 +50,13 @@ Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Мінімальна версія Windows — 10 version 1607 (build 14393): саме її вимагає .NET 10,
+; на якому зібрано застосунок. Без цього рядка Inno Setup пускав встановлення аж із
+; Windows 7 SP1, і на Windows 8/8.1 програма падала при старті з невиразною помилкою
+; про відсутній api-ms-win-crt-*.dll — це Universal CRT, компонент самої ОС, якого там
+; немає і який не входить у самодостатню публікацію .NET. Тепер користувач одразу
+; бачить зрозуміле повідомлення від інсталятора замість помилки після встановлення.
+MinVersion=10.0.14393
 ; Дозволяємо встановлення без прав адміністратора (per-user); користувач може обрати інше.
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
