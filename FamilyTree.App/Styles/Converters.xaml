@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:loc="clr-namespace:FamilyTree.App.Localization"
+                    xmlns:conv="clr-namespace:FamilyTree.App.Converters">
+
+    <!--
+      Конвертери. Власний словник, бо на них спирається Cards.xaml, а StaticResource
+      з середини вкладеного словника НЕ бачить ресурсів батьківського: Cards.xaml мусить
+      мержити саме цей файл, інакше прив'язки в шаблонах упадуть на завантаженні з
+      «Cannot find resource named …».
+
+      Конвертери без стану, тож подвійне створення (тут і в Cards.xaml) нічого не коштує.
+    -->
+
+    <loc:LocalizeConverter x:Key="LocalizeConverter" />
+    <conv:PersonYearsConverter x:Key="PersonYearsConverter" />
+    <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter" />
+    <conv:DepthLabelConverter x:Key="DepthLabelConverter" />
+    <conv:LongDateConverter x:Key="LongDateConverter" />
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+</ResourceDictionary>
