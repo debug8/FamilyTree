@@ -268,7 +268,7 @@ Embedded photo thumbnails: {1}. The originals stayed on this computer.</value>
     <value>Add spouse</value>
   </data>
   <data name="Rel_EditSpouse" xml:space="preserve">
-    <value>Edit spouse</value>
+    <value>Edit marriage</value>
   </data>
   <data name="Rel_RemoveSpouse" xml:space="preserve">
     <value>Delete marriage</value>

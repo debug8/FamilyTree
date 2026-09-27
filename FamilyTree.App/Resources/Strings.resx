@@ -268,10 +268,10 @@
     <value>Додати подружжя</value>
   </data>
   <data name="Rel_EditSpouse" xml:space="preserve">
-    <value>Редагувати подружжя</value>
+    <value>Редагувати шлюб</value>
   </data>
   <data name="Rel_RemoveSpouse" xml:space="preserve">
-    <value>Видалити подружжя</value>
+    <value>Видалити шлюб</value>
   </data>
   <data name="Rel_CreateNew" xml:space="preserve">
     <value>+ Створити</value>
@@ -833,7 +833,7 @@
     <value>Додати подружжя</value>
   </data>
   <data name="Tree_Menu_EditCouple" xml:space="preserve">
-    <value>Редагувати подружжя</value>
+    <value>Редагувати шлюб</value>
   </data>
   <data name="Export_Title" xml:space="preserve">
     <value>Експорт дерева</value>

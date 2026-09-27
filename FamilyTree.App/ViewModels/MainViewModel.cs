@@ -1484,7 +1484,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnTreeDeletePersonRequested(object? sender, Guid personId) => OnTreeNodeAction(personId, DeletePersonInternal);
 
     /// <summary>
-    /// Меню рамки шлюбу: «Редагувати подружжя». Рамка приносить Id САМЕ того зв'язку, за яким
+    /// Меню шлюбу: «Редагувати шлюб» — і з рамки чинного шлюбу, і з пунктирного ребра
+    /// колишнього подружжя. Джерело приносить Id САМЕ того зв'язку, за яким
     /// її намальовано, — пари осіб тут замало: у пари може бути кілька шлюбів (B-16), і пошук
     /// «перший, що стосується обох» відкрив би давній, розлучений. Зв'язок і осіб шукаємо в
     /// документі щоразу з тієї самої причини, що й у <see cref="OnTreeNodeAction"/> — сцену

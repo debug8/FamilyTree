@@ -55,8 +55,15 @@ public partial class FamilyGraphSurface : UserControl
     /// <summary>Меню вузла: «Видалити» (підтвердження — на боці виконавця).</summary>
     public event EventHandler<TreeNodeViewModel>? NodeDeleteRequested;
 
-    /// <summary>Меню рамки шлюбу: «Редагувати подружжя».</summary>
+    /// <summary>Меню рамки чинного шлюбу: «Редагувати шлюб».</summary>
     public event EventHandler<CoupleBoxViewModel>? CoupleEditRequested;
+
+    /// <summary>
+    /// Меню пунктирного ребра колишнього подружжя: «Редагувати шлюб». Окрема подія, а не
+    /// та сама: рамки в цієї пари немає, тож і <see cref="CoupleBoxViewModel"/> їй нізвідки
+    /// взятися — зв'язок носить картка ребра.
+    /// </summary>
+    public event EventHandler<TreeEdgeViewModel>? SpouseEdgeEditRequested;
 
     /// <summary>Наведення на вузол.</summary>
     public event EventHandler<TreeNodeViewModel>? NodePointerEntered;
@@ -167,6 +174,18 @@ public partial class FamilyGraphSurface : UserControl
         if (Interactive && sender is FrameworkElement { DataContext: CoupleBoxViewModel couple })
         {
             CoupleEditRequested?.Invoke(this, couple);
+        }
+    }
+
+    /// <summary>
+    /// Пункт меню пунктирного ребра. Ребро береться з DataContext пункту — ContextMenu
+    /// оголошене в шаблоні ребра, тож успадковує його <see cref="TreeEdgeViewModel"/>.
+    /// </summary>
+    private void EdgeMenuEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (Interactive && sender is FrameworkElement { DataContext: TreeEdgeViewModel edge })
+        {
+            SpouseEdgeEditRequested?.Invoke(this, edge);
         }
     }
 

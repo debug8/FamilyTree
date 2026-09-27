@@ -79,7 +79,17 @@
                               Stroke="Transparent" StrokeThickness="10"
                               ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
                               ToolTipService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              MouseEnter="Edge_MouseEnter" MouseLeave="Surface_PointerLeave">
+                              MouseEnter="Edge_MouseEnter" MouseLeave="Surface_PointerLeave"
+                              ContextMenuService.IsEnabled="{Binding HasCard}">
+                            <!-- Меню є лише в пунктира колишнього подружжя: HasCard вимикає
+                                 його на лініях «батьки — дитина», де редагувати нічого.
+                                 Далі ланцюжок той самий, що й у меню рамки чинного шлюбу. -->
+                            <Line.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{loc:Localize Tree_Menu_EditCouple}"
+                                              Click="EdgeMenuEdit_Click" />
+                                </ContextMenu>
+                            </Line.ContextMenu>
                             <!-- Підказка ребра — картка для колишнього подружжя або рядок
                                  для «батьки — дитина»; перемикається в EdgeTooltipTemplate. -->
                             <Line.ToolTip>

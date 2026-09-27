@@ -59,6 +59,11 @@ public partial class TreeCanvasControl : UserControl
         // Меню рамки шлюбу (ПКМ по рамці навколо подружжя) — теж до власника.
         Surface.CoupleEditRequested += (_, couple) => Vm?.RequestEditCouple(couple.LinkId);
 
+        // Те саме для пунктира колишнього подружжя: зв'язок носить картка ребра.
+        // RequestEditCouple сам відкидає Guid.Empty, тож ребро без картки нічого не зробить.
+        Surface.SpouseEdgeEditRequested += (_, edge) =>
+            Vm?.RequestEditCouple(edge.Card?.LinkId ?? Guid.Empty);
+
         Surface.NodePointerEntered += (_, node) => Vm?.HighlightChildrenOf(node.PersonId);
         Surface.CouplePointerEntered += (_, couple) => Vm?.HighlightChildrenOfCouple(couple.MemberA, couple.MemberB);
         Surface.EdgePointerEntered += (_, edge) => Vm?.HighlightEdge(edge);
