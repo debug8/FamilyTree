@@ -1,0 +1,72 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      Смуги прокрутки й кут між ними. Теж самодостатній блок: ScrollBar посилається
+      лише на власний ScrollThumbStyle, а стиль ScrollViewer існує винятково заради
+      перевизначення системного ключа кута (пояснення — всередині).
+    -->
+
+    <!-- Смуги прокрутки -->
+    <Style x:Key="ScrollThumbStyle" TargetType="Thumb">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="{DynamicResource BorderBrush}" CornerRadius="4" Margin="2" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="12" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource ScrollThumbStyle}" />
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter Property="Width" Value="Auto" />
+                            <Setter Property="Height" Value="12" />
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+      Кут між горизонтальною й вертикальною смугами прокрутки. Типовий шаблон
+      ScrollViewer заливає його прямокутником із системного ключа
+      SystemColors.ControlBrushKey — це світло-сірий колір Windows, який до наших
+      тем стосунку не має, тож на темній темі в кутку лишалася світла плямка.
+      Смуги прокрутки в нас прозорі (стиль ScrollBar вище), тож і кут робимо
+      прозорим: крізь нього видно ту саму поверхню, що й під смугами.
+
+      Ключ перевизначено В МЕЖАХ стилю ScrollViewer, а не глобально: той самий
+      SystemColors.ControlBrushKey читають типові шаблони інших контролів, і
+      глобальна підміна зачепила б їх заразом. Сеттерів у стилі навмисно немає —
+      він існує лише заради цього ресурсу, тож поведінка ScrollViewer-ів
+      (зокрема тих, що всередині чужих шаблонів) не змінюється.
+    -->
+    <Style TargetType="ScrollViewer">
+        <Style.Resources>
+            <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />
+        </Style.Resources>
+    </Style>
+
+</ResourceDictionary>

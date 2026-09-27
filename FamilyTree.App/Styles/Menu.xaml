@@ -1,0 +1,160 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      Тематизоване меню: смуга, пункти верхнього рівня, підменю, контекстне меню.
+      Винесено з Controls.xaml — це була його найбільша суцільна частина (~145 рядків)
+      і водночас найсамодостатніша: жодного посилання назовні, лише три власні
+      ControlTemplate і системний ключ роздільника.
+
+      Імпліцитні стилі (без x:Key) діють на весь застосунок так само, як діяли з
+      Controls.xaml: словник мержиться в Application.Resources, а не в якесь вікно.
+    -->
+
+    <!-- ============ Меню (тематизоване) ============ -->
+
+    <Style TargetType="Menu">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- Пункт верхнього рівня (напр. «Файл») -->
+    <ControlTemplate x:Key="MenuTopLevelHeaderTemplate" TargetType="MenuItem">
+        <Grid>
+            <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="10,4" CornerRadius="4">
+                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+            </Border>
+            <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsSubmenuOpen}"
+                   AllowsTransparency="True" Focusable="False">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="2" Margin="0,2,0,0">
+                    <ItemsPresenter />
+                </Border>
+            </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Пункт підменю без дочірніх -->
+    <ControlTemplate x:Key="MenuSubmenuItemTemplate" TargetType="MenuItem">
+        <Border x:Name="Bd" Background="Transparent" Padding="10,5" CornerRadius="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter Grid.Column="0" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{TemplateBinding InputGestureText}" Margin="24,0,0,0"
+                           Opacity="0.7" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.5" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Пункт підменю з дочірніми (напр. «Останні файли») -->
+    <ControlTemplate x:Key="MenuSubmenuHeaderTemplate" TargetType="MenuItem">
+        <Grid>
+            <Border x:Name="Bd" Background="Transparent" Padding="10,5" CornerRadius="4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ContentPresenter Grid.Column="0" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" />
+                    <Path Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center"
+                          Data="M 0 0 L 4 4 L 0 8 Z" Fill="{DynamicResource TextSecondaryBrush}" />
+                </Grid>
+            </Border>
+            <Popup x:Name="PART_Popup" Placement="Right" IsOpen="{TemplateBinding IsSubmenuOpen}"
+                   AllowsTransparency="True" Focusable="False">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="2">
+                    <ItemsPresenter />
+                </Border>
+            </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template" Value="{StaticResource MenuSubmenuItemTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="Role" Value="TopLevelHeader">
+                <Setter Property="Template" Value="{StaticResource MenuTopLevelHeaderTemplate}" />
+            </Trigger>
+            <Trigger Property="Role" Value="TopLevelItem">
+                <Setter Property="Template" Value="{StaticResource MenuTopLevelHeaderTemplate}" />
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter Property="Template" Value="{StaticResource MenuSubmenuHeaderTemplate}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+      Контекстне меню. Пункти (MenuItem) уже тематизовані стилем вище, а от саму
+      «коробку» малює типовий шаблон ContextMenu — і фон там із системного ключа
+      SystemColors.MenuBrush, тобто світлий незалежно від нашої теми. На темній темі
+      це давало світлу панель зі світлим же текстом. Рамка та ж, що й у спливних
+      підменю (MenuTopLevelHeaderTemplate/MenuSubmenuHeaderTemplate) — щоб меню
+      верхнього рядка й меню на картці дерева виглядали однаково.
+
+      HasDropShadow=True тут не про тінь: він вмикає прозорість спливного вікна,
+      без якої скруглені кути лягли б на системний прямокутник.
+    -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="4" Padding="2">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Resources>
+            <!--
+              Роздільник у меню бере стиль за ключем MenuItem.SeparatorStyleKey, а типовий
+              теж системний (світла риска). Перевизначаємо ЛИШЕ в межах цього стилю —
+              як і з кутом смуг прокрутки нижче: меню верхнього рядка лишається як було.
+            -->
+            <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+                <Setter Property="Height" Value="1" />
+                <Setter Property="Margin" Value="6,4" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Separator">
+                            <Border Background="{DynamicResource BorderBrush}" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Style.Resources>
+    </Style>
+
+</ResourceDictionary>
