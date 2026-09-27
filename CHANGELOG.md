@@ -284,14 +284,52 @@
 людина. Розділення вийшло чесним — **шлюб** там, де дія стосується `SpouseLink`,
 **подружжя** там, де стосується особи.
 
+### Розбір словників ресурсів
+
+`App.xaml` розрісся до 301 рядка, з яких 174 — шаблони карток; кожен новий тип картки додавав
+ще під сотню. Тепер це композиційний корінь на 34 рядки: список словників, іконка застосунку,
+шаблон пунктів комбобокса й дві геометрії.
+
+| Файл | Рядків | Що всередині |
+|---|---|---|
+| `App.xaml` | 34 | склейка словників + кілька глобальних дрібниць |
+| `Styles/Converters.xaml` | 22 | шість конвертерів |
+| `Styles/Cards.xaml` | 288 | п'ять шаблонів карток |
+| `Styles/Controls.xaml` | 318 | типографіка, кнопки, поля, комбобокс, вкладки |
+| `Styles/Menu.xaml` | 160 | меню, підменю, контекстне меню |
+| `Styles/ScrollBar.xaml` | 72 | смуги прокрутки й кут між ними |
+
+**Головна граблина — `StaticResource` не перетинає межу словника.** Посилання зсередини
+вкладеного словника НЕ бачить ресурсів батьківського: щойно шаблони переїхали з `App.xaml`,
+їхні `NullToCollapsedConverter` і `BoolToVisibility` впали б на завантаженні з
+`Cannot find resource named …`. Тому `Cards.xaml` мержить `Converters.xaml` сам — словник
+мусить бути самодостатнім щодо всього, на що посилається. Конвертери без стану, тож подвійне
+створення (там і в `App.xaml`) нічого не коштує.
+
+`Menu.xaml` і `ScrollBar.xaml` виявилися самодостатніми без жодних мержів: меню посилається
+лише на три власні `ControlTemplate`, смуги — лише на власний `ScrollThumbStyle`. Саме тому
+вони й відрізалися першими.
+
+**Що НЕ ловить збірка.** XAML компілюється в BAML, тож синтаксис і типи перевіряються, а от
+`StaticResource` резолвиться в рантаймі. Тому перевірку написали окремо: зібрати всі ключі,
+видимі з області застосунку (`App.xaml` + мержені рекурсивно + теми, які `ThemeService`
+додає в рантаймі), і звірити з кожним `{StaticResource …}` в усіх XAML проєкту. Заразом —
+дублікати ключів і однакові імпліцитні `TargetType` між словниками, бо там перемагав би
+останній змержений. Нерозв'язних і дублів немає.
+
+Імпліцитні стилі (без `x:Key`) переїзду не помітили: словники мержаться в
+`Application.Resources`, а не у вікно, тож діють на весь застосунок як і раніше.
+
 ### Файли
 
-**Нові (6):** `Settings/CardDisplaySettings.cs` (разом із базою `CardSizeSettings`),
+**Нові (10):** `Styles/Converters.xaml`, `Styles/Cards.xaml`, `Styles/Menu.xaml`,
+`Styles/ScrollBar.xaml`, `Settings/CardDisplaySettings.cs` (разом із базою `CardSizeSettings`),
 `ViewModels/CoupleCard.cs` (обидва збирачі — чинного шлюбу й колишнього),
 `ViewModels/NodeCardMetrics.cs`, `ViewModels/CardSettingsViewModel.cs`,
 `CardSettingsWindow.xaml(.cs)`.
 
-**Змінені (19):** `App.xaml` (п'ять шаблонів), `MainWindow.xaml` (розділ меню),
+**Змінені (20):** `App.xaml` (301 → 34 рядки), `Styles/Controls.xaml` (526 → 318),
+`MainWindow.xaml` (розділ меню),
 `Controls/FamilyGraphSurface.xaml(.cs)`, `Controls/TreeCanvasControl.xaml.cs`,
 `ViewModels/TreeEdgeViewModel.cs`, `Settings/AppSettings.cs`, `Settings/SettingsService.cs`,
 `Services/IDialogService.cs`, `Services/DialogService.cs`, `ViewModels/PersonCard.cs`,
