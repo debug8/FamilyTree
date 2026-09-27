@@ -9,7 +9,8 @@ public partial class TreeEdgeViewModel : ObservableObject
 
     public TreeEdgeViewModel(
         double x1, double y1, double x2, double y2, bool isSpouse,
-        IReadOnlySet<Guid>? parentIds = null, IReadOnlySet<Guid>? endpointIds = null, string? tooltip = null)
+        IReadOnlySet<Guid>? parentIds = null, IReadOnlySet<Guid>? endpointIds = null,
+        string? tooltip = null, CoupleCard? card = null)
     {
         X1 = x1;
         Y1 = y1;
@@ -19,6 +20,7 @@ public partial class TreeEdgeViewModel : ObservableObject
         ParentIds = parentIds ?? NoParents;
         EndpointIds = endpointIds ?? NoParents;
         Tooltip = tooltip;
+        Card = card;
     }
 
     public double X1 { get; }
@@ -37,8 +39,18 @@ public partial class TreeEdgeViewModel : ObservableObject
     /// <summary>Ідентифікатори осіб на обох кінцях ребра — для підсвітки при наведенні на ребро.</summary>
     public IReadOnlySet<Guid> EndpointIds { get; }
 
-    /// <summary>Підказка при наведенні: батьки й дитина (або подружжя). null — без підказки.</summary>
+    /// <summary>Підказка-рядок: батьки й дитина. null, коли ребро показує картку.</summary>
     public string? Tooltip { get; }
+
+    /// <summary>
+    /// Картка колишнього подружжя. Заповнена лише для пунктирних ребер розлученої пари;
+    /// для решти ребер null, і тоді підказкою служить <see cref="Tooltip"/>.
+    /// Взаємовиключні: шаблон показує рівно те з двох, що не null.
+    /// </summary>
+    public CoupleCard? Card { get; }
+
+    /// <summary>Чи є в ребра картка — для перемикача в шаблоні підказки.</summary>
+    public bool HasCard => Card is not null;
 
     /// <summary>Підсвічене ребро (наведення на батька чи рамку шлюбу).</summary>
     [ObservableProperty]

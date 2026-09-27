@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:FamilyTree.App.Localization"
         Title="{loc:Localize CardSettings_Title}"
-        Height="560" Width="720" MinHeight="460" MinWidth="620"
+        Height="620" Width="880" MinHeight="520" MinWidth="740"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BackgroundBrush}">
     <!--
@@ -44,11 +44,14 @@
             <TabItem Header="{loc:Localize CardSettings_Tab_Node}">
                 <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                        <!-- MinWidth, бо права колонка Auto: без нього великий перегляд
+                             відтиснув би підписи галочок у нечитний стовпчик. -->
+                        <ColumnDefinition Width="*" MinWidth="300" MaxWidth="500"/>
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                      <StackPanel Margin="0,0,8,0">
                         <TextBlock Text="{loc:Localize CardSettings_Node_Hint}" TextWrapping="Wrap"
                                    Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,14" />
 
@@ -91,12 +94,12 @@
                             <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
                                        Text="{Binding PrimaryFontSize, StringFormat={}{0:F0}}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{loc:Localize CardSettings_Node_PrimaryFont}"
+                            <TextBlock Text="{loc:Localize CardSettings_PrimaryFont}"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                         </DockPanel>
                         <Slider Margin="0,0,0,12"
-                                Minimum="{Binding MinPrimaryFontSize, Mode=OneTime}"
-                                Maximum="{Binding MaxPrimaryFontSize, Mode=OneTime}"
+                                Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                Maximum="{Binding MaxFontSize, Mode=OneTime}"
                                 Value="{Binding PrimaryFontSize, Delay=250}"
                                 IsSnapToTickEnabled="True" TickFrequency="1"
                                 LargeChange="4" SmallChange="1" />
@@ -105,12 +108,12 @@
                             <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
                                        Text="{Binding SecondaryFontSize, StringFormat={}{0:F0}}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{loc:Localize CardSettings_Node_SecondaryFont}"
+                            <TextBlock Text="{loc:Localize CardSettings_SecondaryFont}"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                         </DockPanel>
                         <Slider Margin="0,0,0,12"
-                                Minimum="{Binding MinSecondaryFontSize, Mode=OneTime}"
-                                Maximum="{Binding MaxSecondaryFontSize, Mode=OneTime}"
+                                Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                Maximum="{Binding MaxFontSize, Mode=OneTime}"
                                 Value="{Binding SecondaryFontSize, Delay=250}"
                                 IsSnapToTickEnabled="True" TickFrequency="1"
                                 LargeChange="4" SmallChange="1" />
@@ -122,7 +125,7 @@
                             <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
                                        Text="{Binding PhotoHeight, StringFormat={}{0:F0}}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{loc:Localize CardSettings_Node_PhotoSize}"
+                            <TextBlock Text="{loc:Localize CardSettings_PhotoSize}"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                         </DockPanel>
                         <Slider Margin="0,0,0,12"
@@ -134,18 +137,21 @@
 
                         <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
                                 HorizontalAlignment="Left" Command="{Binding ResetNodeCommand}" />
-                    </StackPanel>
+                      </StackPanel>
+                    </ScrollViewer>
 
                     <Border Grid.Column="1" Style="{StaticResource PreviewHostStyle}" VerticalAlignment="Top">
                         <StackPanel>
                             <TextBlock Text="{loc:Localize CardSettings_Preview}"
                                        Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,10" />
                             <!-- Рамка бере розмір із самого перегляду, а той рахується з фото
-                                 й шрифтів — рівно як у дереві. Контейнер тримає найбільший
-                                 можливий розмір, щоб сусідні елементи не стрибали, поки
-                                 користувач тягне повзунок. -->
-                            <Grid Width="{Binding MaxCardWidth, Mode=OneTime}"
-                                  Height="{Binding MaxCardHeight, Mode=OneTime}">
+                                 й шрифтів — рівно як у дереві.
+                                 MinWidth/MinHeight, а не фіксований максимум: резервувати
+                                 480×240 означало б тримати майже завжди порожнє поле, адже
+                                 типова картка — 160×80. Підлога гасить дрібне сіпання при
+                                 перетягуванні, а помітне зростання картки видно, і це саме
+                                 те, заради чого перегляд існує. -->
+                            <Grid MinWidth="240" MinHeight="150">
                                 <Border Width="{Binding NodePreview.Width}"
                                         Height="{Binding NodePreview.Height}"
                                         HorizontalAlignment="Left" VerticalAlignment="Top"
@@ -165,7 +171,9 @@
             <TabItem Header="{loc:Localize CardSettings_Tab_Person}">
                 <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                        <!-- MinWidth, бо права колонка Auto: без нього великий перегляд
+                             відтиснув би підписи галочок у нечитний стовпчик. -->
+                        <ColumnDefinition Width="*" MinWidth="300" MaxWidth="500"/>
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -215,6 +223,52 @@
                                       IsChecked="{Binding PersonTooltip.ShowNotes}"
                                       Command="{Binding OptionChangedCommand}" />
 
+                            <!-- Розміри. Підказку міряє WPF сама, тож тут немає чого
+                                 обчислювати: кегль виріс — картка виросла. Висота фото задається, ширина — з пропорції 4:5. -->
+                            <Separator Margin="0,4,0,12" />
+
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                           Text="{Binding PersonPrimaryFontSize, StringFormat={}{0:F0}}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{loc:Localize CardSettings_PrimaryFont}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </DockPanel>
+                            <Slider Margin="0,0,0,12"
+                                    Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                    Maximum="{Binding MaxFontSize, Mode=OneTime}"
+                                    Value="{Binding PersonPrimaryFontSize, Delay=250}"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"
+                                    LargeChange="4" SmallChange="1" />
+
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                           Text="{Binding PersonSecondaryFontSize, StringFormat={}{0:F0}}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{loc:Localize CardSettings_SecondaryFont}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </DockPanel>
+                            <Slider Margin="0,0,0,12"
+                                    Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                    Maximum="{Binding MaxFontSize, Mode=OneTime}"
+                                    Value="{Binding PersonSecondaryFontSize, Delay=250}"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"
+                                    LargeChange="4" SmallChange="1" />
+
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                           Text="{Binding PersonPhotoHeight, StringFormat={}{0:F0}}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{loc:Localize CardSettings_PhotoSize}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </DockPanel>
+                            <Slider Margin="0,0,0,12"
+                                    Minimum="{Binding MinPhotoHeight, Mode=OneTime}"
+                                    Maximum="{Binding MaxPhotoHeight, Mode=OneTime}"
+                                    Value="{Binding PersonPhotoHeight, Delay=250}"
+                                    IsSnapToTickEnabled="True" TickFrequency="2"
+                                    LargeChange="10" SmallChange="2" />
+
                             <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
                                     HorizontalAlignment="Left" Command="{Binding ResetPersonTooltipCommand}" />
                         </StackPanel>
@@ -235,7 +289,9 @@
             <TabItem Header="{loc:Localize CardSettings_Tab_Couple}">
                 <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                        <!-- MinWidth, бо права колонка Auto: без нього великий перегляд
+                             відтиснув би підписи галочок у нечитний стовпчик. -->
+                        <ColumnDefinition Width="*" MinWidth="300" MaxWidth="500"/>
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -267,6 +323,52 @@
                                   Style="{StaticResource OptionCheckBoxStyle}"
                                   IsChecked="{Binding CoupleTooltip.ShowChildrenCount}"
                                   Command="{Binding OptionChangedCommand}" />
+
+                          <!-- Розміри. Підказку міряє WPF сама, тож тут немає чого
+                               обчислювати: кегль виріс — картка виросла. Фото тут два, тож ця висота стосується обох. -->
+                          <Separator Margin="0,4,0,12" />
+
+                          <DockPanel Margin="0,0,0,4">
+                              <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                         Text="{Binding CouplePrimaryFontSize, StringFormat={}{0:F0}}"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock Text="{loc:Localize CardSettings_PrimaryFont}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                          </DockPanel>
+                          <Slider Margin="0,0,0,12"
+                                  Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                  Maximum="{Binding MaxFontSize, Mode=OneTime}"
+                                  Value="{Binding CouplePrimaryFontSize, Delay=250}"
+                                  IsSnapToTickEnabled="True" TickFrequency="1"
+                                  LargeChange="4" SmallChange="1" />
+
+                          <DockPanel Margin="0,0,0,4">
+                              <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                         Text="{Binding CoupleSecondaryFontSize, StringFormat={}{0:F0}}"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock Text="{loc:Localize CardSettings_SecondaryFont}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                          </DockPanel>
+                          <Slider Margin="0,0,0,12"
+                                  Minimum="{Binding MinFontSize, Mode=OneTime}"
+                                  Maximum="{Binding MaxFontSize, Mode=OneTime}"
+                                  Value="{Binding CoupleSecondaryFontSize, Delay=250}"
+                                  IsSnapToTickEnabled="True" TickFrequency="1"
+                                  LargeChange="4" SmallChange="1" />
+
+                          <DockPanel Margin="0,0,0,4">
+                              <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                         Text="{Binding CouplePhotoHeight, StringFormat={}{0:F0}}"
+                                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock Text="{loc:Localize CardSettings_PhotoSize}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                          </DockPanel>
+                          <Slider Margin="0,0,0,12"
+                                  Minimum="{Binding MinPhotoHeight, Mode=OneTime}"
+                                  Maximum="{Binding MaxPhotoHeight, Mode=OneTime}"
+                                  Value="{Binding CouplePhotoHeight, Delay=250}"
+                                  IsSnapToTickEnabled="True" TickFrequency="2"
+                                  LargeChange="10" SmallChange="2" />
 
                         <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
                                 HorizontalAlignment="Left" Command="{Binding ResetCoupleTooltipCommand}" />

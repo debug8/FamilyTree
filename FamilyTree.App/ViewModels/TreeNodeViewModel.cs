@@ -1,6 +1,5 @@
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
-using FamilyTree.App.Settings;
 using FamilyTree.Domain.Layout;
 
 namespace FamilyTree.App.ViewModels;
@@ -41,17 +40,16 @@ public partial class TreeNodeViewModel : ObservableObject
     /// Кегль імені та по батькові. Приходить із налаштувань разом із розміром картки,
     /// яку з нього ж і пораховано — тож шрифт і рамка не можуть розійтися.
     /// </summary>
-    public double PrimaryFontSize { get; init; } = NodeCardSettings.DefaultPrimaryFontSize;
+    public double PrimaryFontSize { get; init; } = 13;
 
     /// <summary>Кегль бейджа, дівочого прізвища й років.</summary>
-    public double SecondaryFontSize { get; init; } = NodeCardSettings.DefaultSecondaryFontSize;
+    public double SecondaryFontSize { get; init; } = 11;
 
     /// <summary>Ширина мініатюри фото.</summary>
-    public double PhotoWidth { get; init; } =
-        NodeCardSettings.DefaultPhotoHeight * NodeCardSettings.PhotoAspect;
+    public double PhotoWidth { get; init; } = 40;
 
     /// <summary>Висота мініатюри фото.</summary>
-    public double PhotoHeight { get; init; } = NodeCardSettings.DefaultPhotoHeight;
+    public double PhotoHeight { get; init; } = 50;
 
     public string FullName { get; init; } = string.Empty;
 

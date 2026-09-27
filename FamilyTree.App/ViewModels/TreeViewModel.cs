@@ -446,7 +446,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
                 PhotoHeight = nodeOptions.PhotoHeight,
                 ShowPhoto = nodeOptions.ShowPhoto,
                 Photo = nodeOptions.ShowPhoto
-                    ? PersonPhoto.Load(person, TreeNodeViewModel.NodePhotoWidth)
+                    ? PersonPhoto.Load(person, nodeOptions.PhotoDecodeWidth(TreeNodeViewModel.NodePhotoWidth))
                     : null,
                 IsRoot = isRoot,
                 Card = card,
@@ -485,10 +485,20 @@ public partial class TreeViewModel : ObservableObject, IDisposable
                 }
                 else
                 {
+                    // Пара без чинного зв'язку — колишнє подружжя. Підказка тут картка,
+                    // а не рядок: рамки навколо них немає, тож саме підказка має пояснити,
+                    // що це за пунктир між двома людьми. Рядок лишається запасним варіантом
+                    // на випадок, коли зв'язку в документі вже немає, — і саме тому
+                    // взаємовиключний із карткою: шаблон показує обидві гілки, яким є що
+                    // показати, тож заповнені одночасно вони наклалися б одна на одну.
+                    var formerCard = BuildFormerCoupleCard(edge.FromId, edge.ToId, doc, persons, graph);
                     Edges.Add(new TreeEdgeViewModel(
                         a.X + halfW, PointY(a.Y + halfH), b.X + halfW, PointY(b.Y + halfH), isSpouse: true,
                         endpointIds: new HashSet<Guid> { edge.FromId, edge.ToId },
-                        tooltip: SpouseTooltip(edge.FromId, edge.ToId, persons)));
+                        tooltip: formerCard is null
+                            ? SpouseTooltip(edge.FromId, edge.ToId, persons)
+                            : null,
+                        card: formerCard));
                 }
 
                 continue;
@@ -629,6 +639,53 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Підказка пунктирного ребра колишнього подружжя: «Ім'я — Ім'я».</summary>
+    /// <summary>
+    /// Картка для пунктирного ребра колишнього подружжя. null, коли зв'язку в документі
+    /// вже немає, — тоді ребро лишається з рядковою підказкою.
+    /// </summary>
+    private CoupleCard? BuildFormerCoupleCard(
+        Guid aId, Guid bId, FamilyDocument doc,
+        IReadOnlyDictionary<Guid, Person> persons, FamilyGraph graph)
+    {
+        if (!persons.TryGetValue(aId, out var a) || !persons.TryGetValue(bId, out var b))
+        {
+            return null;
+        }
+
+        return FormerSpouseLink(doc, aId, bId) is { } link
+            ? _coupleCards.BuildFormer(a, b, link, CommonChildrenCount(graph, aId, bId))
+            : null;
+    }
+
+    /// <summary>
+    /// Завершений шлюб пари. У пари їх може бути кілька (повторний шлюб — B-16), і тоді
+    /// показуємо НАЙПІЗНІШИЙ: пунктир між людьми означає «були одружені», а цікавить
+    /// передусім останній такий період. Зв'язки без дати шлюбу йдуть у кінець черги —
+    /// датований період інформативніший за недатований.
+    /// </summary>
+    private static SpouseLink? FormerSpouseLink(FamilyDocument doc, Guid aId, Guid bId)
+    {
+        SpouseLink? best = null;
+        DateOnly? bestDate = null;
+
+        foreach (var link in doc.SpouseLinks)
+        {
+            if (link.IsActive || !link.Involves(aId) || !link.Involves(bId))
+            {
+                continue;
+            }
+
+            var date = link.MarriageDate?.ToComparable();
+            if (best is null || (date is { } d && (bestDate is null || d > bestDate)))
+            {
+                best = link;
+                bestDate = date;
+            }
+        }
+
+        return best;
+    }
+
     private static string? SpouseTooltip(Guid aId, Guid bId, IReadOnlyDictionary<Guid, Person> persons) =>
         persons.TryGetValue(aId, out var a) && persons.TryGetValue(bId, out var b)
             ? $"{a.FullName} — {b.FullName}"

@@ -77,10 +77,17 @@
                         <!-- Прозора товста лінія — зручна зона наведення -->
                         <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
                               Stroke="Transparent" StrokeThickness="10"
-                              ToolTip="{Binding Tooltip}"
                               ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
                               ToolTipService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              MouseEnter="Edge_MouseEnter" MouseLeave="Surface_PointerLeave" />
+                              MouseEnter="Edge_MouseEnter" MouseLeave="Surface_PointerLeave">
+                            <!-- Підказка ребра — картка для колишнього подружжя або рядок
+                                 для «батьки — дитина»; перемикається в EdgeTooltipTemplate. -->
+                            <Line.ToolTip>
+                                <ToolTip Background="Transparent" BorderThickness="0" Padding="0" HasDropShadow="True"
+                                         Content="{Binding}"
+                                         ContentTemplate="{StaticResource EdgeTooltipTemplate}" />
+                            </Line.ToolTip>
+                        </Line>
                         <!-- Видима лінія -->
                         <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
                               IsHitTestVisible="False">

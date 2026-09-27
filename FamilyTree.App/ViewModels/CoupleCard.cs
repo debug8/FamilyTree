@@ -18,7 +18,8 @@ namespace FamilyTree.App.ViewModels;
 public sealed class CoupleCard
 {
     /// <summary>
-    /// Ширина декодування фото: картка показує 64×78, запас — на 200% DPI.
+    /// Найменша ширина декодування: за типових налаштувань картка показує 64×78.
+    /// Більший розмір у налаштуваннях піднімає це число.
     /// Менша за <see cref="PersonCard.CardPhotoWidth"/>, бо тут фото ДВА й обидва дрібніші.
     /// </summary>
     internal const int CouplePhotoWidth = 160;
@@ -50,6 +51,40 @@ public sealed class CoupleCard
     public string? DetailDuration { get; init; }
 
     public string? DetailChildren { get; init; }
+
+    /// <summary>Кегль обох імен.</summary>
+    public double PrimaryFontSize { get; init; } = 13;
+
+    /// <summary>Кегль років життя й рядків про шлюб.</summary>
+    public double SecondaryFontSize { get; init; } = 12;
+
+    /// <summary>
+    /// Кегль серця між портретами. Похідний від імен, а не власне налаштування:
+    /// фіксоване серце поруч із іменами на 28 виглядало б загубленим.
+    /// </summary>
+    public double HeartFontSize { get; init; } = 18;
+
+    public double PhotoWidth { get; init; } = 64;
+
+    public double PhotoHeight { get; init; } = 78;
+
+    /// <summary>Стеля ширини картки — росте з кеглем імен.</summary>
+    public double CardMaxWidth { get; init; } = 360;
+
+    /// <summary>Стеля ширини колонки одного з подружжя.</summary>
+    public double ColumnMaxWidth { get; init; } = 130;
+
+    /// <summary>
+    /// Підпис угорі спрощеної картки — «Колишнє подружжя». Для чинного шлюбу null:
+    /// там про стан говорить сама рамка навколо пари, і підпис був би зайвим.
+    /// </summary>
+    public string? StatusText { get; init; }
+
+    /// <summary>
+    /// Роки в шлюбі одним рядком — «У шлюбі: 1974 – 1989». Для чинного шлюбу
+    /// використовується <see cref="DetailMarriageDate"/> («У шлюбі з: …»), бо кінця ще немає.
+    /// </summary>
+    public string? DetailPeriod { get; init; }
 }
 
 /// <summary>
@@ -80,17 +115,37 @@ public sealed class CoupleCardBuilder
         ArgumentNullException.ThrowIfNull(link);
 
         var o = _settings.Current.Cards.CoupleTooltip;
+        var primary = o.SafePrimaryFontSize;
+        var secondary = o.SafeSecondaryFontSize;
+        var columnMaxWidth = Math.Max(
+            Math.Round(primary * 10),
+            o.ShowPhotos ? Math.Ceiling(o.SafePhotoWidth) : 0);
 
         return new CoupleCard
         {
+            PrimaryFontSize = primary,
+            SecondaryFontSize = secondary,
+            HeartFontSize = Math.Round(primary * 1.4),
+            PhotoWidth = o.SafePhotoWidth,
+            PhotoHeight = o.SafePhotoHeight,
+
+            // Колонка мусить умістити портрет: при фото, ширшому за стелю з кегля,
+            // воно вилазило б за межі своєї колонки. Типовий кегль 13 дає ті самі 130,
+            // що були зашиті в шаблоні.
+            ColumnMaxWidth = columnMaxWidth,
+
+            // Стеля картки — сума двох колонок, серця з його полями (12+12) і
+            // Padding 14×2. Рахується, а не береться з кегля: інакше більший портрет
+            // упирався б у неї й обрізався замість того, щоб розсунути картку.
+            CardMaxWidth = Math.Round(28 + (2 * columnMaxWidth) + (primary * 1.4 * 1.2) + 24),
             LinkId = link.Id,
             NameA = a.FullName,
             NameB = b.FullName,
             YearsA = o.ShowYears ? NullIfEmpty(PersonCardBuilder.FormatYears(a)) : null,
             YearsB = o.ShowYears ? NullIfEmpty(PersonCardBuilder.FormatYears(b)) : null,
             ShowPhotos = o.ShowPhotos,
-            PhotoA = o.ShowPhotos ? PersonPhoto.Load(a, CoupleCard.CouplePhotoWidth) : null,
-            PhotoB = o.ShowPhotos ? PersonPhoto.Load(b, CoupleCard.CouplePhotoWidth) : null,
+            PhotoA = o.ShowPhotos ? PersonPhoto.Load(a, o.PhotoDecodeWidth(CoupleCard.CouplePhotoWidth)) : null,
+            PhotoB = o.ShowPhotos ? PersonPhoto.Load(b, o.PhotoDecodeWidth(CoupleCard.CouplePhotoWidth)) : null,
             DetailMarriageDate = o.ShowMarriageDate ? FormatMarriageDate(link) : null,
             DetailMarriagePlace = o.ShowMarriagePlace
                 ? Line("Couple_Place", link.MarriagePlace)
@@ -132,6 +187,52 @@ public sealed class CoupleCardBuilder
 
         return Line("Couple_Duration", string.Format(
             CultureInfo.CurrentCulture, _localization.GetString("Couple_DurationYears"), years));
+    }
+
+    /// <summary>
+    /// Спрощена картка для РОЗЛУЧЕНОЇ пари: без фото й без років життя — лише хто з ким,
+    /// скільки були в шлюбі та скільки спільних дітей. Висить на пунктирній лінії між
+    /// колишнім подружжям, де рамки немає, тож підпис «Колишнє подружжя» бере на себе те,
+    /// що для чинного шлюбу каже сама рамка.
+    /// </summary>
+    public CoupleCard BuildFormer(Person a, Person b, SpouseLink link, int childrenCount)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+        ArgumentNullException.ThrowIfNull(link);
+
+        var o = _settings.Current.Cards.CoupleTooltip;
+        var primary = o.SafePrimaryFontSize;
+        var secondary = o.SafeSecondaryFontSize;
+        var columnMaxWidth = Math.Round(primary * 10);
+
+        return new CoupleCard
+        {
+            LinkId = link.Id,
+            NameA = a.FullName,
+            NameB = b.FullName,
+            StatusText = _localization.GetString("Couple_Former"),
+            ShowPhotos = false,
+
+            PrimaryFontSize = primary,
+            SecondaryFontSize = secondary,
+            ColumnMaxWidth = columnMaxWidth,
+
+            // Фото тут немає, тож ширина визначається самими іменами: дві колонки,
+            // роздільник із полями (12+12) і Padding 14×2.
+            CardMaxWidth = Math.Round(28 + (2 * columnMaxWidth) + 28),
+
+            // Період шлюбу — головне, заради чого цю підказку й відкривають:
+            // «коли саме вони були разом». Прапорець той самий, що керує датою
+            // в картці чинного шлюбу.
+            DetailPeriod = o.ShowMarriageDate
+                ? Line("Couple_Period", PersonCardBuilder.FormatMarriagePeriod(link))
+                : null,
+            DetailDuration = o.ShowDuration ? FormatDuration(link) : null,
+            DetailChildren = o.ShowChildrenCount
+                ? Line("Couple_Children", childrenCount.ToString(CultureInfo.CurrentCulture))
+                : null,
+        };
     }
 
     private string? Line(string labelKey, string? value) =>

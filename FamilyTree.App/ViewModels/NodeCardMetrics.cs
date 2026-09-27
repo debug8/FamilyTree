@@ -48,23 +48,9 @@ public static class NodeCardMetrics
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var primary = NodeCardSettings.Clamp(
-            options.PrimaryFontSize,
-            NodeCardSettings.MinPrimaryFontSize,
-            NodeCardSettings.MaxPrimaryFontSize,
-            NodeCardSettings.DefaultPrimaryFontSize);
-
-        var secondary = NodeCardSettings.Clamp(
-            options.SecondaryFontSize,
-            NodeCardSettings.MinSecondaryFontSize,
-            NodeCardSettings.MaxSecondaryFontSize,
-            NodeCardSettings.DefaultSecondaryFontSize);
-
-        var photoHeight = NodeCardSettings.Clamp(
-            options.PhotoHeight,
-            NodeCardSettings.MinPhotoHeight,
-            NodeCardSettings.MaxPhotoHeight,
-            NodeCardSettings.DefaultPhotoHeight);
+        var primary = options.SafePrimaryFontSize;
+        var secondary = options.SafeSecondaryFontSize;
+        var photoHeight = options.SafePhotoHeight;
 
         // Висота — сума видимих рядків. Ім'я показується завжди; решта — за прапорцями.
         // ВАЖЛИВО: рахуємо саме ввімкнені рядки, а не всі можливі, інакше вимкнення
@@ -96,7 +82,7 @@ public static class NodeCardMetrics
 
         if (options.ShowPhoto)
         {
-            width += (photoHeight * NodeCardSettings.PhotoAspect) + PhotoGap;
+            width += (photoHeight * CardSizeSettings.PhotoAspect) + PhotoGap;
 
             // Фото вище за текст — картка тягнеться під фото, а не обрізає його.
             height = Math.Max(height, photoHeight + (2 * PaddingY));

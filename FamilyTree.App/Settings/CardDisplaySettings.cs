@@ -1,6 +1,115 @@
 namespace FamilyTree.App.Settings;
 
 /// <summary>
+/// Спільна частина всіх трьох карток: два кеглі й розмір фото. Саме ДВА кеглі, а не
+/// десяток окремих чисел і не один множник на все — проміжний варіант із розбору в
+/// `IDEAS.md`, який на картці вузла виявився робочим: «головне» (імена) й «другорядне»
+/// (підписи, дати, роки) — це рівно те, що людина хоче розводити за розміром.
+///
+/// Розміри самих карток тут немає: підказки міряє WPF (це <c>Border</c> із <c>Padding</c>),
+/// а вузол рахує <c>NodeCardMetrics</c> із цих же чисел.
+/// </summary>
+public abstract class CardSizeSettings
+{
+    /// <summary>Найменший кегль: дрібніше вже нечитно на будь-якому екрані.</summary>
+    public const double MinFontSize = 8;
+
+    /// <summary>Найбільший кегль.</summary>
+    public const double MaxFontSize = 32;
+
+    public const double MinPhotoHeight = 24;
+
+    public const double MaxPhotoHeight = 200;
+
+    /// <summary>
+    /// Ширина фото відносно висоти. Спільна для всіх трьох карток: обличчя в різних
+    /// пропорціях у сусідніх місцях виглядало б недбало.
+    /// Число — це рівно 92/112, тобто пропорція, яка була зашита в картці-підказці;
+    /// так типові налаштування відтворюють колишні 92×112 і 64×78 точно. Мініатюра
+    /// вузла від цього стає 41×50 замість 40×50 — один піксель, і лише коли фото
+    /// увімкнене (типово воно вимкнене).
+    /// </summary>
+    public const double PhotoAspect = 92.0 / 112.0;
+
+    /// <summary>
+    /// Виставляє типові розміри цієї картки. Виклик абстрактних членів із конструктора
+    /// тут безпечний навмисно: всі три перевизначення — константи, жодного поля нащадка
+    /// вони не читають. Без цього щойно створений об'єкт мав би нулі, і картка стала б
+    /// невидимою ще до того, як налаштування завантажаться з файлу.
+    /// </summary>
+    protected CardSizeSettings() => ResetSizes();
+
+    /// <summary>Кегль головних рядків: імена.</summary>
+    public double PrimaryFontSize { get; set; }
+
+    /// <summary>Кегль другорядних: підписи, дати, роки, бейдж родства.</summary>
+    public double SecondaryFontSize { get; set; }
+
+    /// <summary>Висота фото; ширина — похідна від неї.</summary>
+    public double PhotoHeight { get; set; }
+
+    /// <summary>Ширина фото, похідна від висоти.</summary>
+    public double PhotoWidth => PhotoHeight * PhotoAspect;
+
+    // Значення, зведені до меж, без зміни самого об'єкта. Потрібні тим, хто рахує розмір
+    // (NodeCardMetrics) і будує картки: ClampSizes() відпрацьовує при завантаженні
+    // налаштувань, але об'єкт можуть створити й поза цим шляхом.
+    public double SafePrimaryFontSize =>
+        Clamp(PrimaryFontSize, MinFontSize, MaxFontSize, DefaultPrimaryFontSize);
+
+    public double SafeSecondaryFontSize =>
+        Clamp(SecondaryFontSize, MinFontSize, MaxFontSize, DefaultSecondaryFontSize);
+
+    public double SafePhotoHeight =>
+        Clamp(PhotoHeight, MinPhotoHeight, MaxPhotoHeight, DefaultPhotoHeight);
+
+    /// <summary>Ширина фото за зведеною висотою.</summary>
+    public double SafePhotoWidth => SafePhotoHeight * PhotoAspect;
+
+    /// <summary>
+    /// Ширина, в якій декодувати мініатюру: удвічі більша за показану (запас на 200% DPI),
+    /// але не менша за <paramref name="baseline"/> — типове значення цієї картки.
+    /// Без цього фото замилювалося б, щойно повзунок переходить за типовий розмір:
+    /// декодована ширина була константою, а показана — більше ні.
+    /// </summary>
+    public int PhotoDecodeWidth(int baseline) =>
+        (int)Math.Max(baseline, Math.Ceiling(SafePhotoWidth * 2));
+
+    /// <summary>Типовий кегль головних рядків цієї картки.</summary>
+    protected abstract double DefaultPrimaryFontSize { get; }
+
+    /// <summary>Типовий кегль другорядних рядків цієї картки.</summary>
+    protected abstract double DefaultSecondaryFontSize { get; }
+
+    /// <summary>Типова висота фото цієї картки.</summary>
+    protected abstract double DefaultPhotoHeight { get; }
+
+    /// <summary>
+    /// Зводить розміри до допустимих. Живе тут, поруч із межами: settings.json правиться
+    /// руками, і 0, від'ємне чи NaN дали б невидимий текст або картку нульового розміру
+    /// ще до першого вікна.
+    /// </summary>
+    public void ClampSizes()
+    {
+        PrimaryFontSize = Clamp(PrimaryFontSize, MinFontSize, MaxFontSize, DefaultPrimaryFontSize);
+        SecondaryFontSize = Clamp(SecondaryFontSize, MinFontSize, MaxFontSize, DefaultSecondaryFontSize);
+        PhotoHeight = Clamp(PhotoHeight, MinPhotoHeight, MaxPhotoHeight, DefaultPhotoHeight);
+    }
+
+    /// <summary>Повертає розміри до типових для цієї картки.</summary>
+    public void ResetSizes()
+    {
+        PrimaryFontSize = DefaultPrimaryFontSize;
+        SecondaryFontSize = DefaultSecondaryFontSize;
+        PhotoHeight = DefaultPhotoHeight;
+    }
+
+    /// <summary>Значення в межах, або типове — якщо воно нечисло, нуль чи від'ємне.</summary>
+    public static double Clamp(double value, double min, double max, double fallback) =>
+        double.IsFinite(value) && value > 0 ? Math.Clamp(value, min, max) : fallback;
+}
+
+/// <summary>
 /// Зміст трьох карток застосунку: вузол дерева, підказка особи, підказка подружжя.
 /// Саме ЗМІСТ, а не розміри: тут вирішується, які рядки писати й чи показувати фото,
 /// а шрифти й геометрія лишаються в XAML і в <c>TreeLayoutEngine</c>.
@@ -28,9 +137,12 @@ public sealed class CardDisplaySettings
     public void Normalize()
     {
         Node ??= new NodeCardSettings();
-        Node.Clamp();
         PersonTooltip ??= new PersonTooltipSettings();
         CoupleTooltip ??= new CoupleTooltipSettings();
+
+        Node.ClampSizes();
+        PersonTooltip.ClampSizes();
+        CoupleTooltip.ClampSizes();
     }
 }
 
@@ -38,7 +150,7 @@ public sealed class CardDisplaySettings
 /// Що писати у вузлі дерева. Картка мала (160×80), тож увімкнення всього одразу
 /// призведе до обрізання рядків — саме тому вікно налаштувань показує живий перегляд.
 /// </summary>
-public sealed class NodeCardSettings
+public sealed class NodeCardSettings : CardSizeSettings
 {
     /// <summary>Мініатюра фото ліворуч від тексту. Типово вимкнена: вона з'їдає третину ширини картки.</summary>
     public bool ShowPhoto { get; set; }
@@ -58,61 +170,11 @@ public sealed class NodeCardSettings
     /// <summary>Порядок імені: <c>true</c> — «Прізвище Ім'я», <c>false</c> — «Ім'я Прізвище».</summary>
     public bool SurnameFirst { get; set; } = true;
 
-    /// <summary>
-    /// Розмір шрифта імені та по батькові — головних рядків картки.
-    /// Сам розмір КАРТКИ не налаштовується: він обчислюється з цього шрифта,
-    /// додаткового, розміру фото й того, які рядки ввімкнені (див. <c>NodeCardMetrics</c>).
-    /// </summary>
-    public double PrimaryFontSize { get; set; } = DefaultPrimaryFontSize;
+    protected override double DefaultPrimaryFontSize => 13;
 
-    /// <summary>Розмір шрифта другорядних рядків: бейдж родства, дівоче прізвище, роки.</summary>
-    public double SecondaryFontSize { get; set; } = DefaultSecondaryFontSize;
+    protected override double DefaultSecondaryFontSize => 11;
 
-    /// <summary>
-    /// Висота мініатюри фото. Ширина рахується з неї за сталою пропорцією
-    /// <see cref="PhotoAspect"/> — окремо її налаштовувати немає сенсу:
-    /// обличчя в довільному співвідношенні сторін однаково не поміститься.
-    /// </summary>
-    public double PhotoHeight { get; set; } = DefaultPhotoHeight;
-
-    public const double DefaultPrimaryFontSize = 13;
-
-    public const double MinPrimaryFontSize = 9;
-
-    public const double MaxPrimaryFontSize = 28;
-
-    public const double DefaultSecondaryFontSize = 11;
-
-    public const double MinSecondaryFontSize = 8;
-
-    public const double MaxSecondaryFontSize = 24;
-
-    public const double DefaultPhotoHeight = 50;
-
-    public const double MinPhotoHeight = 28;
-
-    public const double MaxPhotoHeight = 120;
-
-    /// <summary>Ширина фото відносно висоти — портретні 4:5, як у картці-підказці.</summary>
-    public const double PhotoAspect = 0.8;
-
-    /// <summary>Ширина мініатюри, похідна від висоти.</summary>
-    public double PhotoWidth => PhotoHeight * PhotoAspect;
-
-    /// <summary>
-    /// Зводить розміри до допустимих. Живе тут, поруч із межами: settings.json правиться
-    /// руками, і 0, від'ємне чи NaN дали б картку нульового розміру ще до першого вікна.
-    /// </summary>
-    public void Clamp()
-    {
-        PrimaryFontSize = Clamp(PrimaryFontSize, MinPrimaryFontSize, MaxPrimaryFontSize, DefaultPrimaryFontSize);
-        SecondaryFontSize = Clamp(SecondaryFontSize, MinSecondaryFontSize, MaxSecondaryFontSize, DefaultSecondaryFontSize);
-        PhotoHeight = Clamp(PhotoHeight, MinPhotoHeight, MaxPhotoHeight, DefaultPhotoHeight);
-    }
-
-    /// <summary>Значення в межах, або типове — якщо воно нечисло, нуль чи від'ємне.</summary>
-    public static double Clamp(double value, double min, double max, double fallback) =>
-        double.IsFinite(value) && value > 0 ? Math.Clamp(value, min, max) : fallback;
+    protected override double DefaultPhotoHeight => 50;
 
     public void Reset()
     {
@@ -122,9 +184,7 @@ public sealed class NodeCardSettings
         ShowMaidenName = false;
         ShowYears = true;
         SurnameFirst = true;
-        PrimaryFontSize = DefaultPrimaryFontSize;
-        SecondaryFontSize = DefaultSecondaryFontSize;
-        PhotoHeight = DefaultPhotoHeight;
+        ResetSizes();
     }
 }
 
@@ -132,8 +192,16 @@ public sealed class NodeCardSettings
 /// Рядки великої підказки особи. Ім'я не налаштовується: підказка без імені
 /// не має сенсу, і вимкнути його — єдиний спосіб зробити її беззмістовною.
 /// </summary>
-public sealed class PersonTooltipSettings
+public sealed class PersonTooltipSettings : CardSizeSettings
 {
+    // Типові — ті самі числа, що були зашиті в PersonCardTemplate: ім'я 15, рядки 12,
+    // фото 112 заввишки (92 завширшки — з тієї ж пропорції 4:5).
+    protected override double DefaultPrimaryFontSize => 15;
+
+    protected override double DefaultSecondaryFontSize => 12;
+
+    protected override double DefaultPhotoHeight => 112;
+
     public bool ShowPhoto { get; set; } = true;
 
     public bool ShowRelationBadge { get; set; } = true;
@@ -166,6 +234,7 @@ public sealed class PersonTooltipSettings
         ShowChildrenCount = true;
         ShowFacts = true;
         ShowNotes = true;
+        ResetSizes();
     }
 }
 
@@ -173,8 +242,17 @@ public sealed class PersonTooltipSettings
 /// Рядки підказки рамки подружжя. Імена подружжя показуються завжди — без них
 /// підказка не пояснює, про яку пару йдеться.
 /// </summary>
-public sealed class CoupleTooltipSettings
+public sealed class CoupleTooltipSettings : CardSizeSettings
 {
+    // Типові — з CoupleCardTemplate: імена 13, роки й рядки 12, фото 78 заввишки.
+    // Роки раніше були 11, тепер ідуть тим самим другорядним кеглем, що й рядки
+    // шлюбу: два майже однакові розміри поруч нічого не додавали.
+    protected override double DefaultPrimaryFontSize => 13;
+
+    protected override double DefaultSecondaryFontSize => 12;
+
+    protected override double DefaultPhotoHeight => 78;
+
     /// <summary>Два фото поруч над іменами.</summary>
     public bool ShowPhotos { get; set; } = true;
 
@@ -201,5 +279,6 @@ public sealed class CoupleTooltipSettings
         ShowMarriagePlace = true;
         ShowDuration = false;
         ShowChildrenCount = true;
+        ResetSizes();
     }
 }

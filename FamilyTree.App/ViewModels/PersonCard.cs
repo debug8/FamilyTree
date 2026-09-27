@@ -18,7 +18,9 @@ namespace FamilyTree.App.ViewModels;
 public sealed class PersonCard
 {
     /// <summary>
-    /// Ширина декодування фото для картки: сама картка показує 92×112, запас — на 150% DPI.
+    /// Найменша ширина декодування фото: за типових налаштувань картка показує 92×112,
+    /// і 220 дають запас на 150% DPI. Більший розмір у налаштуваннях піднімає й це число —
+    /// див. <see cref="Settings.CardSizeSettings.PhotoDecodeWidth"/>.
     /// Не <c>private</c> навмисно: значення читає складальник <see cref="PersonCardBuilder"/>
     /// (окремий клас у цьому ж файлі), а живе воно тут, бо описує саме цю картку.
     /// </summary>
@@ -60,6 +62,25 @@ public sealed class PersonCard
     /// картки сусідніх людей мали б різну ширину й «стрибали» при наведенні.
     /// </summary>
     public bool ShowPhoto { get; init; } = true;
+
+    /// <summary>Кегль імені.</summary>
+    public double PrimaryFontSize { get; init; } = 15;
+
+    /// <summary>Кегль бейджа й усіх рядків деталей.</summary>
+    public double SecondaryFontSize { get; init; } = 12;
+
+    public double PhotoWidth { get; init; } = 92;
+
+    public double PhotoHeight { get; init; } = 112;
+
+    /// <summary>
+    /// Стеля ширини всієї картки. Росте разом із кеглем: на 15 це звичні 380, а на 30
+    /// фіксовані 380 перетворили б підказку на вузький високий стовпчик тексту.
+    /// </summary>
+    public double CardMaxWidth { get; init; } = 380;
+
+    /// <summary>Стеля ширини текстової колонки — так само пропорційна кеглю.</summary>
+    public double TextMaxWidth { get; init; } = 250;
 
     /// <summary>
     /// Готове зображення для показу: файл із теки даних, а якщо його немає —
@@ -133,9 +154,26 @@ public sealed class PersonCardBuilder
         // яким уже ховає порожні. Тому налаштування змісту не додали в XAML жодної гілки:
         // «поля немає» й «поле вимкнули» для картки — та сама ситуація.
         var o = _settings.Current.Cards.PersonTooltip;
+        var primary = o.SafePrimaryFontSize;
+        var secondary = o.SafeSecondaryFontSize;
 
         return new PersonCard
         {
+            PrimaryFontSize = primary,
+            SecondaryFontSize = secondary,
+            PhotoWidth = o.SafePhotoWidth,
+            PhotoHeight = o.SafePhotoHeight,
+
+            // Стеля ширини ВСІЄЇ картки мусить враховувати фото, а не лише кегль: інакше
+            // більший портрет упирався б у неї, і замість того щоб рости, картка
+            // обрізала б текст. Складається з реальних чисел розмітки:
+            // Padding 14×2 + [фото + Margin 14] + стеля текстової колонки.
+            CardMaxWidth = Math.Round(
+                28 + (o.ShowPhoto ? o.SafePhotoWidth + 14 : 0) + (secondary * 20.8)),
+
+            // Коефіцієнт підібрано так, щоб типовий кегль 12 дав ті самі 250, що були
+            // зашиті в шаблоні до цієї зміни.
+            TextMaxWidth = Math.Round(secondary * 20.8),
             Person = person,
             SpouseLinkId = spouseLinkId,
             SpousePeriod = spousePeriod,
@@ -146,7 +184,7 @@ public sealed class PersonCardBuilder
 
             // Фото не вантажимо взагалі, коли воно вимкнене: декодування — найдорожча
             // частина збірки картки, а на великому дереві їх будують сотнями.
-            Photo = o.ShowPhoto ? PersonPhoto.Load(person, PersonCard.CardPhotoWidth) : null,
+            Photo = o.ShowPhoto ? PersonPhoto.Load(person, o.PhotoDecodeWidth(PersonCard.CardPhotoWidth)) : null,
             DetailMaiden = o.ShowMaidenName ? Line("Person_MaidenName", person.MaidenName) : null,
             DetailGender = o.ShowGender ? Line("Person_Gender", GenderText(person.Gender)) : null,
             DetailBirth = o.ShowBirth ? Line("Person_BirthDate", FormatBirth(person)) : null,

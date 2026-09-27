@@ -57,6 +57,24 @@ public partial class CardSettingsViewModel : ObservableObject
     [ObservableProperty]
     private double _secondaryFontSize;
 
+    [ObservableProperty]
+    private double _personPhotoHeight;
+
+    [ObservableProperty]
+    private double _personPrimaryFontSize;
+
+    [ObservableProperty]
+    private double _personSecondaryFontSize;
+
+    [ObservableProperty]
+    private double _couplePhotoHeight;
+
+    [ObservableProperty]
+    private double _couplePrimaryFontSize;
+
+    [ObservableProperty]
+    private double _coupleSecondaryFontSize;
+
     public CardSettingsViewModel(
         ISettingsService settings,
         ILocalizationService localization,
@@ -75,6 +93,16 @@ public partial class CardSettingsViewModel : ObservableObject
         _primaryFontSize = node.PrimaryFontSize;
         _secondaryFontSize = node.SecondaryFontSize;
 
+        var person = _settings.Current.Cards.PersonTooltip;
+        _personPhotoHeight = person.PhotoHeight;
+        _personPrimaryFontSize = person.PrimaryFontSize;
+        _personSecondaryFontSize = person.SecondaryFontSize;
+
+        var couple = _settings.Current.Cards.CoupleTooltip;
+        _couplePhotoHeight = couple.PhotoHeight;
+        _couplePrimaryFontSize = couple.PrimaryFontSize;
+        _coupleSecondaryFontSize = couple.SecondaryFontSize;
+
         (_demoDoc, _demoPersons, _demoPerson, _demoSpouse, _demoLink) = BuildDemoFamily();
 
         _localization.LanguageChanged += OnLanguageChanged;
@@ -89,26 +117,14 @@ public partial class CardSettingsViewModel : ObservableObject
     /// <summary>Налаштування підказки подружжя.</summary>
     public CoupleTooltipSettings CoupleTooltip => _settings.Current.Cards.CoupleTooltip;
 
-    public static double MinPhotoHeight => NodeCardSettings.MinPhotoHeight;
+    // Межі спільні для всіх трьох карток — див. CardSizeSettings.
+    public static double MinPhotoHeight => CardSizeSettings.MinPhotoHeight;
 
-    public static double MaxPhotoHeight => NodeCardSettings.MaxPhotoHeight;
+    public static double MaxPhotoHeight => CardSizeSettings.MaxPhotoHeight;
 
-    public static double MinPrimaryFontSize => NodeCardSettings.MinPrimaryFontSize;
+    public static double MinFontSize => CardSizeSettings.MinFontSize;
 
-    public static double MaxPrimaryFontSize => NodeCardSettings.MaxPrimaryFontSize;
-
-    public static double MinSecondaryFontSize => NodeCardSettings.MinSecondaryFontSize;
-
-    public static double MaxSecondaryFontSize => NodeCardSettings.MaxSecondaryFontSize;
-
-    /// <summary>
-    /// Найбільша картка, яку взагалі може дати розрахунок. Потрібна лише перегляду:
-    /// контейнер тримає цей розмір, щоб сусідні елементи не стрибали, поки користувач
-    /// тягне повзунок.
-    /// </summary>
-    public static double MaxCardWidth => TreeLayoutEngine.MaxNodeWidth;
-
-    public static double MaxCardHeight => TreeLayoutEngine.MaxNodeHeight;
+    public static double MaxFontSize => CardSizeSettings.MaxFontSize;
 
     /// <summary>Перегляд картки вузла на демо-особі.</summary>
     public TreeNodeViewModel NodePreview => BuildNodePreview();
@@ -148,6 +164,42 @@ public partial class CardSettingsViewModel : ObservableObject
         ApplyAndRefresh();
     }
 
+    partial void OnPersonPhotoHeightChanged(double value)
+    {
+        _settings.Current.Cards.PersonTooltip.PhotoHeight = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnPersonPrimaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.PersonTooltip.PrimaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnPersonSecondaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.PersonTooltip.SecondaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnCouplePhotoHeightChanged(double value)
+    {
+        _settings.Current.Cards.CoupleTooltip.PhotoHeight = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnCouplePrimaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.CoupleTooltip.PrimaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnCoupleSecondaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.CoupleTooltip.SecondaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
     [RelayCommand]
     private void ResetNode()
     {
@@ -170,6 +222,12 @@ public partial class CardSettingsViewModel : ObservableObject
     {
         PersonTooltip.Reset();
 
+        _suspendApply = true;
+        PersonPhotoHeight = PersonTooltip.PhotoHeight;
+        PersonPrimaryFontSize = PersonTooltip.PrimaryFontSize;
+        PersonSecondaryFontSize = PersonTooltip.SecondaryFontSize;
+        _suspendApply = false;
+
         // Порожнє ім'я = «усі властивості»: об'єкти налаштувань не сповіщають про зміни самі,
         // тож після скидання галочки перечитають свої значення лише за таким загальним поштовхом.
         OnPropertyChanged(string.Empty);
@@ -180,6 +238,12 @@ public partial class CardSettingsViewModel : ObservableObject
     private void ResetCoupleTooltip()
     {
         CoupleTooltip.Reset();
+
+        _suspendApply = true;
+        CouplePhotoHeight = CoupleTooltip.PhotoHeight;
+        CouplePrimaryFontSize = CoupleTooltip.PrimaryFontSize;
+        CoupleSecondaryFontSize = CoupleTooltip.SecondaryFontSize;
+        _suspendApply = false;
 
         // Порожнє ім'я = «усі властивості»: об'єкти налаштувань не сповіщають про зміни самі,
         // тож після скидання галочки перечитають свої значення лише за таким загальним поштовхом.
