@@ -7,14 +7,64 @@ namespace FamilyTree.Domain.Layout;
 /// </summary>
 public sealed class TreeLayoutEngine
 {
-    // Розміри картки й проміжки в умовних одиницях (рендерер масштабує).
-    public const double NodeWidth = 160;
-    public const double NodeHeight = 80;
+    /// <summary>Типова ширина картки — і значення властивості, і відкат при битих налаштуваннях.</summary>
+    public const double DefaultNodeWidth = 160;
+
+    /// <summary>Типова висота картки.</summary>
+    public const double DefaultNodeHeight = 80;
+
+    // Межі — запобіжник проти битого settings.json, а не діапазон для користувача:
+    // розмір картки обчислюється з шрифтів і фото (App: NodeCardMetrics), і сам по собі
+    // з цих меж не виходить. Тому вони навмисно ширші за все, що дає розрахунок.
+    /// <summary>Найменша ширина: вужче ім'я обрізається вже на другому складі.</summary>
+    public const double MinNodeWidth = 100;
+
+    /// <summary>Найбільша ширина: далі дерево розповзається й перестає читатися як сітка.</summary>
+    public const double MaxNodeWidth = 480;
+
+    /// <summary>Найменша висота: рівно один рядок тексту з полями.</summary>
+    public const double MinNodeHeight = 26;
+
+    /// <summary>Найбільша висота.</summary>
+    public const double MaxNodeHeight = 240;
+
+    // Проміжки лишаються константами: користувач їх не налаштовує, а від ширини картки
+    // вони не залежать — це повітря між сусідами, а не частина картки.
     public const double HorizontalGap = 28;
     public const double VerticalGap = 90;
 
-    public const double ColumnStep = NodeWidth + HorizontalGap;
-    public const double RowStep = NodeHeight + VerticalGap;
+    /// <summary>
+    /// Ширина картки. Властивість, а не константа: користувач міняє її у «Налаштуваннях
+    /// карток», і розкладка мусить це врахувати ще ДО розрахунку координат — від ширини
+    /// залежить <see cref="ColumnStep"/>, а отже й позиція кожного вузла.
+    /// Значення виставляє <c>TreeViewModel</c> перед кожним <see cref="Build"/>.
+    /// </summary>
+    public double NodeWidth { get; set; } = DefaultNodeWidth;
+
+    /// <summary>Висота картки — дзеркально до <see cref="NodeWidth"/>.</summary>
+    public double NodeHeight { get; set; } = DefaultNodeHeight;
+
+    /// <summary>Крок колонки: картка плюс проміжок.</summary>
+    public double ColumnStep => NodeWidth + HorizontalGap;
+
+    /// <summary>Крок рядка: картка плюс проміжок.</summary>
+    public double RowStep => NodeHeight + VerticalGap;
+
+    /// <summary>
+    /// Обмежує розміри допустимим діапазоном. Живе тут, поруч із самими межами, а не в
+    /// місці застосування: settings.json правиться руками, і 0, від'ємне чи NaN дали б
+    /// розкладку з нульовим кроком — усі вузли в одній точці.
+    /// </summary>
+    public static double ClampNodeWidth(double value) =>
+        double.IsFinite(value) && value > 0
+            ? Math.Clamp(value, MinNodeWidth, MaxNodeWidth)
+            : DefaultNodeWidth;
+
+    /// <inheritdoc cref="ClampNodeWidth"/>
+    public static double ClampNodeHeight(double value) =>
+        double.IsFinite(value) && value > 0
+            ? Math.Clamp(value, MinNodeHeight, MaxNodeHeight)
+            : DefaultNodeHeight;
 
     private const double LeafGap = 1.0;   // проміжок (у колонках) між сусідніми піддеревами
     private const double MinColGap = 1.0; // мінімальна відстань між вузлами одного рівня
@@ -363,7 +413,9 @@ public sealed class TreeLayoutEngine
         }
     }
 
-    private static TreeLayout Finalize(FamilyGraph graph, Dictionary<Guid, (double Col, int Depth)> positions)
+    // Не static: переводить колонки та рівні в пікселі, а крок тепер залежить від
+    // налаштовуваних NodeWidth/NodeHeight цього примірника.
+    private TreeLayout Finalize(FamilyGraph graph, Dictionary<Guid, (double Col, int Depth)> positions)
     {
         if (positions.Count == 0)
         {

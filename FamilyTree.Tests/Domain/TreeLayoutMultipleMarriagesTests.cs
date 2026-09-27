@@ -129,8 +129,8 @@ public class TreeLayoutMultipleMarriagesTests
         Math.Min(first.X, second.X).ShouldBeLessThan(father.X);
         Math.Max(first.X, second.X).ShouldBeGreaterThan(father.X);
 
-        Math.Abs(father.X - first.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
-        Math.Abs(father.X - second.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
+        Math.Abs(father.X - first.X).ShouldBe((TreeLayoutEngine.DefaultNodeWidth + TreeLayoutEngine.HorizontalGap), Tolerance);
+        Math.Abs(father.X - second.X).ShouldBe((TreeLayoutEngine.DefaultNodeWidth + TreeLayoutEngine.HorizontalGap), Tolerance);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class TreeLayoutMultipleMarriagesTests
             var xs = level.Select(n => n.X).OrderBy(x => x).ToList();
             for (var i = 1; i < xs.Count; i++)
             {
-                (xs[i] - xs[i - 1]).ShouldBeGreaterThanOrEqualTo(TreeLayoutEngine.NodeWidth - Tolerance);
+                (xs[i] - xs[i - 1]).ShouldBeGreaterThanOrEqualTo(TreeLayoutEngine.DefaultNodeWidth - Tolerance);
             }
         }
     }
@@ -257,8 +257,8 @@ public class TreeLayoutMultipleMarriagesTests
         // Колишня — ліворуч, чинна — праворуч, і кожна сусідня з особою (одна колонка).
         former.X.ShouldBeLessThan(father.X);
         active.X.ShouldBeGreaterThan(father.X);
-        Math.Abs(father.X - former.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
-        Math.Abs(father.X - active.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
+        Math.Abs(father.X - former.X).ShouldBe((TreeLayoutEngine.DefaultNodeWidth + TreeLayoutEngine.HorizontalGap), Tolerance);
+        Math.Abs(father.X - active.X).ShouldBe((TreeLayoutEngine.DefaultNodeWidth + TreeLayoutEngine.HorizontalGap), Tolerance);
     }
 
     [Fact]

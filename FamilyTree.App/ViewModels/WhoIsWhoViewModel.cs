@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
+using FamilyTree.App.Settings;
 using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Layout;
@@ -18,6 +19,11 @@ public partial class WhoIsWhoViewModel : ObservableObject
     private readonly KinshipPathExplainer _explainer;
     private readonly ILocalizationService _localization;
 
+    // Розміри картки міняє користувач у «Налаштуваннях карток». Міні-граф шляху малює
+    // ТІ САМІ вузли, що й дерево, тож мусить рости разом із ними — інакше та сама особа
+    // виглядала б тут і там по-різному.
+    private readonly ISettingsService _settings;
+
     [ObservableProperty]
     private Person? _person1;
 
@@ -29,11 +35,16 @@ public partial class WhoIsWhoViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(NoResult))]
     private string? _resultSummary;
 
-    public WhoIsWhoViewModel(IDocumentSession session, KinshipPathExplainer explainer, ILocalizationService localization)
+    public WhoIsWhoViewModel(
+        IDocumentSession session,
+        KinshipPathExplainer explainer,
+        ILocalizationService localization,
+        ISettingsService settings)
     {
         _session = session;
         _explainer = explainer;
         _localization = localization;
+        _settings = settings;
         _session.DocumentChanged += (_, _) => Reset();
         _session.ContentChanged += (_, _) => RefreshPersons();
         localization.LanguageChanged += (_, _) => Recompute(); // назви зв'язку перекладаються
@@ -106,10 +117,16 @@ public partial class WhoIsWhoViewModel : ObservableObject
             return;
         }
 
-        const double colStep = TreeLayoutEngine.NodeWidth + 40;
-        const double rowStep = TreeLayoutEngine.NodeHeight + 46;
-        const double halfW = TreeLayoutEngine.NodeWidth / 2;
-        const double halfH = TreeLayoutEngine.NodeHeight / 2;
+        // Не const: розмір картки налаштовується. Проміжки (40/46) лишаються власними —
+        // міні-граф стоїть щільніше за дерево, бо в ньому завжди кілька вузлів.
+        var nodeOptions = _settings.Current.Cards.Node;
+        var (rawWidth, rawHeight) = NodeCardMetrics.Measure(nodeOptions);
+        var nodeWidth = TreeLayoutEngine.ClampNodeWidth(rawWidth);
+        var nodeHeight = TreeLayoutEngine.ClampNodeHeight(rawHeight);
+        var colStep = nodeWidth + 40;
+        var rowStep = nodeHeight + 46;
+        var halfW = nodeWidth / 2;
+        var halfH = nodeHeight / 2;
 
         // Рівні відносно кроків.
         var levels = new int[chain.Count];
@@ -174,12 +191,18 @@ public partial class WhoIsWhoViewModel : ObservableObject
                 Patronymic = PersonCardBuilder.FormatPatronymic(person),
                 Years = PersonCardBuilder.FormatYears(person),
                 RelationBadge = i == 0 ? youBadge : null,
+                Width = nodeWidth,
+                Height = nodeHeight,
+                PrimaryFontSize = nodeOptions.PrimaryFontSize,
+                SecondaryFontSize = nodeOptions.SecondaryFontSize,
+                PhotoWidth = nodeOptions.PhotoWidth,
+                PhotoHeight = nodeOptions.PhotoHeight,
                 IsRoot = i == 0,
             });
         }
 
-        PathCanvasWidth = (chain.Count - 1) * colStep + TreeLayoutEngine.NodeWidth;
-        PathCanvasHeight = (maxLevel - minLevel) * rowStep + TreeLayoutEngine.NodeHeight;
+        PathCanvasWidth = (chain.Count - 1) * colStep + nodeWidth;
+        PathCanvasHeight = (maxLevel - minLevel) * rowStep + nodeHeight;
         OnPropertyChanged(nameof(HasPathGraph));
     }
 

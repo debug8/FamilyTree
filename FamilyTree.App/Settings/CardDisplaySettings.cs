@@ -28,6 +28,7 @@ public sealed class CardDisplaySettings
     public void Normalize()
     {
         Node ??= new NodeCardSettings();
+        Node.Clamp();
         PersonTooltip ??= new PersonTooltipSettings();
         CoupleTooltip ??= new CoupleTooltipSettings();
     }
@@ -57,6 +58,62 @@ public sealed class NodeCardSettings
     /// <summary>Порядок імені: <c>true</c> — «Прізвище Ім'я», <c>false</c> — «Ім'я Прізвище».</summary>
     public bool SurnameFirst { get; set; } = true;
 
+    /// <summary>
+    /// Розмір шрифта імені та по батькові — головних рядків картки.
+    /// Сам розмір КАРТКИ не налаштовується: він обчислюється з цього шрифта,
+    /// додаткового, розміру фото й того, які рядки ввімкнені (див. <c>NodeCardMetrics</c>).
+    /// </summary>
+    public double PrimaryFontSize { get; set; } = DefaultPrimaryFontSize;
+
+    /// <summary>Розмір шрифта другорядних рядків: бейдж родства, дівоче прізвище, роки.</summary>
+    public double SecondaryFontSize { get; set; } = DefaultSecondaryFontSize;
+
+    /// <summary>
+    /// Висота мініатюри фото. Ширина рахується з неї за сталою пропорцією
+    /// <see cref="PhotoAspect"/> — окремо її налаштовувати немає сенсу:
+    /// обличчя в довільному співвідношенні сторін однаково не поміститься.
+    /// </summary>
+    public double PhotoHeight { get; set; } = DefaultPhotoHeight;
+
+    public const double DefaultPrimaryFontSize = 13;
+
+    public const double MinPrimaryFontSize = 9;
+
+    public const double MaxPrimaryFontSize = 28;
+
+    public const double DefaultSecondaryFontSize = 11;
+
+    public const double MinSecondaryFontSize = 8;
+
+    public const double MaxSecondaryFontSize = 24;
+
+    public const double DefaultPhotoHeight = 50;
+
+    public const double MinPhotoHeight = 28;
+
+    public const double MaxPhotoHeight = 120;
+
+    /// <summary>Ширина фото відносно висоти — портретні 4:5, як у картці-підказці.</summary>
+    public const double PhotoAspect = 0.8;
+
+    /// <summary>Ширина мініатюри, похідна від висоти.</summary>
+    public double PhotoWidth => PhotoHeight * PhotoAspect;
+
+    /// <summary>
+    /// Зводить розміри до допустимих. Живе тут, поруч із межами: settings.json правиться
+    /// руками, і 0, від'ємне чи NaN дали б картку нульового розміру ще до першого вікна.
+    /// </summary>
+    public void Clamp()
+    {
+        PrimaryFontSize = Clamp(PrimaryFontSize, MinPrimaryFontSize, MaxPrimaryFontSize, DefaultPrimaryFontSize);
+        SecondaryFontSize = Clamp(SecondaryFontSize, MinSecondaryFontSize, MaxSecondaryFontSize, DefaultSecondaryFontSize);
+        PhotoHeight = Clamp(PhotoHeight, MinPhotoHeight, MaxPhotoHeight, DefaultPhotoHeight);
+    }
+
+    /// <summary>Значення в межах, або типове — якщо воно нечисло, нуль чи від'ємне.</summary>
+    public static double Clamp(double value, double min, double max, double fallback) =>
+        double.IsFinite(value) && value > 0 ? Math.Clamp(value, min, max) : fallback;
+
     public void Reset()
     {
         ShowPhoto = false;
@@ -65,6 +122,9 @@ public sealed class NodeCardSettings
         ShowMaidenName = false;
         ShowYears = true;
         SurnameFirst = true;
+        PrimaryFontSize = DefaultPrimaryFontSize;
+        SecondaryFontSize = DefaultSecondaryFontSize;
+        PhotoHeight = DefaultPhotoHeight;
     }
 }
 

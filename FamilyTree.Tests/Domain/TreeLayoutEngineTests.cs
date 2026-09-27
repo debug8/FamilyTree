@@ -54,7 +54,7 @@ public class TreeLayoutEngineTests
             var xs = level.Select(n => n.X).OrderBy(x => x).ToList();
             for (var i = 1; i < xs.Count; i++)
             {
-                (xs[i] - xs[i - 1]).ShouldBeGreaterThanOrEqualTo(TreeLayoutEngine.NodeWidth - Tolerance);
+                (xs[i] - xs[i - 1]).ShouldBeGreaterThanOrEqualTo(TreeLayoutEngine.DefaultNodeWidth - Tolerance);
             }
         }
     }
@@ -65,7 +65,7 @@ public class TreeLayoutEngineTests
         var nb = layout.Nodes.Single(n => n.PersonId == b.Id);
 
         na.Y.ShouldBe(nb.Y, Tolerance);
-        Math.Abs(na.X - nb.X).ShouldBe(TreeLayoutEngine.ColumnStep, Tolerance);
+        Math.Abs(na.X - nb.X).ShouldBe((TreeLayoutEngine.DefaultNodeWidth + TreeLayoutEngine.HorizontalGap), Tolerance);
     }
 
     [Fact]

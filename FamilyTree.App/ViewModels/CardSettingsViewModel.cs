@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Settings;
 using FamilyTree.Domain;
+using FamilyTree.Domain.Layout;
 using FamilyTree.Storage;
 
 namespace FamilyTree.App.ViewModels;
@@ -29,6 +30,10 @@ public partial class CardSettingsViewModel : ObservableObject
     /// </summary>
     private readonly Action _applyChanges;
 
+    // Скидання виставляє обидва повзунки підряд. Без цього прапорця кожне присвоєння
+    // смикнуло б власний partial-обробник і перебудувало дерево — тричі на одне скидання.
+    private bool _suspendApply;
+
     // Демо-родина для перегляду. Будується раз у конструкторі: перегляд має показувати
     // картку зі ВСІМА заповненими полями, інакше половина галочок нічого не міняла б
     // візуально й виглядала б зламаною.
@@ -37,6 +42,20 @@ public partial class CardSettingsViewModel : ObservableObject
     private readonly Person _demoPerson;
     private readonly Person _demoSpouse;
     private readonly SpouseLink _demoLink;
+
+    // Фото й два шрифти — окремими властивостями ViewModel, на відміну від галочок, які
+    // прив'язуються прямо в об'єкт налаштувань. Причина в тому, що повзунок не має Command:
+    // про його рух треба дізнатися якось інакше, і partial-метод згенерованої властивості —
+    // найпростіший спосіб. Розміру САМОЇ картки серед них немає: він рахується з цих трьох
+    // чисел і набору галочок (NodeCardMetrics).
+    [ObservableProperty]
+    private double _photoHeight;
+
+    [ObservableProperty]
+    private double _primaryFontSize;
+
+    [ObservableProperty]
+    private double _secondaryFontSize;
 
     public CardSettingsViewModel(
         ISettingsService settings,
@@ -48,6 +67,13 @@ public partial class CardSettingsViewModel : ObservableObject
         _applyChanges = applyChanges;
         _cards = new PersonCardBuilder(localization, settings);
         _coupleCards = new CoupleCardBuilder(localization, settings);
+
+        // Clamp уже зроблено при завантаженні налаштувань (CardDisplaySettings.Normalize),
+        // тож тут просто читаємо — повзунок не опиниться поза своєю шкалою.
+        var node = _settings.Current.Cards.Node;
+        _photoHeight = node.PhotoHeight;
+        _primaryFontSize = node.PrimaryFontSize;
+        _secondaryFontSize = node.SecondaryFontSize;
 
         (_demoDoc, _demoPersons, _demoPerson, _demoSpouse, _demoLink) = BuildDemoFamily();
 
@@ -62,6 +88,27 @@ public partial class CardSettingsViewModel : ObservableObject
 
     /// <summary>Налаштування підказки подружжя.</summary>
     public CoupleTooltipSettings CoupleTooltip => _settings.Current.Cards.CoupleTooltip;
+
+    public static double MinPhotoHeight => NodeCardSettings.MinPhotoHeight;
+
+    public static double MaxPhotoHeight => NodeCardSettings.MaxPhotoHeight;
+
+    public static double MinPrimaryFontSize => NodeCardSettings.MinPrimaryFontSize;
+
+    public static double MaxPrimaryFontSize => NodeCardSettings.MaxPrimaryFontSize;
+
+    public static double MinSecondaryFontSize => NodeCardSettings.MinSecondaryFontSize;
+
+    public static double MaxSecondaryFontSize => NodeCardSettings.MaxSecondaryFontSize;
+
+    /// <summary>
+    /// Найбільша картка, яку взагалі може дати розрахунок. Потрібна лише перегляду:
+    /// контейнер тримає цей розмір, щоб сусідні елементи не стрибали, поки користувач
+    /// тягне повзунок.
+    /// </summary>
+    public static double MaxCardWidth => TreeLayoutEngine.MaxNodeWidth;
+
+    public static double MaxCardHeight => TreeLayoutEngine.MaxNodeHeight;
 
     /// <summary>Перегляд картки вузла на демо-особі.</summary>
     public TreeNodeViewModel NodePreview => BuildNodePreview();
@@ -80,10 +127,37 @@ public partial class CardSettingsViewModel : ObservableObject
     [RelayCommand]
     private void OptionChanged() => ApplyAndRefresh();
 
+    // Повзунки. Прив'язка в XAML із Delay, тож сюди приходить не кожен піксель
+    // перетягування, а значення після короткої паузи — інакше кожен тік перебудовував би
+    // усе дерево, а на великій родині це сотні вузлів із перерахунком координат.
+    partial void OnPhotoHeightChanged(double value)
+    {
+        _settings.Current.Cards.Node.PhotoHeight = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnPrimaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.Node.PrimaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
+    partial void OnSecondaryFontSizeChanged(double value)
+    {
+        _settings.Current.Cards.Node.SecondaryFontSize = value;
+        ApplyAndRefresh();
+    }
+
     [RelayCommand]
     private void ResetNode()
     {
         Node.Reset();
+
+        _suspendApply = true;
+        PhotoHeight = Node.PhotoHeight;
+        PrimaryFontSize = Node.PrimaryFontSize;
+        SecondaryFontSize = Node.SecondaryFontSize;
+        _suspendApply = false;
 
         // Порожнє ім'я = «усі властивості»: об'єкти налаштувань не сповіщають про зміни самі,
         // тож після скидання галочки перечитають свої значення лише за таким загальним поштовхом.
@@ -118,6 +192,11 @@ public partial class CardSettingsViewModel : ObservableObject
 
     private void ApplyAndRefresh()
     {
+        if (_suspendApply)
+        {
+            return;
+        }
+
         _settings.Save();
         RefreshPreviews();
         _applyChanges();
@@ -137,6 +216,8 @@ public partial class CardSettingsViewModel : ObservableObject
     private TreeNodeViewModel BuildNodePreview()
     {
         var o = Node;
+        var size = NodeCardMetrics.Measure(o);
+
         return new TreeNodeViewModel(_demoPerson.Id)
         {
             NamePrimary = PersonCardBuilder.FormatNamePrimary(_demoPerson, o.SurnameFirst),
@@ -144,6 +225,13 @@ public partial class CardSettingsViewModel : ObservableObject
             MaidenName = o.ShowMaidenName ? _demoPerson.MaidenName : null,
             Years = o.ShowYears ? PersonCardBuilder.FormatYears(_demoPerson) : string.Empty,
             RelationBadge = o.ShowRelationBadge ? _localization.GetString("CardSettings_DemoBadge") : null,
+            // Той самий розрахунок, що й у дереві — перегляд показує справжній розмір.
+            Width = TreeLayoutEngine.ClampNodeWidth(size.Width),
+            Height = TreeLayoutEngine.ClampNodeHeight(size.Height),
+            PrimaryFontSize = o.PrimaryFontSize,
+            SecondaryFontSize = o.SecondaryFontSize,
+            PhotoWidth = o.PhotoWidth,
+            PhotoHeight = o.PhotoHeight,
             ShowPhoto = o.ShowPhoto,
 
             // Фото в перегляді немає навіть коли воно ввімкнене: демо-особа вигадана, і

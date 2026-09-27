@@ -1,5 +1,6 @@
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FamilyTree.App.Settings;
 using FamilyTree.Domain.Layout;
 
 namespace FamilyTree.App.ViewModels;
@@ -26,9 +27,31 @@ public partial class TreeNodeViewModel : ObservableObject
 
     public double Y { get; init; }
 
-    public double Width => TreeLayoutEngine.NodeWidth;
+    /// <summary>
+    /// Ширина картки. Раніше читалася зі статичної константи двигуна; відколи розмір
+    /// налаштовується, значення приходить із розкладки разом із координатами — інакше
+    /// вузол міг би намалюватися шириною, відмінною від тієї, за якою його розставили.
+    /// </summary>
+    public double Width { get; init; } = TreeLayoutEngine.DefaultNodeWidth;
 
-    public double Height => TreeLayoutEngine.NodeHeight;
+    /// <inheritdoc cref="Width"/>
+    public double Height { get; init; } = TreeLayoutEngine.DefaultNodeHeight;
+
+    /// <summary>
+    /// Кегль імені та по батькові. Приходить із налаштувань разом із розміром картки,
+    /// яку з нього ж і пораховано — тож шрифт і рамка не можуть розійтися.
+    /// </summary>
+    public double PrimaryFontSize { get; init; } = NodeCardSettings.DefaultPrimaryFontSize;
+
+    /// <summary>Кегль бейджа, дівочого прізвища й років.</summary>
+    public double SecondaryFontSize { get; init; } = NodeCardSettings.DefaultSecondaryFontSize;
+
+    /// <summary>Ширина мініатюри фото.</summary>
+    public double PhotoWidth { get; init; } =
+        NodeCardSettings.DefaultPhotoHeight * NodeCardSettings.PhotoAspect;
+
+    /// <summary>Висота мініатюри фото.</summary>
+    public double PhotoHeight { get; init; } = NodeCardSettings.DefaultPhotoHeight;
 
     public string FullName { get; init; } = string.Empty;
 

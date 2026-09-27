@@ -77,6 +77,61 @@
                                   IsChecked="{Binding Node.SurnameFirst}"
                                   Command="{Binding OptionChangedCommand}" />
 
+                        <!--
+                          Фото й шрифти. Розміру самої картки тут немає навмисно: вона
+                          рахується з цих трьох чисел і галочок вище (NodeCardMetrics), як
+                          і підказка, що сама росте під свій вміст.
+                          Кожна зміна — перерахунок координат усіх вузлів, тому Delay=250:
+                          щоб перетягування не перебудовувало велике дерево на кожен піксель.
+                          SnapToTick прорідує проміжні значення.
+                        -->
+                        <Separator Margin="0,4,0,12" />
+
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                       Text="{Binding PrimaryFontSize, StringFormat={}{0:F0}}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{loc:Localize CardSettings_Node_PrimaryFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </DockPanel>
+                        <Slider Margin="0,0,0,12"
+                                Minimum="{Binding MinPrimaryFontSize, Mode=OneTime}"
+                                Maximum="{Binding MaxPrimaryFontSize, Mode=OneTime}"
+                                Value="{Binding PrimaryFontSize, Delay=250}"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                LargeChange="4" SmallChange="1" />
+
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                       Text="{Binding SecondaryFontSize, StringFormat={}{0:F0}}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{loc:Localize CardSettings_Node_SecondaryFont}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </DockPanel>
+                        <Slider Margin="0,0,0,12"
+                                Minimum="{Binding MinSecondaryFontSize, Mode=OneTime}"
+                                Maximum="{Binding MaxSecondaryFontSize, Mode=OneTime}"
+                                Value="{Binding SecondaryFontSize, Delay=250}"
+                                IsSnapToTickEnabled="True" TickFrequency="1"
+                                LargeChange="4" SmallChange="1" />
+
+                        <!-- Повзунок фото працює й при знятій галочці: людина може спершу
+                             підібрати розмір, а тоді ввімкнути — або навпаки. Блокувати його
+                             не стали, бо перегляд однаково показує рамку лише коли фото ввімкнене. -->
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Right" MinWidth="42" TextAlignment="Right"
+                                       Text="{Binding PhotoHeight, StringFormat={}{0:F0}}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{loc:Localize CardSettings_Node_PhotoSize}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </DockPanel>
+                        <Slider Margin="0,0,0,12"
+                                Minimum="{Binding MinPhotoHeight, Mode=OneTime}"
+                                Maximum="{Binding MaxPhotoHeight, Mode=OneTime}"
+                                Value="{Binding PhotoHeight, Delay=250}"
+                                IsSnapToTickEnabled="True" TickFrequency="2"
+                                LargeChange="10" SmallChange="2" />
+
                         <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
                                 HorizontalAlignment="Left" Command="{Binding ResetNodeCommand}" />
                     </StackPanel>
@@ -85,15 +140,22 @@
                         <StackPanel>
                             <TextBlock Text="{loc:Localize CardSettings_Preview}"
                                        Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,10" />
-                            <!-- Розмір рамки той самий, що в TreeLayoutEngine (160×80): перегляд мусить
-                                 показувати реальну тісноту картки, інакше він обіцяв би більше місця,
-                                 ніж є на полотні. -->
-                            <Border Width="160" Height="80" CornerRadius="8" BorderThickness="1.5"
-                                    Background="{DynamicResource SurfaceBrush}"
-                                    BorderBrush="{DynamicResource BorderBrush}">
-                                <ContentPresenter Content="{Binding NodePreview}"
-                                                  ContentTemplate="{StaticResource NodeCardContentTemplate}" />
-                            </Border>
+                            <!-- Рамка бере розмір із самого перегляду, а той рахується з фото
+                                 й шрифтів — рівно як у дереві. Контейнер тримає найбільший
+                                 можливий розмір, щоб сусідні елементи не стрибали, поки
+                                 користувач тягне повзунок. -->
+                            <Grid Width="{Binding MaxCardWidth, Mode=OneTime}"
+                                  Height="{Binding MaxCardHeight, Mode=OneTime}">
+                                <Border Width="{Binding NodePreview.Width}"
+                                        Height="{Binding NodePreview.Height}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                                        CornerRadius="8" BorderThickness="1.5"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}">
+                                    <ContentPresenter Content="{Binding NodePreview}"
+                                                      ContentTemplate="{StaticResource NodeCardContentTemplate}" />
+                                </Border>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>

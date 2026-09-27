@@ -1025,4 +1025,13 @@ Details have been saved to the log:
   <data name="Couple_Children" xml:space="preserve">
     <value>Common children</value>
   </data>
+  <data name="CardSettings_Node_PrimaryFont" xml:space="preserve">
+    <value>Name font size</value>
+  </data>
+  <data name="CardSettings_Node_SecondaryFont" xml:space="preserve">
+    <value>Secondary line font size</value>
+  </data>
+  <data name="CardSettings_Node_PhotoSize" xml:space="preserve">
+    <value>Photo size</value>
+  </data>
 </root>

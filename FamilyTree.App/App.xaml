@@ -98,14 +98,17 @@
             <DataTemplate x:Key="NodeCardContentTemplate">
                 <!-- Grid, а не горизонтальний StackPanel: колонка "*" обмежує текст шириною
                      картки, і лише тому працює TextTrimming. У StackPanel рядок отримав би
-                     бажану ширину й виліз би за межі вузла. -->
+                     бажану ширину й виліз би за межі вузла.
+                     Margin і розміри фото тут мусять збігатися з числами в NodeCardMetrics:
+                     саме з них пораховано рамку, у якій цей вміст малюється. -->
                 <Grid Margin="10,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="0" Width="40" Height="50" CornerRadius="4" Margin="0,0,8,0"
+                    <Border Grid.Column="0" Width="{Binding PhotoWidth}" Height="{Binding PhotoHeight}"
+                            CornerRadius="4" Margin="0,0,8,0"
                             Background="{DynamicResource BackgroundBrush}"
                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                             VerticalAlignment="Center"
@@ -114,22 +117,22 @@
                     </Border>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding RelationBadge}" FontSize="11"
+                        <TextBlock Text="{Binding RelationBadge}" FontSize="{Binding SecondaryFontSize}"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource PrimaryBrush}"
                                    Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
-                        <TextBlock Text="{Binding NamePrimary}" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="{Binding NamePrimary}" FontSize="{Binding PrimaryFontSize}" FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="{Binding Patronymic}" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock Text="{Binding Patronymic}" FontSize="{Binding PrimaryFontSize}" FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    Visibility="{Binding Patronymic, Converter={StaticResource NullToCollapsedConverter}}" />
-                        <TextBlock Text="{Binding MaidenName}" FontSize="11" FontStyle="Italic"
+                        <TextBlock Text="{Binding MaidenName}" FontSize="{Binding SecondaryFontSize}" FontStyle="Italic"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    Visibility="{Binding MaidenName, Converter={StaticResource NullToCollapsedConverter}}" />
-                        <TextBlock Text="{Binding Years}" FontSize="11"
+                        <TextBlock Text="{Binding Years}" FontSize="{Binding SecondaryFontSize}"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    Visibility="{Binding Years, Converter={StaticResource NullToCollapsedConverter}}" />

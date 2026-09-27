@@ -358,6 +358,15 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         _doc = doc;
         _graph = graph;
         _persons = doc.Persons.DistinctBy(p => p.Id).ToDictionary(p => p.Id);
+
+        // Розміри картки — ДО побудови: від них залежить крок колонки й рядка, тобто
+        // координати кожного вузла. Саме розміри не налаштовуються: вони обчислюються
+        // з шрифтів, фото й набору ввімкнених рядків (NodeCardMetrics). Clamp двигуна
+        // лишається запобіжником проти битого settings.json.
+        var (nodeWidth, nodeHeight) = NodeCardMetrics.Measure(_settings.Current.Cards.Node);
+        _engine.NodeWidth = TreeLayoutEngine.ClampNodeWidth(nodeWidth);
+        _engine.NodeHeight = TreeLayoutEngine.ClampNodeHeight(nodeHeight);
+
         _layout = _engine.Build(graph, rootId, Mode, Depth, RelativeIds(graph, rootId));
 
         Render();
@@ -422,13 +431,19 @@ public partial class TreeViewModel : ObservableObject, IDisposable
             Nodes.Add(new TreeNodeViewModel(node.PersonId)
             {
                 X = node.X,
-                Y = BoxY(node.Y, TreeLayoutEngine.NodeHeight),
+                Y = BoxY(node.Y, _engine.NodeHeight),
                 FullName = person.FullName,
                 NamePrimary = PersonCardBuilder.FormatNamePrimary(person, nodeOptions.SurnameFirst),
                 Patronymic = nodeOptions.ShowPatronymic ? PersonCardBuilder.FormatPatronymic(person) : null,
                 MaidenName = nodeOptions.ShowMaidenName ? NullIfBlank(person.MaidenName) : null,
                 Years = nodeOptions.ShowYears ? PersonCardBuilder.FormatYears(person) : string.Empty,
                 RelationBadge = nodeOptions.ShowRelationBadge ? badge : null,
+                Width = _engine.NodeWidth,
+                Height = _engine.NodeHeight,
+                PrimaryFontSize = nodeOptions.PrimaryFontSize,
+                SecondaryFontSize = nodeOptions.SecondaryFontSize,
+                PhotoWidth = nodeOptions.PhotoWidth,
+                PhotoHeight = nodeOptions.PhotoHeight,
                 ShowPhoto = nodeOptions.ShowPhoto,
                 Photo = nodeOptions.ShowPhoto
                     ? PersonPhoto.Load(person, TreeNodeViewModel.NodePhotoWidth)
@@ -439,8 +454,8 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         }
 
         const double couplePad = 6;
-        var halfW = TreeLayoutEngine.NodeWidth / 2;
-        var halfH = TreeLayoutEngine.NodeHeight / 2;
+        var halfW = _engine.NodeWidth / 2;
+        var halfH = _engine.NodeHeight / 2;
 
         // Активні подружжя → рамка + якір знизу рамки; розлучені → пунктирне ребро.
         var coupleAnchors = new List<(Guid A, Guid B, double X, double Y)>();
@@ -461,8 +476,8 @@ public partial class TreeViewModel : ObservableObject, IDisposable
                 {
                     var left = Math.Min(a.X, b.X) - couplePad;
                     var top = Math.Min(a.Y, b.Y) - couplePad;
-                    var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
-                    var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
+                    var width = Math.Abs(a.X - b.X) + _engine.NodeWidth + 2 * couplePad;
+                    var height = _engine.NodeHeight + 2 * couplePad;
                     Couples.Add(new CoupleBoxViewModel(left, BoxY(top, height), width, height,
                         BuildCoupleCard(edge.FromId, edge.ToId, link, persons, graph),
                         edge.FromId, edge.ToId, link.Id));
@@ -520,7 +535,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
                 var parent = positions[parentId];
                 Edges.Add(new TreeEdgeViewModel(
-                    parent.X + halfW, PointY(parent.Y + TreeLayoutEngine.NodeHeight), childX, PointY(childY),
+                    parent.X + halfW, PointY(parent.Y + _engine.NodeHeight), childX, PointY(childY),
                     isSpouse: false,
                     parentIds: new HashSet<Guid> { parentId },
                     endpointIds: new HashSet<Guid> { parentId, childId },
@@ -581,8 +596,10 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     /// <summary>Будує смугу-фон для кожного покоління (унікального Y-рядка).</summary>
     private void BuildBands(IEnumerable<double> nodeYs, double width, bool flip, double canvasHeight)
     {
+        // Не const: висота картки тепер налаштовується, тож це звичайні локальні
+        // змінні. Проміжок лишається константою двигуна.
         const double pad = TreeLayoutEngine.VerticalGap / 2;
-        const double height = TreeLayoutEngine.NodeHeight + 2 * pad;
+        var height = _engine.NodeHeight + 2 * pad;
         var rows = nodeYs.Distinct().OrderBy(y => y).ToList();
         for (var i = 0; i < rows.Count; i++)
         {

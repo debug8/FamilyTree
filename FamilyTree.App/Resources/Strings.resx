@@ -1025,4 +1025,13 @@
   <data name="Couple_Children" xml:space="preserve">
     <value>Спільних дітей</value>
   </data>
+  <data name="CardSettings_Node_PrimaryFont" xml:space="preserve">
+    <value>Шрифт імені</value>
+  </data>
+  <data name="CardSettings_Node_SecondaryFont" xml:space="preserve">
+    <value>Шрифт другорядних рядків</value>
+  </data>
+  <data name="CardSettings_Node_PhotoSize" xml:space="preserve">
+    <value>Розмір фото</value>
+  </data>
 </root>
