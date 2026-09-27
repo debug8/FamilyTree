@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows.Media;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
+using FamilyTree.App.Settings;
 using FamilyTree.Domain;
 using FamilyTree.Storage;
 
@@ -54,6 +55,13 @@ public sealed class PersonCard
     public string? PhotoPath { get; init; }
 
     /// <summary>
+    /// Чи виділяти в картці місце під фото. Окремо від <see cref="Photo"/>: коли фото
+    /// увімкнене, але в конкретної особи його немає, рамка-заглушка лишається — інакше
+    /// картки сусідніх людей мали б різну ширину й «стрибали» при наведенні.
+    /// </summary>
+    public bool ShowPhoto { get; init; } = true;
+
+    /// <summary>
     /// Готове зображення для показу: файл із теки даних, а якщо його немає —
     /// мініатюра з документа. Саме через це відкритий на чужій машині файл показує
     /// людей із обличчями: оригіналів там немає, а мініатюри подорожують разом із ним.
@@ -89,8 +97,18 @@ public sealed class PersonCard
 public sealed class PersonCardBuilder
 {
     private readonly ILocalizationService _localization;
+    private readonly ISettingsService _settings;
 
-    public PersonCardBuilder(ILocalizationService localization) => _localization = localization;
+    /// <param name="settings">
+    /// Читається на КОЖНУ збірку картки, а не запам'ятовується в полі-знімку: вікно
+    /// налаштувань міняє прапорці вживо й одразу просить перебудувати картки, тож
+    /// збирач мусить бачити поточний стан, а не той, що був при створенні.
+    /// </param>
+    public PersonCardBuilder(ILocalizationService localization, ISettingsService settings)
+    {
+        _localization = localization;
+        _settings = settings;
+    }
 
     /// <param name="childrenCount">
     /// Кількість дітей. Передається зовні, бо викликачі вже мають дешеве джерело
@@ -109,25 +127,42 @@ public sealed class PersonCardBuilder
         int childrenCount,
         string? relationBadge = null,
         Guid spouseLinkId = default,
-        string? spousePeriod = null) =>
-        new()
+        string? spousePeriod = null)
+    {
+        // Вимкнений рядок стає null — і шаблон ховає його тим самим NullToCollapsedConverter,
+        // яким уже ховає порожні. Тому налаштування змісту не додали в XAML жодної гілки:
+        // «поля немає» й «поле вимкнули» для картки — та сама ситуація.
+        var o = _settings.Current.Cards.PersonTooltip;
+
+        return new PersonCard
         {
             Person = person,
             SpouseLinkId = spouseLinkId,
             SpousePeriod = spousePeriod,
             Years = FormatYears(person),
-            RelationBadge = relationBadge,
+            RelationBadge = o.ShowRelationBadge ? relationBadge : null,
             PhotoPath = ResolvePhoto(person.PhotoPath),
-            Photo = PersonPhoto.Load(person, PersonCard.CardPhotoWidth),
-            DetailMaiden = Line("Person_MaidenName", person.MaidenName),
-            DetailGender = Line("Person_Gender", GenderText(person.Gender)),
-            DetailBirth = Line("Person_BirthDate", FormatBirth(person)),
-            DetailDeath = person.IsAlive ? null : Line("Person_DeathDate", FormatDeath(person)),
-            DetailMarriage = Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons)),
-            DetailChildren = Line("Tree_Card_Children", childrenCount.ToString(CultureInfo.CurrentCulture)),
-            DetailFacts = FormatFacts(person) is { Length: > 0 } facts ? facts : null,
-            DetailNotes = Line("Person_Notes", person.Notes),
+            ShowPhoto = o.ShowPhoto,
+
+            // Фото не вантажимо взагалі, коли воно вимкнене: декодування — найдорожча
+            // частина збірки картки, а на великому дереві їх будують сотнями.
+            Photo = o.ShowPhoto ? PersonPhoto.Load(person, PersonCard.CardPhotoWidth) : null,
+            DetailMaiden = o.ShowMaidenName ? Line("Person_MaidenName", person.MaidenName) : null,
+            DetailGender = o.ShowGender ? Line("Person_Gender", GenderText(person.Gender)) : null,
+            DetailBirth = o.ShowBirth ? Line("Person_BirthDate", FormatBirth(person)) : null,
+            DetailDeath = o.ShowDeath && !person.IsAlive
+                ? Line("Person_DeathDate", FormatDeath(person))
+                : null,
+            DetailMarriage = o.ShowMarriages
+                ? Line("Tree_Card_Marriage", FormatMarriages(person, doc, persons))
+                : null,
+            DetailChildren = o.ShowChildrenCount
+                ? Line("Tree_Card_Children", childrenCount.ToString(CultureInfo.CurrentCulture))
+                : null,
+            DetailFacts = o.ShowFacts && FormatFacts(person) is { Length: > 0 } facts ? facts : null,
+            DetailNotes = o.ShowNotes ? Line("Person_Notes", person.Notes) : null,
         };
+    }
 
     /// <summary>
     /// Локалізована назва виду факту. Для виду з новішої збірки показуємо його власну
@@ -198,9 +233,20 @@ public sealed class PersonCardBuilder
     /// Перший рядок вузла дерева — «Прізвище Ім'я». Окремо від <see cref="Person.FullName"/>,
     /// бо по батькові виводиться наступним рядком.
     /// </summary>
-    public static string FormatNamePrimary(Person person) =>
-        string.Join(' ', new[] { person.LastName, person.FirstName }
-            .Where(part => !string.IsNullOrWhiteSpace(part)));
+    /// <param name="surnameFirst">
+    /// <c>false</c> дає «Ім'я Прізвище». Порядок налаштовується, бо в дереві, впорядкованому
+    /// за родами, зручніше читати прізвище першим, а в невеликій родині — навпаки.
+    /// </param>
+    public static string FormatNamePrimary(Person person, bool surnameFirst = true)
+    {
+        ArgumentNullException.ThrowIfNull(person);
+
+        var parts = surnameFirst
+            ? new[] { person.LastName, person.FirstName }
+            : new[] { person.FirstName, person.LastName };
+
+        return string.Join(' ', parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+    }
 
     /// <summary>По батькові окремим рядком вузла; null — рядок ховається.</summary>
     public static string? FormatPatronymic(Person person) =>

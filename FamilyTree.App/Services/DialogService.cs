@@ -26,6 +26,9 @@ public sealed class DialogService : IDialogService
     public void ShowSettings(SettingsViewModel viewModel) =>
         ShowDialog(new SettingsWindow { DataContext = viewModel });
 
+    public void ShowCardSettings(CardSettingsViewModel viewModel) =>
+        ShowDialog(new CardSettingsWindow { DataContext = viewModel });
+
     public void ShowAbout(AboutViewModel viewModel) =>
         ShowDialog(new AboutWindow { DataContext = viewModel });
 

@@ -158,7 +158,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _whoIsWho = whoIsWho;
         _settings = settings;
         _photos = photos;
-        _cards = new PersonCardBuilder(localization);
+        _cards = new PersonCardBuilder(localization, settings);
 
         _selectedLanguage = _localization.CurrentLanguage;
         _selectedTheme = _theme.CurrentTheme;
@@ -632,6 +632,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SelectedTheme = _theme.CurrentTheme;
         SelectedNamingStyle = NamingStyles.First(s => s.Style == _kinshipFormatter.Style);
         LoadRecentFiles();
+    }
+
+    [RelayCommand]
+    private void OpenCardSettings()
+    {
+        // Діалог застосовує зміни вживу через цей зворотний виклик: перемальовуємо і
+        // дерево, і картки родичів на вкладці «Особа» — вони будуються тим самим збирачем.
+        var vm = new CardSettingsViewModel(_settings, _localization, RefreshCards);
+        _dialogs.ShowCardSettings(vm);
+        vm.Detach();
+    }
+
+    /// <summary>
+    /// Перебудувати всі картки застосунку після зміни їхнього змісту. Дерево —
+    /// через Refresh (бейджі родства теж збираються заново), вкладку «Особа» —
+    /// через RefreshRelations: обидва місця беруть картки з PersonCardBuilder.
+    /// </summary>
+    public void RefreshCards()
+    {
+        _tree.Refresh();
+        RefreshRelations();
     }
 
     [RelayCommand]

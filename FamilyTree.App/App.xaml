@@ -36,11 +36,13 @@
                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14"
                         BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" MaxWidth="380">
                     <StackPanel Orientation="Horizontal">
-                        <!-- Місце під фото -->
+                        <!-- Місце під фото. Ховається цілком, коли фото вимкнене в налаштуваннях:
+                             Collapsed знімає і ширину, і Margin, тож текст сам займає місце рамки. -->
                         <Border Width="92" Height="112" CornerRadius="6" Margin="0,0,14,0"
                                 Background="{DynamicResource BackgroundBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                VerticalAlignment="Top">
+                                VerticalAlignment="Top"
+                                Visibility="{Binding ShowPhoto, Converter={StaticResource BoolToVisibility}}">
                             <Grid>
                                 <TextBlock Text="{loc:Localize Tree_Card_Photo}" FontSize="11"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -81,6 +83,125 @@
                             <TextBlock Text="{Binding DetailNotes}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                        FontStyle="Italic" Foreground="{DynamicResource TextSecondaryBrush}"
                                        Visibility="{Binding DetailNotes, Converter={StaticResource NullToCollapsedConverter}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!--
+              Вміст картки вузла дерева. Живе тут, а не в FamilyGraphSurface, бо той самий
+              шаблон показує і полотно, і вікно налаштувань у своєму живому перегляді —
+              інакше перегляд поволі роз'їхався б із тим, що бачить користувач у дереві.
+              Рамку, тіні й тригери виділення шаблон навмисно не малює: вони належать
+              полотну, а перегляду потрібен лише вміст.
+            -->
+            <DataTemplate x:Key="NodeCardContentTemplate">
+                <!-- Grid, а не горизонтальний StackPanel: колонка "*" обмежує текст шириною
+                     картки, і лише тому працює TextTrimming. У StackPanel рядок отримав би
+                     бажану ширину й виліз би за межі вузла. -->
+                <Grid Margin="10,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Width="40" Height="50" CornerRadius="4" Margin="0,0,8,0"
+                            Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding ShowPhoto, Converter={StaticResource BoolToVisibility}}">
+                        <Image Source="{Binding Photo}" Stretch="UniformToFill" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding RelationBadge}" FontSize="11"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource PrimaryBrush}"
+                                   Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
+                        <TextBlock Text="{Binding NamePrimary}" FontSize="13" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Patronymic}" FontSize="13" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Visibility="{Binding Patronymic, Converter={StaticResource NullToCollapsedConverter}}" />
+                        <TextBlock Text="{Binding MaidenName}" FontSize="11" FontStyle="Italic"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Visibility="{Binding MaidenName, Converter={StaticResource NullToCollapsedConverter}}" />
+                        <TextBlock Text="{Binding Years}" FontSize="11"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Visibility="{Binding Years, Converter={StaticResource NullToCollapsedConverter}}" />
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+
+            <!--
+              Картка підказки подружжя. Дзеркалить PersonCardTemplate: спершу обличчя,
+              під ними — рядки, кожен ховається через NullToCollapsedConverter, коли
+              порожній АБО вимкнений у налаштуваннях.
+            -->
+            <DataTemplate x:Key="CoupleCardTemplate">
+                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14"
+                        BorderBrush="#D64545" BorderThickness="1" MaxWidth="360">
+                    <StackPanel>
+                        <!-- Двоє поруч: фото над іменем, між ними — серце. -->
+                        <Grid HorizontalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" MaxWidth="130">
+                                <Border Width="64" Height="78" CornerRadius="5"
+                                        Background="{DynamicResource BackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                        Visibility="{Binding ShowPhotos, Converter={StaticResource BoolToVisibility}}">
+                                    <Image Source="{Binding PhotoA}" Stretch="UniformToFill" />
+                                </Border>
+                                <TextBlock Text="{Binding NameA}" FontSize="13" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,0"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="{Binding YearsA}" FontSize="11" TextAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding YearsA, Converter={StaticResource NullToCollapsedConverter}}" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1" Text="♥" FontSize="18" Margin="12,24,12,0"
+                                       VerticalAlignment="Top" Foreground="#D64545" />
+
+                            <StackPanel Grid.Column="2" MaxWidth="130">
+                                <Border Width="64" Height="78" CornerRadius="5"
+                                        Background="{DynamicResource BackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                        Visibility="{Binding ShowPhotos, Converter={StaticResource BoolToVisibility}}">
+                                    <Image Source="{Binding PhotoB}" Stretch="UniformToFill" />
+                                </Border>
+                                <TextBlock Text="{Binding NameB}" FontSize="13" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,0"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="{Binding YearsB}" FontSize="11" TextAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding YearsB, Converter={StaticResource NullToCollapsedConverter}}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Дані самого шлюбу -->
+                        <StackPanel Margin="0,10,0,0">
+                            <TextBlock Text="{Binding DetailMarriageDate}" FontSize="12" Margin="0,2,0,0"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailMarriageDate, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailMarriagePlace}" FontSize="12" Margin="0,2,0,0"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailMarriagePlace, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailDuration}" FontSize="12" Margin="0,2,0,0"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailDuration, Converter={StaticResource NullToCollapsedConverter}}" />
+                            <TextBlock Text="{Binding DetailChildren}" FontSize="12" Margin="0,2,0,0"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Visibility="{Binding DetailChildren, Converter={StaticResource NullToCollapsedConverter}}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

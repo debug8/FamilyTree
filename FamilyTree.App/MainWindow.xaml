@@ -81,6 +81,11 @@
                 <Separator />
                 <MenuItem Header="{loc:Localize Menu_Exit}" Command="{Binding ExitCommand}" />
             </MenuItem>
+            <!-- Вигляд: поки що лише зміст карток; сюди ж підуть майбутні налаштування
+                 шрифтів і масштабу, щоб не роздувати меню «Файл». -->
+            <MenuItem Header="{loc:Localize Menu_View}">
+                <MenuItem Header="{loc:Localize Menu_CardSettings}" Command="{Binding OpenCardSettingsCommand}" />
+            </MenuItem>
             <MenuItem Header="{loc:Localize Menu_Help}">
                 <MenuItem Header="{loc:Localize Menu_About}" Command="{Binding OpenAboutCommand}" />
             </MenuItem>

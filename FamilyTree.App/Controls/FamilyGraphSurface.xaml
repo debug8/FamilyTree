@@ -43,11 +43,17 @@
                 <DataTemplate>
                     <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="12"
                             Background="#22D64545" BorderBrush="#D64545" BorderThickness="1.5"
-                            ToolTip="{Binding Tooltip}"
                             ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000"
                             ToolTipService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             ContextMenuService.IsEnabled="{Binding Interactive, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             MouseEnter="Couple_MouseEnter" MouseLeave="Surface_PointerLeave">
+                        <!-- Підказка шлюбу — повноцінна картка (CoupleCardTemplate), а не рядок:
+                             її зміст налаштовується, і прапорці «фото», «місце» рядком не виражаються. -->
+                        <Border.ToolTip>
+                            <ToolTip Background="Transparent" BorderThickness="0" Padding="0" HasDropShadow="True"
+                                     Content="{Binding Card}"
+                                     ContentTemplate="{StaticResource CoupleCardTemplate}" />
+                        </Border.ToolTip>
                         <!-- Меню рамки шлюбу. Як і в меню вузла, пункт лише повідомляє назовні:
                              сам зв'язок редагує власник (MainViewModel) — там і діалог, і валідатор. -->
                         <Border.ContextMenu>
@@ -160,20 +166,10 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <StackPanel Margin="10,8" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding RelationBadge}" FontSize="11"
-                                       Foreground="{DynamicResource PrimaryBrush}"
-                                       Visibility="{Binding RelationBadge, Converter={StaticResource NullToCollapsedConverter}}" />
-                            <TextBlock Text="{Binding NamePrimary}" FontSize="13" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="{Binding Patronymic}" FontSize="13" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Visibility="{Binding Patronymic, Converter={StaticResource NullToCollapsedConverter}}" />
-                            <TextBlock Text="{Binding Years}" FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
+                        <!-- Вміст картки — спільний шаблон NodeCardContentTemplate (App.xaml),
+                             той самий, що показує живий перегляд у вікні налаштувань. -->
+                        <ContentPresenter Content="{Binding}"
+                                          ContentTemplate="{StaticResource NodeCardContentTemplate}" />
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

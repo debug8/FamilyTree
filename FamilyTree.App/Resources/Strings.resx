@@ -875,4 +875,154 @@
   <data name="PersonFactKind_Other" xml:space="preserve">
     <value>Інше</value>
   </data>
+  <data name="Menu_View" xml:space="preserve">
+    <value>Вигляд</value>
+  </data>
+  <data name="Menu_CardSettings" xml:space="preserve">
+    <value>Налаштування карток…</value>
+  </data>
+  <data name="CardSettings_Title" xml:space="preserve">
+    <value>Налаштування карток</value>
+  </data>
+  <data name="CardSettings_Preview" xml:space="preserve">
+    <value>Перегляд</value>
+  </data>
+  <data name="CardSettings_Reset" xml:space="preserve">
+    <value>Скинути до типових</value>
+  </data>
+  <data name="CardSettings_Tab_Node" xml:space="preserve">
+    <value>Картка в дереві</value>
+  </data>
+  <data name="CardSettings_Tab_Person" xml:space="preserve">
+    <value>Підказка особи</value>
+  </data>
+  <data name="CardSettings_Tab_Couple" xml:space="preserve">
+    <value>Підказка подружжя</value>
+  </data>
+  <data name="CardSettings_Node_Hint" xml:space="preserve">
+    <value>Що писати у вузлі дерева. Картка невелика, тож увімкнення всього одразу обріже нижні рядки — перегляд праворуч показує справжній розмір.</value>
+  </data>
+  <data name="CardSettings_Node_Photo" xml:space="preserve">
+    <value>Мініатюра фото</value>
+  </data>
+  <data name="CardSettings_Node_Badge" xml:space="preserve">
+    <value>Родинний зв'язок із коренем</value>
+  </data>
+  <data name="CardSettings_Node_Patronymic" xml:space="preserve">
+    <value>По батькові</value>
+  </data>
+  <data name="CardSettings_Node_Maiden" xml:space="preserve">
+    <value>Дівоче прізвище</value>
+  </data>
+  <data name="CardSettings_Node_Years" xml:space="preserve">
+    <value>Роки життя</value>
+  </data>
+  <data name="CardSettings_Node_SurnameFirst" xml:space="preserve">
+    <value>Спершу прізвище, потім ім'я</value>
+  </data>
+  <data name="CardSettings_Person_Hint" xml:space="preserve">
+    <value>Рядки великої підказки, яка з'являється при наведенні на особу — у дереві й у списках родичів. Ім'я показується завжди.</value>
+  </data>
+  <data name="CardSettings_Person_Photo" xml:space="preserve">
+    <value>Фото</value>
+  </data>
+  <data name="CardSettings_Person_Badge" xml:space="preserve">
+    <value>Родинний зв'язок</value>
+  </data>
+  <data name="CardSettings_Person_Maiden" xml:space="preserve">
+    <value>Дівоче прізвище</value>
+  </data>
+  <data name="CardSettings_Person_Gender" xml:space="preserve">
+    <value>Стать</value>
+  </data>
+  <data name="CardSettings_Person_Birth" xml:space="preserve">
+    <value>Народження</value>
+  </data>
+  <data name="CardSettings_Person_Death" xml:space="preserve">
+    <value>Смерть</value>
+  </data>
+  <data name="CardSettings_Person_Marriages" xml:space="preserve">
+    <value>Подружжя</value>
+  </data>
+  <data name="CardSettings_Person_Children" xml:space="preserve">
+    <value>Кількість дітей</value>
+  </data>
+  <data name="CardSettings_Person_Facts" xml:space="preserve">
+    <value>Життєві факти</value>
+  </data>
+  <data name="CardSettings_Person_Notes" xml:space="preserve">
+    <value>Нотатки</value>
+  </data>
+  <data name="CardSettings_Couple_Hint" xml:space="preserve">
+    <value>Рядки підказки, яка з'являється при наведенні на рамку шлюбу в дереві. Імена подружжя показуються завжди.</value>
+  </data>
+  <data name="CardSettings_Couple_Photos" xml:space="preserve">
+    <value>Фото обох</value>
+  </data>
+  <data name="CardSettings_Couple_Years" xml:space="preserve">
+    <value>Роки життя під іменами</value>
+  </data>
+  <data name="CardSettings_Couple_Date" xml:space="preserve">
+    <value>Дата шлюбу</value>
+  </data>
+  <data name="CardSettings_Couple_Place" xml:space="preserve">
+    <value>Місце шлюбу</value>
+  </data>
+  <data name="CardSettings_Couple_Duration" xml:space="preserve">
+    <value>Тривалість шлюбу</value>
+  </data>
+  <data name="CardSettings_Couple_Children" xml:space="preserve">
+    <value>Кількість спільних дітей</value>
+  </data>
+  <data name="CardSettings_DemoBadge" xml:space="preserve">
+    <value>бабуся</value>
+  </data>
+  <data name="CardSettings_DemoLastName" xml:space="preserve">
+    <value>Коваленко</value>
+  </data>
+  <data name="CardSettings_DemoFirstName" xml:space="preserve">
+    <value>Марія</value>
+  </data>
+  <data name="CardSettings_DemoMiddleName" xml:space="preserve">
+    <value>Петрівна</value>
+  </data>
+  <data name="CardSettings_DemoMaidenName" xml:space="preserve">
+    <value>Тарасенко</value>
+  </data>
+  <data name="CardSettings_DemoBirthPlace" xml:space="preserve">
+    <value>Полтава</value>
+  </data>
+  <data name="CardSettings_DemoDeathPlace" xml:space="preserve">
+    <value>Київ</value>
+  </data>
+  <data name="CardSettings_DemoNotes" xml:space="preserve">
+    <value>Зберігала родинні світлини.</value>
+  </data>
+  <data name="CardSettings_DemoOccupation" xml:space="preserve">
+    <value>вчителька</value>
+  </data>
+  <data name="CardSettings_DemoSpouseLastName" xml:space="preserve">
+    <value>Коваленко</value>
+  </data>
+  <data name="CardSettings_DemoSpouseFirstName" xml:space="preserve">
+    <value>Іван</value>
+  </data>
+  <data name="CardSettings_DemoMarriagePlace" xml:space="preserve">
+    <value>Полтава</value>
+  </data>
+  <data name="Couple_MarriedSince" xml:space="preserve">
+    <value>У шлюбі з</value>
+  </data>
+  <data name="Couple_Place" xml:space="preserve">
+    <value>Місце</value>
+  </data>
+  <data name="Couple_Duration" xml:space="preserve">
+    <value>Тривалість</value>
+  </data>
+  <data name="Couple_DurationYears" xml:space="preserve">
+    <value>{0} р.</value>
+  </data>
+  <data name="Couple_Children" xml:space="preserve">
+    <value>Спільних дітей</value>
+  </data>
 </root>

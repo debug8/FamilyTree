@@ -875,4 +875,154 @@ Details have been saved to the log:
   <data name="PersonFactKind_Other" xml:space="preserve">
     <value>Other</value>
   </data>
+  <data name="Menu_View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Menu_CardSettings" xml:space="preserve">
+    <value>Card contents…</value>
+  </data>
+  <data name="CardSettings_Title" xml:space="preserve">
+    <value>Card contents</value>
+  </data>
+  <data name="CardSettings_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="CardSettings_Reset" xml:space="preserve">
+    <value>Reset to defaults</value>
+  </data>
+  <data name="CardSettings_Tab_Node" xml:space="preserve">
+    <value>Tree card</value>
+  </data>
+  <data name="CardSettings_Tab_Person" xml:space="preserve">
+    <value>Person tooltip</value>
+  </data>
+  <data name="CardSettings_Tab_Couple" xml:space="preserve">
+    <value>Couple tooltip</value>
+  </data>
+  <data name="CardSettings_Node_Hint" xml:space="preserve">
+    <value>What to show in a tree node. The card is small, so turning everything on will clip the lower lines — the preview on the right is actual size.</value>
+  </data>
+  <data name="CardSettings_Node_Photo" xml:space="preserve">
+    <value>Photo thumbnail</value>
+  </data>
+  <data name="CardSettings_Node_Badge" xml:space="preserve">
+    <value>Relationship to the root</value>
+  </data>
+  <data name="CardSettings_Node_Patronymic" xml:space="preserve">
+    <value>Patronymic</value>
+  </data>
+  <data name="CardSettings_Node_Maiden" xml:space="preserve">
+    <value>Maiden name</value>
+  </data>
+  <data name="CardSettings_Node_Years" xml:space="preserve">
+    <value>Life years</value>
+  </data>
+  <data name="CardSettings_Node_SurnameFirst" xml:space="preserve">
+    <value>Surname first, then given name</value>
+  </data>
+  <data name="CardSettings_Person_Hint" xml:space="preserve">
+    <value>Lines of the large tooltip shown when hovering a person — both in the tree and in relative lists. The name is always shown.</value>
+  </data>
+  <data name="CardSettings_Person_Photo" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="CardSettings_Person_Badge" xml:space="preserve">
+    <value>Relationship</value>
+  </data>
+  <data name="CardSettings_Person_Maiden" xml:space="preserve">
+    <value>Maiden name</value>
+  </data>
+  <data name="CardSettings_Person_Gender" xml:space="preserve">
+    <value>Gender</value>
+  </data>
+  <data name="CardSettings_Person_Birth" xml:space="preserve">
+    <value>Birth</value>
+  </data>
+  <data name="CardSettings_Person_Death" xml:space="preserve">
+    <value>Death</value>
+  </data>
+  <data name="CardSettings_Person_Marriages" xml:space="preserve">
+    <value>Spouses</value>
+  </data>
+  <data name="CardSettings_Person_Children" xml:space="preserve">
+    <value>Number of children</value>
+  </data>
+  <data name="CardSettings_Person_Facts" xml:space="preserve">
+    <value>Life facts</value>
+  </data>
+  <data name="CardSettings_Person_Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="CardSettings_Couple_Hint" xml:space="preserve">
+    <value>Lines of the tooltip shown when hovering a marriage frame in the tree. Both names are always shown.</value>
+  </data>
+  <data name="CardSettings_Couple_Photos" xml:space="preserve">
+    <value>Both photos</value>
+  </data>
+  <data name="CardSettings_Couple_Years" xml:space="preserve">
+    <value>Life years under the names</value>
+  </data>
+  <data name="CardSettings_Couple_Date" xml:space="preserve">
+    <value>Marriage date</value>
+  </data>
+  <data name="CardSettings_Couple_Place" xml:space="preserve">
+    <value>Marriage place</value>
+  </data>
+  <data name="CardSettings_Couple_Duration" xml:space="preserve">
+    <value>Marriage duration</value>
+  </data>
+  <data name="CardSettings_Couple_Children" xml:space="preserve">
+    <value>Number of common children</value>
+  </data>
+  <data name="CardSettings_DemoBadge" xml:space="preserve">
+    <value>grandmother</value>
+  </data>
+  <data name="CardSettings_DemoLastName" xml:space="preserve">
+    <value>Kovalenko</value>
+  </data>
+  <data name="CardSettings_DemoFirstName" xml:space="preserve">
+    <value>Mariia</value>
+  </data>
+  <data name="CardSettings_DemoMiddleName" xml:space="preserve">
+    <value>Petrivna</value>
+  </data>
+  <data name="CardSettings_DemoMaidenName" xml:space="preserve">
+    <value>Tarasenko</value>
+  </data>
+  <data name="CardSettings_DemoBirthPlace" xml:space="preserve">
+    <value>Poltava</value>
+  </data>
+  <data name="CardSettings_DemoDeathPlace" xml:space="preserve">
+    <value>Kyiv</value>
+  </data>
+  <data name="CardSettings_DemoNotes" xml:space="preserve">
+    <value>Kept the family photographs.</value>
+  </data>
+  <data name="CardSettings_DemoOccupation" xml:space="preserve">
+    <value>teacher</value>
+  </data>
+  <data name="CardSettings_DemoSpouseLastName" xml:space="preserve">
+    <value>Kovalenko</value>
+  </data>
+  <data name="CardSettings_DemoSpouseFirstName" xml:space="preserve">
+    <value>Ivan</value>
+  </data>
+  <data name="CardSettings_DemoMarriagePlace" xml:space="preserve">
+    <value>Poltava</value>
+  </data>
+  <data name="Couple_MarriedSince" xml:space="preserve">
+    <value>Married since</value>
+  </data>
+  <data name="Couple_Place" xml:space="preserve">
+    <value>Place</value>
+  </data>
+  <data name="Couple_Duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Couple_DurationYears" xml:space="preserve">
+    <value>{0} yrs</value>
+  </data>
+  <data name="Couple_Children" xml:space="preserve">
+    <value>Common children</value>
+  </data>
 </root>

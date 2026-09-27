@@ -49,6 +49,11 @@ public sealed class SettingsService : ISettingsService
             _current = new AppSettings();
         }
 
+        // Групи налаштувань карток могли прийти з файлу як null (рука або старіша збірка) —
+        // підставляємо типові ДО того, як до них дотягнеться перша картка.
+        _current.Cards ??= new CardDisplaySettings();
+        _current.Cards.Normalize();
+
         return _current;
     }
 

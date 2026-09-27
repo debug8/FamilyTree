@@ -50,6 +50,12 @@ public sealed class AppSettings
             ? Math.Clamp(value, MinPersonNameFontSize, MaxPersonNameFontSize)
             : DefaultPersonNameFontSize;
 
+    /// <summary>
+    /// Зміст карток — вузла дерева, підказки особи, підказки подружжя.
+    /// Окремим об'єктом, а не плоскими полями: див. <see cref="CardDisplaySettings"/>.
+    /// </summary>
+    public CardDisplaySettings Cards { get; set; } = new();
+
     /// <summary>Останні відкриті файли (найновіші — першими).</summary>
     public List<string> RecentFiles { get; set; } = new();
 }

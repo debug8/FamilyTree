@@ -1,0 +1,225 @@
+<Window x:Class="FamilyTree.App.CardSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FamilyTree.App.Localization"
+        Title="{loc:Localize CardSettings_Title}"
+        Height="560" Width="720" MinHeight="460" MinWidth="620"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
+    <!--
+      Три вкладки — по одній на кожну картку застосунку. Ліворуч галочки, праворуч
+      живий перегляд на вигаданій особі: без нього половина перемикачів була б
+      здогадкою («а що саме зникне, якщо зняти оцю?»).
+
+      Кожна галочка прив'язана прямо до об'єкта налаштувань і додатково смикає команду
+      OptionChangedCommand: самі налаштування — прості класи без INotifyPropertyChanged,
+      тож про зміну ViewModel інакше не дізнається.
+    -->
+    <Window.Resources>
+        <Style x:Key="OptionCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+
+        <!-- Підкладка перегляду: власний фон, щоб картка з напівпрозорими тінями
+             читалася й у темній темі. -->
+        <Style x:Key="PreviewHostStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource BackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="16,0,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+        <Button DockPanel.Dock="Bottom" Content="{loc:Localize Common_Close}" MinWidth="90"
+                HorizontalAlignment="Right" Margin="0,16,0,0"
+                Style="{StaticResource PrimaryButtonStyle}" IsCancel="True" Click="Close_Click" />
+
+        <TabControl Background="Transparent" BorderThickness="0">
+
+            <!-- ============ 1. Картка вузла дерева ============ -->
+            <TabItem Header="{loc:Localize CardSettings_Tab_Node}">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{loc:Localize CardSettings_Node_Hint}" TextWrapping="Wrap"
+                                   Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,14" />
+
+                        <CheckBox Content="{loc:Localize CardSettings_Node_Photo}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.ShowPhoto}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Node_Badge}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.ShowRelationBadge}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Node_Patronymic}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.ShowPatronymic}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Node_Maiden}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.ShowMaidenName}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Node_Years}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.ShowYears}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Node_SurnameFirst}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding Node.SurnameFirst}"
+                                  Command="{Binding OptionChangedCommand}" />
+
+                        <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
+                                HorizontalAlignment="Left" Command="{Binding ResetNodeCommand}" />
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Style="{StaticResource PreviewHostStyle}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Localize CardSettings_Preview}"
+                                       Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,10" />
+                            <!-- Розмір рамки той самий, що в TreeLayoutEngine (160×80): перегляд мусить
+                                 показувати реальну тісноту картки, інакше він обіцяв би більше місця,
+                                 ніж є на полотні. -->
+                            <Border Width="160" Height="80" CornerRadius="8" BorderThickness="1.5"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}">
+                                <ContentPresenter Content="{Binding NodePreview}"
+                                                  ContentTemplate="{StaticResource NodeCardContentTemplate}" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ============ 2. Підказка особи ============ -->
+            <TabItem Header="{loc:Localize CardSettings_Tab_Person}">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,8,0">
+                            <TextBlock Text="{loc:Localize CardSettings_Person_Hint}" TextWrapping="Wrap"
+                                       Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,14" />
+
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Photo}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowPhoto}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Badge}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowRelationBadge}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Maiden}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowMaidenName}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Gender}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowGender}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Birth}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowBirth}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Death}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowDeath}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Marriages}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowMarriages}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Children}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowChildrenCount}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Facts}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowFacts}"
+                                      Command="{Binding OptionChangedCommand}" />
+                            <CheckBox Content="{loc:Localize CardSettings_Person_Notes}"
+                                      Style="{StaticResource OptionCheckBoxStyle}"
+                                      IsChecked="{Binding PersonTooltip.ShowNotes}"
+                                      Command="{Binding OptionChangedCommand}" />
+
+                            <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
+                                    HorizontalAlignment="Left" Command="{Binding ResetPersonTooltipCommand}" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Column="1" Style="{StaticResource PreviewHostStyle}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Localize CardSettings_Preview}"
+                                       Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,10" />
+                            <ContentPresenter Content="{Binding PersonPreview}"
+                                              ContentTemplate="{StaticResource PersonCardTemplate}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ============ 3. Підказка подружжя ============ -->
+            <TabItem Header="{loc:Localize CardSettings_Tab_Couple}">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{loc:Localize CardSettings_Couple_Hint}" TextWrapping="Wrap"
+                                   Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,14" />
+
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Photos}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowPhotos}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Years}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowYears}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Date}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowMarriageDate}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Place}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowMarriagePlace}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Duration}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowDuration}"
+                                  Command="{Binding OptionChangedCommand}" />
+                        <CheckBox Content="{loc:Localize CardSettings_Couple_Children}"
+                                  Style="{StaticResource OptionCheckBoxStyle}"
+                                  IsChecked="{Binding CoupleTooltip.ShowChildrenCount}"
+                                  Command="{Binding OptionChangedCommand}" />
+
+                        <Button Content="{loc:Localize CardSettings_Reset}" Padding="10,4" Margin="0,8,0,0"
+                                HorizontalAlignment="Left" Command="{Binding ResetCoupleTooltipCommand}" />
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Style="{StaticResource PreviewHostStyle}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Localize CardSettings_Preview}"
+                                       Style="{StaticResource SecondaryTextStyle}" Margin="0,0,0,10" />
+                            <ContentPresenter Content="{Binding CouplePreview}"
+                                              ContentTemplate="{StaticResource CoupleCardTemplate}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

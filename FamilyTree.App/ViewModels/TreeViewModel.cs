@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FamilyTree.App.Localization;
 using FamilyTree.App.Services;
+using FamilyTree.App.Settings;
 using FamilyTree.Domain;
 using FamilyTree.Domain.Kinship;
 using FamilyTree.Domain.Layout;
@@ -36,6 +36,14 @@ public partial class TreeViewModel : ObservableObject, IDisposable
 
     // Складання картки-тултіпа спільне з вкладкою «Особа» (див. PersonCardBuilder).
     private readonly PersonCardBuilder _cards;
+
+    // Картка підказки подружжя. Окремий збирач, бо в неї два обличчя й дані зв'язку,
+    // а не однієї особи (див. CoupleCardBuilder).
+    private readonly CoupleCardBuilder _coupleCards;
+
+    // Налаштування змісту карток. Читаються на кожну перебудову сцени, тож зміна
+    // галочки у вікні налаштувань + Refresh() дає новий вигляд без перезапуску.
+    private readonly ISettingsService _settings;
 
     [ObservableProperty]
     private TreeMode _mode = TreeMode.Descendants;
@@ -85,14 +93,21 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     private bool _isActive;
     private bool _rebuildPending;
 
-    public TreeViewModel(IDocumentSession session, TreeLayoutEngine engine, ILocalizationService localization, KinshipCalculator kinship)
+    public TreeViewModel(
+        IDocumentSession session,
+        TreeLayoutEngine engine,
+        ILocalizationService localization,
+        KinshipCalculator kinship,
+        ISettingsService settings)
     {
         _session = session;
         _engine = engine;
         _localization = localization;
         _kinship = kinship;
+        _settings = settings;
         _relatives = new RelativeFilter(kinship);
-        _cards = new PersonCardBuilder(localization);
+        _cards = new PersonCardBuilder(localization, settings);
+        _coupleCards = new CoupleCardBuilder(localization, settings);
 
         // Іменовані обробники (а не лямбди) — щоб від них можна було відписатися в Dispose.
         _session.DocumentChanged += OnDocumentOrContentChanged;
@@ -391,6 +406,10 @@ public partial class TreeViewModel : ObservableObject, IDisposable
         double BoxY(double y, double h) => flip ? flipH - y - h : y; // верхній лівий кут рамки
         double PointY(double y) => flip ? flipH - y : y;             // окрема точка (кінець ребра)
 
+        // Налаштування вузла читаємо один раз на всю сцену: у межах одного Render
+        // вони змінитися не можуть, а звертань було б стільки ж, скільки людей.
+        var nodeOptions = _settings.Current.Cards.Node;
+
         foreach (var node in layout.Nodes)
         {
             var person = persons[node.PersonId];
@@ -405,10 +424,15 @@ public partial class TreeViewModel : ObservableObject, IDisposable
                 X = node.X,
                 Y = BoxY(node.Y, TreeLayoutEngine.NodeHeight),
                 FullName = person.FullName,
-                NamePrimary = PersonCardBuilder.FormatNamePrimary(person),
-                Patronymic = PersonCardBuilder.FormatPatronymic(person),
-                Years = card.Years,
-                RelationBadge = badge,
+                NamePrimary = PersonCardBuilder.FormatNamePrimary(person, nodeOptions.SurnameFirst),
+                Patronymic = nodeOptions.ShowPatronymic ? PersonCardBuilder.FormatPatronymic(person) : null,
+                MaidenName = nodeOptions.ShowMaidenName ? NullIfBlank(person.MaidenName) : null,
+                Years = nodeOptions.ShowYears ? PersonCardBuilder.FormatYears(person) : string.Empty,
+                RelationBadge = nodeOptions.ShowRelationBadge ? badge : null,
+                ShowPhoto = nodeOptions.ShowPhoto,
+                Photo = nodeOptions.ShowPhoto
+                    ? PersonPhoto.Load(person, TreeNodeViewModel.NodePhotoWidth)
+                    : null,
                 IsRoot = isRoot,
                 Card = card,
             });
@@ -440,7 +464,7 @@ public partial class TreeViewModel : ObservableObject, IDisposable
                     var width = Math.Abs(a.X - b.X) + TreeLayoutEngine.NodeWidth + 2 * couplePad;
                     var height = TreeLayoutEngine.NodeHeight + 2 * couplePad;
                     Couples.Add(new CoupleBoxViewModel(left, BoxY(top, height), width, height,
-                        BuildCoupleTooltip(edge.FromId, edge.ToId, link, persons),
+                        BuildCoupleCard(edge.FromId, edge.ToId, link, persons, graph),
                         edge.FromId, edge.ToId, link.Id));
                     coupleAnchors.Add((edge.FromId, edge.ToId, left + width / 2, top + height));
                 }
@@ -624,26 +648,47 @@ public partial class TreeViewModel : ObservableObject, IDisposable
     /// </summary>
     private static (Guid, Guid) OrderPair(Guid a, Guid b) => a.CompareTo(b) <= 0 ? (a, b) : (b, a);
 
-    /// <summary>Короткий опис шлюбу для тултіпа рамки: «Ім'я ♥ Ім'я · у шлюбі з 2005».</summary>
-    private string? BuildCoupleTooltip(
-        Guid aId, Guid bId, SpouseLink link, IReadOnlyDictionary<Guid, Person> persons)
+    /// <summary>
+    /// Картка підказки для рамки подружжя. Раніше тут збирався рядок; тепер зміст
+    /// налаштовується, тож збірка віддана <see cref="CoupleCardBuilder"/>, а тут лишився
+    /// лише пошук самих осіб і підрахунок спільних дітей.
+    /// </summary>
+    private CoupleCard? BuildCoupleCard(
+        Guid aId, Guid bId, SpouseLink link, IReadOnlyDictionary<Guid, Person> persons, FamilyGraph graph)
     {
         if (!persons.TryGetValue(aId, out var a) || !persons.TryGetValue(bId, out var b))
         {
             return null;
         }
 
-        var couple = $"{a.FullName}  ♥  {b.FullName}";
-        if (link.MarriageDate is not { } date)
+        return _coupleCards.Build(a, b, link, CommonChildrenCount(graph, aId, bId));
+    }
+
+    /// <summary>
+    /// Скільки дітей у пари СПІЛЬНИХ. Саме перетин, а не сума: діти від інших шлюбів
+    /// до цієї рамки не належать, і показувати їх у підказці про цей шлюб — брехня.
+    /// </summary>
+    private static int CommonChildrenCount(FamilyGraph graph, Guid aId, Guid bId)
+    {
+        var mine = graph.GetChildren(aId);
+        if (mine.Count == 0)
         {
-            return couple;
+            return 0;
         }
 
-        var since = string.Format(
-            _localization.GetString("Tree_Card_MarriedSince"),
-            date?.ToComparable()?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty);
-        return $"{couple}\n{since}";
+        var theirs = graph.GetChildren(bId);
+        if (theirs.Count == 0)
+        {
+            return 0;
+        }
+
+        var other = new HashSet<Guid>(theirs.Select(p => p.Id));
+        return mine.Count(child => other.Contains(child.Id));
     }
+
+    /// <summary>Порожній або пробільний рядок — як відсутній (шаблон ховає такий рядок).</summary>
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value;
 
     public void Dispose()
     {

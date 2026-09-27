@@ -19,6 +19,9 @@ public interface IDialogService
     /// <summary>Показує екран налаштувань застосунку.</summary>
     void ShowSettings(SettingsViewModel viewModel);
 
+    /// <summary>Вікно «Налаштування карток» — зміст вузла дерева й обох підказок.</summary>
+    void ShowCardSettings(CardSettingsViewModel viewModel);
+
     /// <summary>Показує вікно «Про програму».</summary>
     void ShowAbout(AboutViewModel viewModel);
 
